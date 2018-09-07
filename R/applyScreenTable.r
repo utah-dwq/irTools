@@ -16,12 +16,12 @@ applyScreenTable=function(data, datatype="object", translation_wb, sheetname, fl
 
 ##Testing setup
 #data=merged_results
-#translation_wb="XXXXXXX P:\\WQ\\Integrated Report\\Automation_Development\\jake\\04param_translation\\paramTransTable_v7.xlsx"
-#sheetname="masterSiteTable"
-#flag_col_name="IR_Site_FLAG"
-#com_col_name="IR_Site_COMMENT"
+#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\jake\\translationWorkbook\\ir_translation_workbook.xlsx"
+#sheetname="labNameActivityTable"
+#flag_col_name="IR_LabAct_FLAG"
+#com_col_name="LabAct_COMMENT"
 #datatype="object"
-#startRow=1
+#startRow=2
 
 # Read in input data
 if(datatype=="filepath" & class(data)!="character"){
@@ -40,6 +40,10 @@ trans_wb=loadWorkbook(translation_wb)
 #Read selected sheet in workbook table
 screen_table=data.frame(readWorkbook(trans_wb, sheet=sheetname, startRow=startRow, detectDates=TRUE))
 
+#Check for blanks/NAs in screen_table, exit w/ error if present
+if(any(is.na(screen_table$IR_FLAG))==TRUE){
+	stop("Error: Screen table incomplete and cannot be applied. All records must have IR_FLAG filled in as either ACCEPT or REJECT...")}
+
 #Remove excess columns (if they exist)
 screen_table=screen_table[,!names(screen_table) %in% c("InData","DateAdded", "", "", "", "")]
 
@@ -57,5 +61,9 @@ return(data_screen)
 
 
 }
+
+
+
+
 
 
