@@ -60,11 +60,6 @@ autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_p
 #				 "Canal Irrigation")
 ########
 
-
-
-setwd(outfile_path)
-
-
 # Read in WQP station and results data
 stn = read.csv(sites_file, stringsAsFactors=FALSE)
 stn[stn==""]=NA #Make sure all blanks are NA
@@ -121,10 +116,10 @@ au_poly=st_read(polygon_path,"AU_poly_wgs84")
 au_poly=au_poly[,c("ASSESS_ID","AU_NAME","AU_Type")]
 au_poly=st_read(polygon_path,"AU_poly_wgs84")
 au_poly=au_poly[au_poly$Status=="ACTIVE",c("ASSESS_ID","AU_NAME","AU_Type")]
-bu_poly=st_read("polygons","Beneficial_Uses_All_2020IR_wgs84")
+bu_poly=st_read(polygon_path,"Beneficial_Uses_All_2020IR_wgs84")
 bu_poly=bu_poly[bu_poly$Status=="ACTIVE",c("R317Descrp","BenUseClas","Water_Type")]
 names(bu_poly)[names(bu_poly)=="BenUseClas"]="BEN_CLASS"
-ss_poly=st_read("polygons","SiteSpecific_wgs84")
+ss_poly=st_read(polygon_path,"SiteSpecific_wgs84")
 ss_poly=ss_poly[ss_poly$Status=="ACTIVE","R317Descrp"]
 names(ss_poly)[names(ss_poly)=="R317Descrp"]="ss_R317Descrp"
 
@@ -607,7 +602,7 @@ sites=master_new
 coordinates(sites)=c("LongitudeMeasure","LatitudeMeasure")
 proj4string(sites)=CRS("+init=epsg:4326")
 sites=st_as_sf(sites)
-gsl_poly=st_read(paste0(outfile_path,"\\polygons"),"GSL_poly_wgs84")
+gsl_poly=st_read(paste0(polygon_path),"GSL_poly_wgs84")
 accept_review_lo_int=st_intersection(sites, gsl_poly)
 st_geometry(accept_review_lo_int)=NULL
 master_new=merge(master_new,accept_review_lo_int,all.x=TRUE)
