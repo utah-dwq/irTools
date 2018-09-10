@@ -5,7 +5,7 @@
 \title{Apply screens to WQP data by selected table}
 \usage{
 applyScreenTable(data, datatype = "object", translation_wb, sheetname,
-  flag_col_name, com_col_name, startRow = 1)
+  flag_col_name, com_col_name, startRow = 1, na_err = TRUE)
 }
 \arguments{
 \item{data}{Either a merged result object (narrowresult<-activity<-quantdetlim) or the full path and filename to a merged result .csv file. If data input is a path/file name, restype must be specified as "filepath".}
@@ -21,6 +21,8 @@ applyScreenTable(data, datatype = "object", translation_wb, sheetname,
 \item{com_col_name}{Name to rename IR_COMMENT column to.}
 
 \item{startRow}{Row to start reading excel sheet from (in case additional headers have been added). Defaults to 1.}
+
+\item{na_err}{Logical. If TRUE (default), exit function with error if any IR_FLAG values are NA. Set to FALSE to apply a screen table without checking for NA values in IR_FLAG.}
 }
 \value{
 A data.frame object of WQP data with merged columns from input screening tables.

@@ -80,8 +80,6 @@ names(dql_lo)[names(dql_lo)=="IRLimitPriorityRanking_lower"]="rank"
 dim(dql_up)
 dim(dql_lo)
 
-head(table(dql_up$ResultIdentifier)[table(dql_up$ResultIdentifier)>=3])
-
 #Select one lim for each using min available rank (see https://stackoverflow.com/questions/15698749/select-one-row-in-a-group-based-on-the-first-appearance-of-a-value)
 selectLim <- function(x) replace(logical(length(x)), which.min(x), TRUE)
 dql_lo=transform(dql_lo, keep=as.logical(ave(rank, ResultIdentifier, FUN=selectLim)))
@@ -90,15 +88,12 @@ dql_lo[dql_lo$ResultIdentifier=="STORET-550706589",]
 if(length(unique(dql_lo$ResultIdentifier))!=dim(dql_lo[dql_lo$keep==TRUE,])[1]){stop("Error: selected limits not unique to each RID...")}
 dql_lo=dql_lo[dql_lo$keep==TRUE,!names(dql_lo) %in% "keep"]
 head(dql_lo)
-dql_lo[dql_lo$ResultIdentifier=="STORET-550706589",]
 
 dql_up=transform(dql_up, keep=as.logical(ave(rank, ResultIdentifier, FUN=selectLim)))
 dim(dql_up)
-dql_up[dql_up$ResultIdentifier=="STORET-550706589",]
 if(length(unique(dql_up$ResultIdentifier))!=dim(dql_up[dql_up$keep==TRUE,])[1]){stop("Error: selected limits not unique to each RID...")}
 dql_up=dql_up[dql_up$keep==TRUE,!names(dql_up) %in% "keep"]
 head(dql_up)
-dql_up[dql_up$ResultIdentifier=="STORET-550706589",]
 
 
 #Rename then combine to "wide" limit object w/ upper and lower limits
@@ -133,11 +128,14 @@ table(results_dql$IR_UpperLimitType)
 #Filling values	
 results_dql$ResultMeasureValue[results_dql$ResultMeasureValue==""]=NA #Convert blanks result values to NA
 
-#Coercing values to numeric (need to double check w/ Emilie re: special characters in these columns)
+#Coercing values to numeric if not already numeric (need to double check w/ Emilie re: special characters in these columns)
 suppressWarnings({
-	results_dql$ResultMeasureValue=as.numeric(levels(results_dql$ResultMeasureValue))[results_dql$ResultMeasureValue]
-	results_dql$IR_LowerLimitValue=as.numeric(levels(results_dql$IR_LowerLimitValue))[results_dql$IR_LowerLimitValue]
-	results_dql$IR_UpperLimitValue=as.numeric(levels(results_dql$IR_UpperLimitValue))[results_dql$IR_UpperLimitValue]
+	if(class(results_dql$ResultMeasureValue)!="numeric"){
+		results_dql$ResultMeasureValue=as.numeric(levels(results_dql$ResultMeasureValue))[results_dql$ResultMeasureValue]}
+	if(class(results_dql$IR_LowerLimitValue)!="numeric"){
+		results_dql$IR_LowerLimitValue=as.numeric(levels(results_dql$IR_LowerLimitValue))[results_dql$IR_LowerLimitValue]}
+	if(class(results_dql$IR_UpperLimitValue)!="numeric"){
+		results_dql$IR_UpperLimitValue=as.numeric(levels(results_dql$IR_UpperLimitValue))[results_dql$IR_UpperLimitValue]}
 	})
 
 
