@@ -29,7 +29,7 @@ fillMaskedValues = function(results, detquantlim, translation_wb, sheetname="det
 #
 #results=merged_results
 #detquantlim=detquantlim
-#translation_wb="P:\\WQ\\Integrated Report\\IR_2020\\2020-IR-assessments\\translations\\ir_translation_workbook.xlsx"
+#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\jake\\translationWorkbook\\ir_translation_workbook.xlsx"
 #sheetname="detLimitTypeTable"
 #lql_fac=0.5
 #uql_fac=1
