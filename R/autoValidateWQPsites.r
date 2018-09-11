@@ -41,10 +41,10 @@ autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_p
 ###TESTING SETUP
 #library(sp)
 #library(sf)
-#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\jake\\02data_raw\\sites101001-180930.csv"
-#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\jake\\03site_validation\\wqp_master_site_file.csv"
-#polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\jake\\03site_validation\\polygons"
-#outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\jake\\03site_validation"
+#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites171001-180930.csv"
+#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
+#polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
+#outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation"
 #site_type_keep=c("Lake, Reservoir, Impoundment",
 #				 "Stream",
 #				 "Spring",
@@ -59,6 +59,10 @@ autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_p
 #				 "Canal Drainage",
 #				 "Canal Irrigation")
 ########
+
+
+setwd(outfile_path)
+
 
 # Read in WQP station and results data
 stn = read.csv(sites_file, stringsAsFactors=FALSE)
@@ -594,8 +598,12 @@ if(dim(master_site)[1]>0){
 	master_site$IR_REASON[master_site$IR_FLAG=="REVIEW"]="Manual review required"
 }
 
+
 #rbind master_site & stn_new to make full list of all sites (master_new)
+master_site$IR_REASON=as.factor(master_site$IR_REASON)
+stn_new$IR_REASON=as.factor(stn_new$IR_REASON)
 master_new=rbind(master_site, stn_new)
+
 
 #Intersect sites w/ GSL AU
 sites=master_new
