@@ -19,7 +19,7 @@
 #' @import sf
 
 #' @export
-autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_path,
+autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_path,correct_longitude=TRUE,
 	site_type_keep=c(
 		"Lake, Reservoir, Impoundment",
 		"Stream",
@@ -68,6 +68,10 @@ setwd(outfile_path)
 # Read in WQP station and results data
 stn = read.csv(sites_file, stringsAsFactors=FALSE)
 stn[stn==""]=NA #Make sure all blanks are NA
+
+if(correct_longitude=TRUE){
+  stn$LongitudeMeasure[stn$LongitudeMeasure>0]<- -stn$LongitudeMeasure[stn$LongitudeMeasure>0]
+}
 
 #Read in master site file
 master_site=read.csv(master_site_file, stringsAsFactors=FALSE)
