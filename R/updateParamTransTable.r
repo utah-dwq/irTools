@@ -1,9 +1,8 @@
-#' Identify New WQP Parameters/Fractions/Units/Methods and Append to IR Parameter Translation Table
+#' Update paramTransTable, paramFractionGroup, & WQPParamCASID tables in translation workbook
 #'
 #' This function identifies parameter/fraction/unit/method combinations in WQP data for which an IR translation has not yet been defined and appends them to the translation table for review.
 #'
-#' @param data A WQP results (merged or narrow result) R-object or the full path and filename to a WQP result file (.csv). If input is a path/file name, datatype must be specified as "filepath".
-#' @param datatype Data input type (one of "object" or "filepath"). Defaults to "object". Specify "filepath" to input a path and file name for the results function argument.
+#' @param data A WQP results (merged or narrow result) R-object
 #' @param detquantlim WQP detection/quantitation limit object
 #' @param translation_wb Full path and filename for IR translation workbook
 
@@ -31,7 +30,7 @@
 #' @importFrom openxlsx getSheetNames
 
 #' @export
-updateParamTrans=function(data, datatype="object", detquantlim=detquantlim, translation_wb,
+updateParamTrans=function(data, detquantlim=detquantlim, translation_wb,
 						  paramTransTable_sheetname="paramTransTable", paramTransTable_startRow=4, paramTransTable_startCol=16,
 						  WQPParamCASID_sheetname="WQPParamCASID", WQPParamCASID_startRow=4, WQPParamCASID_startCol=1,
 						  paramFractionGroup_sheetname="paramFractionGroup", paramFractionGroup_startRow=3, paramFractionGroup_startCol=3,
@@ -58,16 +57,6 @@ updateParamTrans=function(data, datatype="object", detquantlim=detquantlim, tran
 #			"HoldingTimeFrozen","TotalHoldingTime","HoldingTimeUnit","Source")
 ################
 
-#Checking input types
-if(datatype=="filepath" & class(data)!="character"){
-	stop("datatype specified as filepath, but data argument is not a filepath")
-}
-if(datatype=="filepath" & class(data)=="character"){
-	data=read.csv(data)
-}
-if(datatype=="object" & class(data)=="character"){
-	stop("datatype specified as object, but data argument is of class 'character'")
-}
 
 #Reading translation workbook and table
 trans_wb=loadWorkbook(translation_wb)

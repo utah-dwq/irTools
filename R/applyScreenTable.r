@@ -1,8 +1,7 @@
 #' Apply screens to WQP data by selected table
 #'
 #' Joins activity review inputs (labNameActivityTable, activityMediaNameTable, & activityCommentTable) to WQP data to apply decisions from input files to data.
-#' @param data Either a merged result object (narrowresult<-activity<-quantdetlim) or the full path and filename to a merged result .csv file. If data input is a path/file name, restype must be specified as "filepath".
-#' @param datatype Data input type (one of "object" or "filepath"). Defaults to "object". Specify "filepath" to input a path and file name for the results function argument.
+#' @param data A merged WQP result object. Must include both narrowresult & activity files. May also be a post-fillMaskedValues() results object.
 #' @param translation_wb Full path and filename for IR translation workbook
 #' @param sheetname Name of sheet in workbook holding desired screening decisions
 #' @param flag_col_name Name to rename IR_FLAG column to.
@@ -23,17 +22,6 @@ applyScreenTable=function(data, datatype="object", translation_wb, sheetname, fl
 #com_col_name="LabAct_COMMENT"
 #datatype="object"
 #startRow=2
-
-# Read in input data
-if(datatype=="filepath" & class(data)!="character"){
-	stop("datatype specified as filepath, but data input argument is not a filepath")
-}
-if(datatype=="filepath" & class(data)=="character"){
-	data=read.csv(data)
-}
-if(datatype=="object" & class(data)=="character"){
-	stop("datatype specified as object, but data input argument is of class 'character'")
-}
 
 #Load workbook
 trans_wb=loadWorkbook(translation_wb)

@@ -1,9 +1,8 @@
-#' Identify New WQP LaboratoryName/ActivityTypeCode combinations & ActivityMediaName/ActivityMediaSubdivisionName combinations and append them into IR Parameter Translation Workbook (sheet names labNameActivityTable & activityMediaNameTable)
+#' Update labNameActivityTable & activityMediaNameTable
 #'
 #' This function identifies new LaboratoryName/ActivityTypeCode combinations & ActivityMediaName/ActivityMediaSubdivisionName combinations in WQP data for which an IR_FLAG has not yet been defined and appends them into the translation workbook for review.
 #'
-#' @param data A WQP results (must include activity, merged objects OK) R-object or the full path and filename to a WQP result file (.csv). If input is a path/file name, datatype must be specified as "filepath".
-#' @param datatype Data input type (one of "object" or "filepath"). Defaults to "object". Specify "filepath" to input a path and file name for the data function argument.
+#' @param data A WQP results (must include activity, merged objects OK) R-object
 #' @param translation_wb Full path and filename for IR translation workbook (.xlsx). 
 
 #' @param labNameActivityTable_sheetname Name of sheet in workbook holding lab name / activity table. Defaults to "labNameActivityTable".
@@ -13,8 +12,6 @@
 #' @param activityMediaNameTable_sheetname  Name of sheet in workbook holding activity / media/submedia name table. Defaults to "activityMediaNameTable".
 #' @param activityMediaNameTable_startRow Row to start reading the activityMediaNameTable excel sheet from (in case headers have been added). Defaults to 1.
 #' @param activityMediaNameTable_startCol Col to start writing the activityMediaNameTable excel sheet to (to the right of all formula based columns). Defaults to 3.
-
-#' @param fun_cols Vector of names of columns in any table that contain functions. These are excluded from reading and writing by this function.
 
 #' @return Appends any new combinations in WQP data to translation_wb for review. This updates the input translation_wb with those new rows with system date in the "DateAdded" column.
 
@@ -26,10 +23,10 @@
 #' @importFrom openxlsx getSheetNames
 
 #' @export
-updateLabActMediaTables=function(data, datatype="object", translation_wb,
+updateLabActMediaTables=function(data, translation_wb,
 								labNameActivityTable_sheetname="labNameActivityTable",labNameActivityTable_startCol=1,labNameActivityTable_startRow=1,
-								activityMediaNameTable_sheetname="activityMediaNameTable",activityMediaNameTable_startCol=1,activityMediaNameTable_startRow=1,
-								fun_cols=c()){
+								activityMediaNameTable_sheetname="activityMediaNameTable",activityMediaNameTable_startCol=1,activityMediaNameTable_startRow=1)
+	{
 
 ######TESTING SETUP
 #translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\jake\\translationWorkbook\\IR_translation_workbook.xlsx"
@@ -43,17 +40,6 @@ updateLabActMediaTables=function(data, datatype="object", translation_wb,
 #activityMediaNameTable_startRow=1
 
 #####
-
-#Checking input types
-if(datatype=="filepath" & class(data)!="character"){
-	stop("datatype specified as filepath, but data argument is not a filepath")
-}
-if(datatype=="filepath" & class(data)=="character"){
-	data=read.csv(data)
-}
-if(datatype=="object" & class(data)=="character"){
-	stop("datatype specified as object, but data argument is of class 'character'")
-}
 
 #Load translation workbook
 trans_wb=loadWorkbook(translation_wb)

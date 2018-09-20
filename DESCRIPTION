@@ -9,4 +9,4 @@ COPYRIGHT HOLDER: Utah Division of Water Quality
 License: MIT + file LICENSE
 RoxygenNote: 6.0.1
 Imports:
-	V8, scales, leaflet, mapedit, mapview, raster, rgdal, rhandsontable, sf, shiny, shinyjs, sp, jsonlite, openxlsx
+	V8, scales, leaflet, mapedit, mapview, raster, rgdal, rhandsontable, sf, shiny, shinyjs, sp, jsonlite, openxlsx, classInt

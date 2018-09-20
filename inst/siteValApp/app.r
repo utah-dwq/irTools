@@ -53,6 +53,8 @@ tags$head(
 	extendShinyjs(text = jscode),
     fluidRow(
 		column(3,
+			br(),
+			actionButton("instruct","Instructions", icon=icon("question"),style='height:50px; padding:4px; font-size:150%',width="200px"),
 			checkboxGroupInput("flag_checkbox",label=h3("Review flag"),choices=IR_flag_choices,selected="REVIEW",inline=T),
 			uiOutput("reason_checkbox"),
 			uiOutput("sitetype_checkbox"),
@@ -76,7 +78,12 @@ tags$head(
 server <- function(input, output, session){
 
 	sites=read.csv(master_site_file)
-
+	
+	##User notes modal:
+	#showModal(modalDialog(title="Instructions","Initial map drawing is slow. Please be patient. Attempts to rapidly draw map may crash the app. Checkboxes on left allow.",size="l")
+	#
+	
+	
 	##Reactive checkbox inputs
 	reactive_objects=reactiveValues()
 	
@@ -106,8 +113,24 @@ server <- function(input, output, session){
 	})
 
 	
+	#Instructions popup
+	observeEvent(input$instruct,{
+		showModal(modalDialog(
+		title = "User instructions",
+		HTML("
+				1. Select desired site attributes via checkboxes.<br> <br>
+				2. Click 'Draw map' button to produce map (a bit slow, be patient).<br><br>
+				3. Select desired sites by drawing a polygon or square on the map. Always draw just one polygon at a time and clear polygon when finished.<br><br>
+				4. If necessary, edit feature attributes in table below map. Only IR_FLAG, IR_COMMENT, & IR_MLID columns are editable.<br><br>
+				5. When satisfied, click 'Save edits' to save edits. Sites for which edits have been made to IR_FLAG will continue to display until the map is refreshed.<br><br>
+				6. Click 'Refresh app' to refresh and redraw map to reflect previously saved edits.
+			")
+		))
+	})
+	
+	
 	observeEvent(input$draw,{
-		showModal(modalDialog(title="PLEASE WAIT...","Please wait for map to (re-)draw before proceeding.",size="l"))
+		showModal(modalDialog(title="PLEASE WAIT...","Please wait for map to (re-)draw before proceeding (a bit slow).",size="l"))
 		sites=read.csv(file=master_site_file)
 		reason_choices=unique(sites$IR_COMMENT)
 		reason_choices=unique(as.factor(append(as.vector(reason_choices),c("Non-jurisdictional","Merged","Inaccurate location", "Unclear location", "Other"))))
@@ -117,7 +140,6 @@ server <- function(input, output, session){
 		#review<<-sites[sites$IR_FLAG %in% c("ACCEPT","REJECT") & sites$MonitoringLocationTypeName %in% c("Canal Drainage","Canal Irrigation","Canal Transport"),]
 		other_sites<<-sites[!(sites$UID%in%review$UID),]	
 		review_points<<-st_as_sf(review, coords = c("LongitudeMeasure", "LatitudeMeasure"), crs = 4326, remove=FALSE) # crs 4326 is WGS84
-			
 		if(dim(review_points)[1]>0){
 			review_map<<-leaflet(review) %>%
 				addTiles() %>%
@@ -172,6 +194,8 @@ server <- function(input, output, session){
 					color=~pal(IR_FLAG))%>%
 				addLabelOnlyMarkers(lng=review_points$LongitudeMeasure, lat=review_points$LatitudeMeasure,group="Site labels",label=~(review_points$MonitoringLocationIdentifier),labelOptions = labelOptions(noHide = T),
 					clusterOptions=markerClusterOptions(spiderfyOnMaxZoom=T))
+		
+		
 		}else{
 			review_map<<-leaflet(sites) %>%
 				addTiles() %>%
@@ -207,9 +231,11 @@ server <- function(input, output, session){
 				addMeasure(position = "topright", primaryLengthUnit = "meters")
 		}
 		
+		
+		
 		polysel<<-callModule(editMod, "selection", review_map)
 		
-
+		
 		output$hot <<-renderRHandsontable({
 				req(polysel()$finished)
 				intersection <- st_intersection(polysel()$finished, review_points)
@@ -223,9 +249,10 @@ server <- function(input, output, session){
 					hot_col(col="IR_COMMENT",readOnly=FALSE,type="dropdown",source=reason_choices)#%>%
 		})
 
-
+	
 	})
-
+	
+	
 	#output$plotwindow=renderPlot({
 	#	req(input$hot)
 	#	req(polysel()$finished)

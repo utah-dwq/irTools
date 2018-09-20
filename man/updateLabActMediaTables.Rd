@@ -2,19 +2,16 @@
 % Please edit documentation in R/updateLabActMediaTables.r
 \name{updateLabActMediaTables}
 \alias{updateLabActMediaTables}
-\title{Identify New WQP LaboratoryName/ActivityTypeCode combinations & ActivityMediaName/ActivityMediaSubdivisionName combinations and append them into IR Parameter Translation Workbook (sheet names labNameActivityTable & activityMediaNameTable)}
+\title{Update labNameActivityTable & activityMediaNameTable}
 \usage{
-updateLabActMediaTables(data, datatype = "object", translation_wb,
+updateLabActMediaTables(data, translation_wb,
   labNameActivityTable_sheetname = "labNameActivityTable",
   labNameActivityTable_startCol = 1, labNameActivityTable_startRow = 1,
   activityMediaNameTable_sheetname = "activityMediaNameTable",
-  activityMediaNameTable_startCol = 1, activityMediaNameTable_startRow = 1,
-  fun_cols = c())
+  activityMediaNameTable_startCol = 1, activityMediaNameTable_startRow = 1)
 }
 \arguments{
-\item{data}{A WQP results (must include activity, merged objects OK) R-object or the full path and filename to a WQP result file (.csv). If input is a path/file name, datatype must be specified as "filepath".}
-
-\item{datatype}{Data input type (one of "object" or "filepath"). Defaults to "object". Specify "filepath" to input a path and file name for the data function argument.}
+\item{data}{A WQP results (must include activity, merged objects OK) R-object}
 
 \item{translation_wb}{Full path and filename for IR translation workbook (.xlsx).}
 
@@ -29,8 +26,6 @@ updateLabActMediaTables(data, datatype = "object", translation_wb,
 \item{activityMediaNameTable_startCol}{Col to start writing the activityMediaNameTable excel sheet to (to the right of all formula based columns). Defaults to 3.}
 
 \item{activityMediaNameTable_startRow}{Row to start reading the activityMediaNameTable excel sheet from (in case headers have been added). Defaults to 1.}
-
-\item{fun_cols}{Vector of names of columns in any table that contain functions. These are excluded from reading and writing by this function.}
 }
 \value{
 Appends any new combinations in WQP data to translation_wb for review. This updates the input translation_wb with those new rows with system date in the "DateAdded" column.

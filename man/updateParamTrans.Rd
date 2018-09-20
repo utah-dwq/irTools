@@ -4,8 +4,8 @@
 \alias{updateParamTrans}
 \title{Identify New WQP Parameters/Fractions/Units/Methods and Append to IR Parameter Translation Table}
 \usage{
-updateParamTrans(data, datatype = "object", detquantlim = detquantlim,
-  translation_wb, paramTransTable_sheetname = "paramTransTable",
+updateParamTrans(data, detquantlim = detquantlim, translation_wb,
+  paramTransTable_sheetname = "paramTransTable",
   paramTransTable_startRow = 4, paramTransTable_startCol = 16,
   WQPParamCASID_sheetname = "WQPParamCASID", WQPParamCASID_startRow = 4,
   WQPParamCASID_startCol = 1,
@@ -19,9 +19,7 @@ updateParamTrans(data, datatype = "object", detquantlim = detquantlim,
   "HoldingTimeUnit", "Source"))
 }
 \arguments{
-\item{data}{A WQP results (merged or narrow result) R-object or the full path and filename to a WQP result file (.csv). If input is a path/file name, datatype must be specified as "filepath".}
-
-\item{datatype}{Data input type (one of "object" or "filepath"). Defaults to "object". Specify "filepath" to input a path and file name for the results function argument.}
+\item{data}{A WQP results (merged or narrow result) R-object}
 
 \item{detquantlim}{WQP detection/quantitation limit object}
 
