@@ -69,7 +69,7 @@ setwd(outfile_path)
 stn = read.csv(sites_file, stringsAsFactors=FALSE)
 stn[stn==""]=NA #Make sure all blanks are NA
 
-if(correct_longitude=TRUE){
+if(correct_longitude){
   stn$LongitudeMeasure[stn$LongitudeMeasure>0]<- -stn$LongitudeMeasure[stn$LongitudeMeasure>0]
 }
 
@@ -87,7 +87,8 @@ stn_site_types=unique(stn$MonitoringLocationTypeName)
 new_site_types=stn_site_types[!stn_site_types %in% master_site_types]
 if(length(new_site_types)>0){
 	print("WARNING: New site type(s) encountered")
-	print(cbind(new_site_types))}
+	print(cbind(new_site_types))
+	readline(prompt="Press [enter] to continue")}
 
 
 #Identify any new sites (all review columns == NA) and move to new data frame (stn_new)
@@ -417,7 +418,7 @@ table(stn_new$IR_FLAG)
 #Reject by is.na(STATE_NAME)
 table(stn_new$IR_FLAG)
 stn_new$IR_FLAG[is.na(stn_new$STATE_NAME)]="REJECT"
-stn_new$IR_REASON[is.na(stn_new$STATE_NAME)]="Outside UT state boundaries (including tribal)."
+stn_new$IR_REASON[is.na(stn_new$STATE_NAME)]="Non-jurisdictional: out of state or within tribal boundaries."
 table(stn_new$IR_FLAG)
 stn_new=stn_new[,!names(stn_new) %in% "STATE_NAME"]
 
