@@ -69,9 +69,6 @@ setwd(outfile_path)
 stn = read.csv(sites_file, stringsAsFactors=FALSE)
 stn[stn==""]=NA #Make sure all blanks are NA
 
-if(correct_longitude){
-  stn$LongitudeMeasure[stn$LongitudeMeasure>0]<- -stn$LongitudeMeasure[stn$LongitudeMeasure>0]
-}
 
 #Read in master site file
 master_site=read.csv(master_site_file, stringsAsFactors=FALSE)
@@ -258,6 +255,12 @@ if(dim(master_site)[1]>0){
 
 #Stop execution if there are no new sites
 if(dim(stn_new)[1]==0){stop("No new sites identified. Proceed to next step.",call.=FALSE)}
+
+
+#Correct positive longitudes (if correct_longitude==TRUE) (JV note, moved to apply to all stations that will undergo auto review - stn_new)
+if(correct_longitude==TRUE){
+  stn_new$LongitudeMeasure[stn_new$LongitudeMeasure>0]<- -stn_new$LongitudeMeasure[stn_new$LongitudeMeasure>0]
+}
 
 
 ##Auto review new sites & master sites re-flagged to AUTO...
