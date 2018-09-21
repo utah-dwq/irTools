@@ -17,7 +17,7 @@
 #' @import sf
 
 #' @export
-autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_path,
+autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_path,correct_longitude=TRUE,
 	site_type_keep=c(
 		"Lake, Reservoir, Impoundment",
 		"Stream",
@@ -66,6 +66,7 @@ setwd(outfile_path)
 stn = read.csv(sites_file, stringsAsFactors=FALSE)
 stn[stn==""]=NA #Make sure all blanks are NA
 
+
 #Read in master site file
 master_site=read.csv(master_site_file, stringsAsFactors=FALSE)
 names(master_site)[names(master_site)=="IR_COMMENT"]="IR_REASON"
@@ -80,7 +81,8 @@ stn_site_types=unique(stn$MonitoringLocationTypeName)
 new_site_types=stn_site_types[!stn_site_types %in% master_site_types]
 if(length(new_site_types)>0){
 	print("WARNING: New site type(s) encountered")
-	print(cbind(new_site_types))}
+	print(cbind(new_site_types))
+	readline(prompt="Press [enter] to continue")}
 
 
 #Identify any new sites (all review columns == NA) and move to new data frame (stn_new)
@@ -252,6 +254,12 @@ if(dim(master_site)[1]>0){
 if(dim(stn_new)[1]==0){stop("No new sites identified. Proceed to next step.",call.=FALSE)}
 
 
+#Correct positive longitudes (if correct_longitude==TRUE) (JV note, moved to apply to all stations that will undergo auto review - stn_new)
+if(correct_longitude==TRUE){
+  stn_new$LongitudeMeasure[stn_new$LongitudeMeasure>0]<- -stn_new$LongitudeMeasure[stn_new$LongitudeMeasure>0]
+}
+
+
 ##Auto review new sites & master sites re-flagged to AUTO...
 
 # Create IR specific columns, all values filled w/ "REVIEW"
@@ -410,7 +418,7 @@ table(stn_new$IR_FLAG)
 #Reject by is.na(STATE_NAME)
 table(stn_new$IR_FLAG)
 stn_new$IR_FLAG[is.na(stn_new$STATE_NAME)]="REJECT"
-stn_new$IR_REASON[is.na(stn_new$STATE_NAME)]="Outside UT state boundaries (including tribal)."
+stn_new$IR_REASON[is.na(stn_new$STATE_NAME)]="Non-jurisdictional: out of state or within tribal boundaries."
 table(stn_new$IR_FLAG)
 stn_new=stn_new[,!names(stn_new) %in% "STATE_NAME"]
 
