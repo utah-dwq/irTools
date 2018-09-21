@@ -23,9 +23,6 @@ applyScreenTable=function(data, datatype="object", translation_wb, sheetname, fl
 #datatype="object"
 #startRow=2
 
-###TEST TEST TEST
-
-
 #Load workbook
 trans_wb=loadWorkbook(translation_wb)
 
