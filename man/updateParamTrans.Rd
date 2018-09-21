@@ -2,7 +2,7 @@
 % Please edit documentation in R/updateParamTransTable.r
 \name{updateParamTrans}
 \alias{updateParamTrans}
-\title{Identify New WQP Parameters/Fractions/Units/Methods and Append to IR Parameter Translation Table}
+\title{Update paramTransTable, paramFractionGroup, & WQPParamCASID tables in translation workbook}
 \usage{
 updateParamTrans(data, detquantlim = detquantlim, translation_wb,
   paramTransTable_sheetname = "paramTransTable",
