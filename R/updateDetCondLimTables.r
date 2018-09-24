@@ -63,43 +63,59 @@ res_dql=merge(results, detquantlim)
 
 
 #detConditionTable
-detconds=data.frame(unique(res_dql[,c("ResultDetectionConditionText")]))
+detconds=data.frame(unique(res_dql[,c("ResultDetectionConditionText")]), stringsAsFactors = FALSE)
 names(detconds)="ResultDetectionConditionText"
 detconds[detconds==""]=NA
 detconds$InData="Y"
 
-detConditionTable=data.frame(readWorkbook(trans_wb, sheet=detConditionTable_sheetname, startRow=detConditionTable_startRow, detectDates=TRUE))
+detConditionTable=data.frame(readWorkbook(trans_wb, sheet=detConditionTable_sheetname, startRow=detConditionTable_startRow, detectDates=TRUE), stringsAsFactors = FALSE)
 detConditionTable_names=names(detConditionTable)
 detConditionTable=detConditionTable[,!names(detConditionTable)%in%"InData"]
 
 detcond_merge=merge(detconds, detConditionTable, all=T)
 
 detcond_merge=detcond_merge[,detConditionTable_names]
-new_detconds_count=dim(detcond_merge)[1]-dim(detConditionTable)[1]
 
 writeData(trans_wb, detConditionTable_sheetname, detcond_merge, startRow=detConditionTable_startRow+1, startCol=detConditionTable_startCol,colNames=F)
-print(paste("detConditionTable updated.", new_detconds_count,"New ResultDetectionConditionText value(s) identified."))
+
+# Check for new detection condition text
+detcondstext <- detconds$ResultDetectionConditionText
+trans_wb_detconds <- detConditionTable$ResultDetectionConditionText
+new_det_conds <- detcondstext[!detcondstext%in%trans_wb_detconds]
+
+if(length(new_det_conds)>0){
+  print("WARNING: New ResultDetectionConditionText value(s) identified")
+  print(cbind(new_det_conds))
+  readline(prompt="Press [enter] to continue")
+  print("detConditionTable updated.")} else{print("No new ResultDetectionConditionText value(s) identified")}
 
 
 #detLimitTypeTable	
-detlims=data.frame(unique(res_dql[,c("DetectionQuantitationLimitTypeName")]))
+detlims=data.frame(unique(res_dql[,c("DetectionQuantitationLimitTypeName")]), stringsAsFactors = FALSE)
 names(detlims)="DetectionQuantitationLimitTypeName"
 detlims[detlims==""]=NA
 detlims$InData="Y"
 
-detLimitTypeTable=data.frame(readWorkbook(trans_wb, sheet=detLimitTypeTable_sheetname, startRow=detLimitTypeTable_startRow, detectDates=TRUE))
+detLimitTypeTable=data.frame(readWorkbook(trans_wb, sheet=detLimitTypeTable_sheetname, startRow=detLimitTypeTable_startRow, detectDates=TRUE), stringsAsFactors = FALSE)
 detLimitTypeTable_names=names(detLimitTypeTable)
 detLimitTypeTable=detLimitTypeTable[,!names(detLimitTypeTable)%in%"InData"]
 
 detlim_merge=merge(detlims, detLimitTypeTable, all=T)
 
 detlim_merge=detlim_merge[,detLimitTypeTable_names]
-new_lims_count=dim(detlim_merge)[1]-dim(detLimitTypeTable)[1]
 
 writeData(trans_wb, detLimitTypeTable_sheetname, detlim_merge, startRow=detLimitTypeTable_startRow+1, startCol=detLimitTypeTable_startCol,colNames=F)
-print(paste("detLimitTypeTable updated.", new_lims_count,"New DetectionQuantitationLimitTypeName value(s) identified."))
 
+# Check for new detection limit types
+detlimtypes <- detlims$DetectionQuantitationLimitTypeName
+trans_wb_detlimtypes <- detLimitTypeTable$DetectionQuantitationLimitTypeName
+new_det_lim_types <- detlimtypes[!detlimtypes%in%trans_wb_detlimtypes]
 
+if(length(new_det_lim_types)>0){
+  print("WARNING: New DetectionQuantitationLimitTypeName value(s) identified")
+  print(cbind(new_det_lim_types))
+  readline(prompt="Press [enter] to continue")
+  print("detLimitTypeTable updated.")} else{print("No new DetectionQuantitationLimitTypeName value(s) identified.")}
 
 #Save translation wb
 saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
