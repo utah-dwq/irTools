@@ -3,7 +3,6 @@
 #' This function identifies new ResultLaboratoryCommentCode/ResultLaboratoryCommentText/ActivityCommentText/ResultCommentText combinations in WQP data for which an IR_FLAG has not yet been defined and appends them into the translation workbook for review.
 #'
 #' @param data A WQP results (must include activity, merged objects OK) R-object or the full path and filename to a WQP result file (.csv). If input is a path/file name, datatype must be specified as "filepath".
-#' @param datatype Data input type (one of "object" or "filepath"). Defaults to "object". Specify "filepath" to input a path and file name for the data function argument.
 #' @param translation_wb Full path and filename for IR translation workbook (.xlsx).
 #' @param sheetname Name of sheet in workbook holding comment table. Defaults to "activityCommentTable".
 #' @param startRow Row to start reading the activityCommentTable excel sheet from (in case headers have been added). Defaults to 1.
@@ -18,26 +17,14 @@
 #' @importFrom openxlsx removeFilter
 
 #' @export
-updateCommentTable=function(data, datatype="object", translation_wb, sheetname="activityCommentTable", startRow=1, startCol=1){
+updateCommentTable=function(data, translation_wb, sheetname="activityCommentTable", startRow=1, startCol=1){
 
 ######TESTING SETUP
 #translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\jake\\translationWorkbook\\IR_translation_workbook.xlsx"
 #data=merged_results_sub
-#datatype="object"
 #sheetname="activityCommentTable"
 ######
 
-
-#Checking input types
-if(datatype=="filepath" & class(data)!="character"){
-	stop("datatype specified as filepath, but data argument is not a filepath")
-}
-if(datatype=="filepath" & class(data)=="character"){
-	data=read.csv(data)
-}
-if(datatype=="object" & class(data)=="character"){
-	stop("datatype specified as object, but data argument is of class 'character'")
-}
 
 #Load translation workbook
 trans_wb=loadWorkbook(translation_wb)
