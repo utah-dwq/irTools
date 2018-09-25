@@ -15,6 +15,13 @@ pullWQP<-function(outfile_path,StartDate,EndDate,retrieve=c("narrowresult","acti
 startlab = format(strptime(StartDate, "%m-%d-%Y"),"%y%m%d") # set label as yymmdd for file identifier
 endlab = format(strptime(EndDate, "%m-%d-%Y"),"%y%m%d") # set label as yymmdd for file identifier
 
+
+####
+#alternative option to skip/replace download read.csv("https://www.waterqualitydata.us/Result/search?&statecode=US%3A49&startDateLo=01-01-2010&startDateHi=01-01-2018&mimeType=csv&zip=no&sorted=no&dataProfile=narrowResult&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream")
+####
+
+
+
 #Set everything inside while + try loop to check for existence of desired files (generate file name list first) - occasionally the connection gets timed out, this lets R keep trying until all files are downloaded even if time out occurs
 file_list=vector(length=length(retrieve))
 for(n in 1:length(retrieve)){

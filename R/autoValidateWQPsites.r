@@ -251,7 +251,7 @@ if(dim(master_site)[1]>0){
 
 
 #Stop execution if there are no new sites
-if(dim(stn_new)[1]==0){stop("No new sites identified. Proceed to next step.",call.=FALSE)}
+if(dim(stn_new)[1]==0){stop("ERROR - No new sites identified. This is suspicious. Double check inputs. Coding modification may be required.",call.=FALSE)}
 
 
 #Correct positive longitudes (if correct_longitude==TRUE) (JV note, moved to apply to all stations that will undergo auto review - stn_new)
