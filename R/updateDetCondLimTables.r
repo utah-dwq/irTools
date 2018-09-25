@@ -63,12 +63,12 @@ res_dql=merge(results, detquantlim)
 
 
 #detConditionTable
-detconds=data.frame(unique(res_dql[,c("ResultDetectionConditionText")]), stringsAsFactors = FALSE)
+detconds=data.frame(unique(res_dql[,c("ResultDetectionConditionText")]))
 names(detconds)="ResultDetectionConditionText"
 detconds[detconds==""]=NA
 detconds$InData="Y"
 
-detConditionTable=data.frame(readWorkbook(trans_wb, sheet=detConditionTable_sheetname, startRow=detConditionTable_startRow, detectDates=TRUE), stringsAsFactors = FALSE)
+detConditionTable=data.frame(readWorkbook(trans_wb, sheet=detConditionTable_sheetname, startRow=detConditionTable_startRow, detectDates=TRUE))
 detConditionTable_names=names(detConditionTable)
 detConditionTable=detConditionTable[,!names(detConditionTable)%in%"InData"]
 
@@ -85,18 +85,18 @@ new_det_conds <- detcondstext[!detcondstext%in%trans_wb_detconds]
 
 if(length(new_det_conds)>0){
   print("WARNING: New ResultDetectionConditionText value(s) identified")
-  print(cbind(new_det_conds))
+  print(data.frame(new_det_conds))
   readline(prompt="Press [enter] to continue")
   print("detConditionTable updated.")} else{print("No new ResultDetectionConditionText value(s) identified")}
 
 
 #detLimitTypeTable	
-detlims=data.frame(unique(res_dql[,c("DetectionQuantitationLimitTypeName")]), stringsAsFactors = FALSE)
+detlims=data.frame(unique(res_dql[,c("DetectionQuantitationLimitTypeName")]))
 names(detlims)="DetectionQuantitationLimitTypeName"
 detlims[detlims==""]=NA
 detlims$InData="Y"
 
-detLimitTypeTable=data.frame(readWorkbook(trans_wb, sheet=detLimitTypeTable_sheetname, startRow=detLimitTypeTable_startRow, detectDates=TRUE), stringsAsFactors = FALSE)
+detLimitTypeTable=data.frame(readWorkbook(trans_wb, sheet=detLimitTypeTable_sheetname, startRow=detLimitTypeTable_startRow, detectDates=TRUE))
 detLimitTypeTable_names=names(detLimitTypeTable)
 detLimitTypeTable=detLimitTypeTable[,!names(detLimitTypeTable)%in%"InData"]
 
@@ -113,7 +113,7 @@ new_det_lim_types <- detlimtypes[!detlimtypes%in%trans_wb_detlimtypes]
 
 if(length(new_det_lim_types)>0){
   print("WARNING: New DetectionQuantitationLimitTypeName value(s) identified")
-  print(cbind(new_det_lim_types))
+  print(data.frame(new_det_lim_types))
   readline(prompt="Press [enter] to continue")
   print("detLimitTypeTable updated.")} else{print("No new DetectionQuantitationLimitTypeName value(s) identified.")}
 
