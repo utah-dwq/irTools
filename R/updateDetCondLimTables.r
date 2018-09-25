@@ -100,6 +100,7 @@ writeData(trans_wb, detLimitTypeTable_sheetname, detlim_merge, startRow=detLimit
 print(paste("detLimitTypeTable updated.", new_lims_count,"New DetectionQuantitationLimitTypeName value(s) identified."))
 
 
+
 #Save translation wb
 saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
 print("Translation workbook updated & saved.")

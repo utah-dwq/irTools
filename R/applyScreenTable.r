@@ -29,14 +29,14 @@ trans_wb=loadWorkbook(translation_wb)
 #Read selected sheet in workbook table
 screen_table=data.frame(readWorkbook(trans_wb, sheet=sheetname, startRow=startRow, detectDates=TRUE))
 
-#Check for blanks/NAs in screen_table, exit w/ error if present (if na_err==TRUE) - JV note - consider adding check for InData so that this only applies to translations in the current dataset
+#Check for blanks/NAs in screen_table, exit w/ error if present (if na_err==TRUE)
 if(na_err==TRUE){
 	if(any(is.na(screen_table$IR_FLAG))==TRUE){
 		stop("Error: Screen table incomplete and cannot be applied. All records must have IR_FLAG filled in as either ACCEPT or REJECT...")}
 }
 	
-#Remove excess columns (if they exist, could feed additional columns to remove from join at this step)
-screen_table=screen_table[,!names(screen_table) %in% c("InData","DateAdded")]
+#Remove excess columns (if they exist)
+screen_table=screen_table[,!names(screen_table) %in% c("InData","DateAdded", "", "", "", "")]
 
 #Rename IR_FLAG & IR_COMMENT columns to flag_col_name & com_col_name
 names(screen_table)[names(screen_table)=="IR_FLAG"]=flag_col_name
