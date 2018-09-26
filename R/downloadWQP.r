@@ -1,8 +1,7 @@
-#' Pull water quality, station, and other data for Utah from USEPA WQP
+#' Download water quality, station, and other data for Utah from USEPA WQP
 #'
-#' Pulls data from EPA's Water Quality Portal (WQP) and exports data files (as .csv) to outfile_path folder.
-#' Prepared by C Shope 1/25/18, Adapted from Roop Guha-NJDEP 1/3/18.
-#' Updated, re-formated to function, & packaged by J VanderLaan.
+#' Download data from EPA's Water Quality Portal (WQP) as .csv to outfile_path folder.
+#' Prepared by C Shope 1/25/18, Adapted from Roop Guha-NJDEP 1/3/18. Updated, re-formated to function, & packaged by J VanderLaan.
 #' @param outfile_path Path for file outputs.
 #' @param StartDate Query start date. "MM-DD-YYYY" format.
 #' @param EndDate Query end date. "MM-DD-YYYY" format.
@@ -10,7 +9,7 @@
 #' @return Exports .csv files for all selected data types during selected date period in specified output path.
 
 #' @export
-pullWQP<-function(outfile_path,StartDate,EndDate,retrieve=c("narrowresult","activity","sites","detquantlim"),retry=FALSE){
+downloadWQP<-function(outfile_path,StartDate,EndDate,retrieve=c("narrowresult","activity","sites","detquantlim"),retry=FALSE){
 
 startlab = format(strptime(StartDate, "%m-%d-%Y"),"%y%m%d") # set label as yymmdd for file identifier
 endlab = format(strptime(EndDate, "%m-%d-%Y"),"%y%m%d") # set label as yymmdd for file identifier

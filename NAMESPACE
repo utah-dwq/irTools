@@ -2,9 +2,9 @@
 
 export(applyScreenTable)
 export(autoValidateWQPsites)
+export(downloadWQP)
 export(fillMaskedValues)
 export(pullAttains)
-export(pullWQP)
 export(runSiteValApp)
 export(updateCommentTable)
 export(updateDetCondLimTables)
