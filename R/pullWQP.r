@@ -14,7 +14,7 @@ pullWQP<-function(StartDate,EndDate,retrieve=c("narrowresult","activity","sites"
     # Get the WQP station data with given date range
     if("sites" %in% retrieve){
       while(exists("sites")==FALSE){
-        SiteSource=paste0("https://www.waterqualitydata.us/data/Station/search?countrycode=US&statecode=US%3A49&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream&startDateLo=",StartDate,"&startDateHi=",EndDate,"&mimeType=csv&zip=no")
+        SiteSource=paste0("https://www.waterqualitydata.us/Station/search?countrycode=US&statecode=US%3A49&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream&startDateLo=",StartDate,"&startDateHi=",EndDate,"&mimeType=csv&zip=no")
         try(sites <- read.csv(SiteSource, stringsAsFactors = FALSE))
       }
       print(paste("Object 'sites' created. Consists of",dim(sites)[1],"rows and",dim(sites)[2],"columns."))
@@ -24,14 +24,14 @@ pullWQP<-function(StartDate,EndDate,retrieve=c("narrowresult","activity","sites"
     # Get the WQP result data with given date range
     if("result" %in% retrieve){
       while(exists("result")==FALSE){
-        RSource=paste0("https://www.waterqualitydata.us/data/Result/search?countrycode=US&statecode=US%3A49&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream&startDateLo=", StartDate,"&startDateHi=",EndDate,"&mimeType=csv&zip=no")
+        RSource=paste0("https://www.waterqualitydata.us/Result/search?countrycode=US&statecode=US%3A49&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream&startDateLo=", StartDate,"&startDateHi=",EndDate,"&mimeType=csv&zip=no")
         try(result <- read.csv(RSource, stringsAsFactors = FALSE))
       }
       print(paste("Object 'result' created. Consists of",dim(result)[1],"rows and",dim(result)[2],"columns."))
       }
     if("narrowresult" %in% retrieve){
       while(exists("narrowresult")==FALSE){
-        NRSource=paste0("https://www.waterqualitydata.us/data/Result/search?countrycode=US&statecode=US%3A49&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream&startDateLo=",StartDate,"&startDateHi=",EndDate,"&mimeType=csv&zip=no&dataProfile=narrowResult")
+        NRSource=paste0("https://www.waterqualitydata.us/Result/search?countrycode=US&statecode=US%3A49&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream&startDateLo=",StartDate,"&startDateHi=",EndDate,"&mimeType=csv&zip=no&dataProfile=narrowResult")
         try(narrowresult <- read.csv(NRSource, stringsAsFactors = FALSE))
       }
       print(paste("Object 'narrowresult' created. Consists of",dim(narrowresult)[1],"rows and",dim(narrowresult)[2],"columns."))
@@ -42,7 +42,7 @@ pullWQP<-function(StartDate,EndDate,retrieve=c("narrowresult","activity","sites"
     # Get the WQP sampling activities data with given date range
     if("activity" %in% retrieve){
       while(exists("activity")==FALSE){
-        ActSource=paste0("https://www.waterqualitydata.us/data/Activity/search?countrycode=US&statecode=US%3A49&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream&startDateLo=",StartDate,"&startDateHi=",EndDate,"&mimeType=csv&zip=no")
+        ActSource=paste0("https://www.waterqualitydata.us/Activity/search?countrycode=US&statecode=US%3A49&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream&startDateLo=",StartDate,"&startDateHi=",EndDate,"&mimeType=csv&zip=no")
         try(activity <- read.csv(ActSource, stringsAsFactors = FALSE))
       }
       print(paste("Object 'activity' created. Consists of",dim(activity)[1],"rows and",dim(activity)[2],"columns."))
@@ -52,7 +52,7 @@ pullWQP<-function(StartDate,EndDate,retrieve=c("narrowresult","activity","sites"
     # Get the WQP sampling activity metrics data with given date range
     if("activitymetric" %in% retrieve){
      while(exists("activitymetric")==FALSE){
-       ActMetSource=paste0("https://www.waterqualitydata.us/data/ActivityMetric/search?countrycode=US&statecode=US%3A49&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream&startDateLo=",StartDate,"&startDateHi=",EndDate,"&mimeType=csv&zip=no")
+       ActMetSource=paste0("https://www.waterqualitydata.us/ActivityMetric/search?countrycode=US&statecode=US%3A49&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream&startDateLo=",StartDate,"&startDateHi=",EndDate,"&mimeType=csv&zip=no")
         try(activitymetric <- read.csv(ActMetSource, stringsAsFactors = FALSE))
       }
       print(paste("Object 'activitymetric' created. Consists of",dim(activitymetric)[1],"rows and",dim(activitymetric)[2],"columns."))
@@ -62,7 +62,7 @@ pullWQP<-function(StartDate,EndDate,retrieve=c("narrowresult","activity","sites"
     # Get the WQP result quantitation data with given date range
     if("detquantlim" %in% retrieve){
       while(exists("detquantlim")==FALSE){
-        DQLSource=paste0("https://www.waterqualitydata.us/data/ResultDetectionQuantitationLimit/search?countrycode=US&statecode=US%3A49&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream&startDateLo=",StartDate,"&startDateHi=",EndDate,"&mimeType=csv&zip=no")
+        DQLSource=paste0("https://www.waterqualitydata.us/ResultDetectionQuantitationLimit/search?countrycode=US&statecode=US%3A49&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream&startDateLo=",StartDate,"&startDateHi=",EndDate,"&mimeType=csv&zip=no")
         try(detquantlim <- read.csv(DQLSource, stringsAsFactors = FALSE))
       }
       print(paste("Object 'detquantlim' created. Consists of",dim(detquantlim)[1],"rows and",dim(detquantlim)[2],"columns."))
