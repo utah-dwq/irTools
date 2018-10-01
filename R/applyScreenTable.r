@@ -12,7 +12,7 @@
 #' @importFrom openxlsx loadWorkbook
 #' @importFrom openxlsx readWorkbook
 #' @export
-applyScreenTable=function(data, datatype="object", translation_wb, sheetname, flag_col_name, com_col_name, startRow=1, na_err=TRUE){ 
+applyScreenTable=function(data, translation_wb, sheetname, flag_col_name, com_col_name, startRow=1, na_err=TRUE){ 
 
 ##Testing setup
 #data=merged_results
@@ -20,7 +20,6 @@ applyScreenTable=function(data, datatype="object", translation_wb, sheetname, fl
 #sheetname="labNameActivityTable"
 #flag_col_name="IR_LabAct_FLAG"
 #com_col_name="LabAct_COMMENT"
-#datatype="object"
 #startRow=2
 
 #Load workbook
