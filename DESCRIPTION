@@ -7,6 +7,6 @@ Depends: R (>= 3.4.4)
 YEAR: 2018
 COPYRIGHT HOLDER: Utah Division of Water Quality
 License: MIT + file LICENSE
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
 Imports:
 	V8, scales, leaflet, mapedit, mapview, raster, rgdal, rhandsontable, sf, shiny, shinyjs, sp, jsonlite, openxlsx, classInt
