@@ -8,9 +8,7 @@ applyScreenTable(data, datatype = "object", translation_wb, sheetname,
   flag_col_name, com_col_name, startRow = 1, na_err = TRUE)
 }
 \arguments{
-\item{data}{Either a merged result object (narrowresult<-activity<-quantdetlim) or the full path and filename to a merged result .csv file. If data input is a path/file name, restype must be specified as "filepath".}
-
-\item{datatype}{Data input type (one of "object" or "filepath"). Defaults to "object". Specify "filepath" to input a path and file name for the results function argument.}
+\item{data}{A merged WQP result object. Must include both narrowresult & activity files. May also be a post-fillMaskedValues() results object.}
 
 \item{translation_wb}{Full path and filename for IR translation workbook}
 

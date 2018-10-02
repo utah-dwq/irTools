@@ -5,6 +5,7 @@
 \title{Auto-validate USEPA WQP stations}
 \usage{
 autoValidateWQPsites(sites_file, master_site_file, polygon_path, outfile_path,
+  correct_longitude = TRUE,
   site_type_keep = c("Lake, Reservoir, Impoundment", "Stream",
   "Stream: Canal", "Stream: Ditch", "Spring", "River/Stream", "Lake",
   "River/Stream Intermittent", "River/Stream Perennial", "Reservoir",
@@ -31,6 +32,4 @@ Performs auto-validation on previously queried WQP stations combined with the ex
 Auto-validates any new sites (i.e. those not currently in the master site list) and appends them into existing master site list flagged for acceptance, rejection, or review.
 Checks for any new site types in new data. A warning message and a list of new site types is printed if new site types are encountered.
 Also re-auto-validates any sites in the master site list that have previously only undergone auto-validation (to account for any changes in auto validation process) and checks existing master site list for changes in AUs, selected site types, or property boundaries.
-Currently requires the existence of a WQP stations file with matching start and end dates, and therefore works best when run in a paired equence with retrieveWQP().
-Also requires existing "wqp_master_site_file.csv" in outfile_path. Will likely update to select individual files in the future.
 }
