@@ -2,25 +2,24 @@
 % Please edit documentation in R/pullWQP.r
 \name{pullWQP}
 \alias{pullWQP}
-\title{Pull water quality, station, and other data for Utah from USEPA WQP}
+\title{Pull water quality, station, and other data for Utah from USEPA to R global environment.}
 \usage{
-pullWQP(outfile_path, StartDate, EndDate, retrieve = c("narrowresult",
-  "activity", "sites", "detquantlim"), retry = FALSE)
+pullWQP(StartDate, EndDate, retrieve = c("narrowresult", "activity",
+  "sites", "detquantlim"), retry = TRUE)
 }
 \arguments{
-\item{outfile_path}{Path for file outputs.}
-
 \item{StartDate}{Query start date. "MM-DD-YYYY" format.}
 
 \item{EndDate}{Query end date. "MM-DD-YYYY" format.}
 
-\item{retrieve}{Vector of data type names to retrieve from WQP. One or more of: "result","narrowresult","activity","activitymetric","sites","detquantlim". Defaults to query all.}
+\item{retrieve}{Vector of data type names to retrieve from WQP. One or more of: "result","narrowresult","activity","activitymetric","sites","detquantlim". Defaults to query "sites", "narrowresult", "activity", and "detquantlim".}
+
+\item{retry}{Logical value specifying whether function should continuously attempt a connection with USEPA WQP. Default set to TRUE.}
 }
 \value{
-Exports .csv files for all selected data types during selected date period in specified output path.
+Returns a list of objects of the selected data types over specified date range.
 }
 \description{
-Pulls data from EPA's Water Quality Portal (WQP) and exports data files (as .csv) to outfile_path folder.
-Prepared by C Shope 1/25/18, Adapted from Roop Guha-NJDEP 1/3/18.
-Updated, re-formated to function, & packaged by J VanderLaan.
+Pull data from EPA's Water Quality Portal (WQP) as .csv directly into R environment for validation, screening, and assessment.
+Prepared by C Shope 1/25/18, Adapted from Roop Guha-NJDEP 1/3/18. Updated, re-formated to function, & packaged by J VanderLaan.
 }

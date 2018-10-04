@@ -3,6 +3,7 @@
 export(applyScreenTable)
 export(assignCriteria)
 export(autoValidateWQPsites)
+export(downloadWQP)
 export(fillMaskedValues)
 export(pullAttains)
 export(pullWQP)
