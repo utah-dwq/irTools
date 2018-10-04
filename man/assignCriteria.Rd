@@ -2,17 +2,21 @@
 % Please edit documentation in R/assignCriteria.r
 \name{assignCriteria}
 \alias{assignCriteria}
-\title{Assign numeric criteria}
+\title{Assign numeric criteria to WQP data}
 \usage{
-assignCriteria(data, translation_wb, sheetname, startRow = 1,
-  browsefile = F)
+assignCriteria(data, translation_wb, crit_sheetname, ss_sheetname,
+  crit_startRow = 1, ss_startRow = 1)
 }
 \arguments{
 \item{data}{A merged, parameter translated, spatially referenced WQP result object.}
 
-\item{sheetname}{Name of sheet in workbook holding criteria to be assigned.}
+\item{crit_sheetname}{Name of sheet in workbook holding criteria to be assigned.}
 
-\item{startRow}{Row to start reading excel sheet from (in case headers have been added). Defaults to 1.}
+\item{ss_sheetname}{Name of sheet in workbook holding site-specific criteria to be assigned. Should typically contain parameters corresponding to those in criteria table.}
+
+\item{crit_startRow}{Row to start reading criteria table excel sheet from (in case headers have been added). Defaults to 1.}
+
+\item{ss_startRow}{Row to start reading site specific criteria table excel sheet from (in case headers have been added). Defaults to 1.}
 
 \item{crit_wb}{Full path and filename for workbook containing criteria.}
 }
