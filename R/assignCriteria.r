@@ -1,7 +1,7 @@
 #' Assign numeric criteria to WQP data
 #'
 #' Assigns general & site-specific numeric WQ criteria to WQP data. Does not calculate criteria w/ correction factors. See calcCriteria (function in development).
-#' @param data A merged, parameter translated, spatially referenced WQP result object.
+#' @param data A merged, parameter translated, spatially referenced WQP result object. Must be post parameter translation step.
 #' @param crit_wb Full path and filename for workbook containing criteria.
 #' @param crit_sheetname Name of sheet in workbook holding criteria to be assigned.
 #' @param crit_startRow Row to start reading criteria table excel sheet from (in case headers have been added). Defaults to 1.
@@ -51,6 +51,13 @@ assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startR
 #ss_startRow=1
 
 
+
+#Check that data is post-parameter translation
+if(!any(names(data)=="R3172ParameterName")){
+	stop("Error: input data must be post-parameter translation and contain translated parameter names in R3172ParameterName column.")
+	}
+
+
 #Load workbook
 crit_wb=openxlsx::loadWorkbook(crit_wb)
 
@@ -63,18 +70,18 @@ cf=crit_table[crit_table$BeneficialUse=="CF",]
 data$BEN_CLASS[data$R3172ParameterName %in% cf$R3172ParameterName]=paste0(data$BEN_CLASS[data$R3172ParameterName %in% cf$R3172ParameterName],",CF")
 table(is.na(data$BEN_CLASS))
 
-#Expand data uses (BEN_CLASS)
+#Expand comma separated uses (BEN_CLASS)
 max_use_count=max(sapply(strsplit(data$BEN_CLASS,","),FUN="length"))
 use_colnames=paste0(rep("use",max_use_count),seq(1:max_use_count))
-uses_mat=data.frame(data$BEN_CLASS,colsplit(data$BEN_CLASS,",",use_colnames))
+uses_mat=unique(data.frame(data$BEN_CLASS,colsplit(data$BEN_CLASS,",",use_colnames)))
 names(uses_mat)[names(uses_mat)=="data.BEN_CLASS"]="BEN_CLASS"
 
 #Flatten uses
 uses_flat=reshape2::melt(uses_mat, id.vars="BEN_CLASS", value.name = "BeneficialUse")
-uses_flat=unique(uses_flat[,!names(uses_flat)=="variable"])
+uses_flat=uses_flat[,!names(uses_flat)=="variable"]
 uses_flat=uses_flat[uses_flat$BeneficialUse!="" & !is.na(uses_flat$BeneficialUse),]
 
-#Merge flat uses back to data (by BEN_CLASS)
+#Merge flat uses back to data by BEN_CLASS
 data_uses_flat=merge(data,uses_flat,all=T)
 
 #Merge criteria to data w/ flattened uses
@@ -144,7 +151,6 @@ dim(data_uses_flat_crit)
 #Correction factors
 #pH, temp, hardness (Ca+Mg > hardness >100(?), max=400 mg/l)
 
-#-Grab records that need criteria calculated (remove these from data?)
 #-Build correction factor subdataset
 #-Cast correction factor subdataset
 #-Merge correction factors to records needing calculated criteria
