@@ -14,7 +14,7 @@
 #' @importFrom plyr rbind.fill
 #' @importFrom lubridate month
 #' @export
-assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startRow=1, ss_startRow=1){ 
+assignCriteria=function(data, translation_wb, crit_sheetname, ss_sheetname, crit_startRow=1, ss_startRow=1){ 
 
 
 ###Assign numeric criteria to WQP data
@@ -124,10 +124,12 @@ table(data_uses_flat_ssc$in_ssc_period)
 #	(data_uses_flat_ssc$SSC_StartMon > data_uses_flat_ssc$SSC_EndMon & (data_uses_flat_ssc$month<=data_uses_flat_ssc$SSC_EndMon | data_uses_flat_ssc$month>=data_uses_flat_ssc$SSC_StartMon)))
 #)
 
+
 dim(data_uses_flat_ssc)
 data_uses_flat_ssc=data_uses_flat_ssc[data_uses_flat_ssc$in_ssc_period=="TRUE" | is.na(data_uses_flat_ssc$in_ssc_period),]
 data_uses_flat_ssc=data_uses_flat_ssc[,!names(data_uses_flat_ssc) %in% c("in_ssc_period","month")]
 dim(data_uses_flat_ssc)
+
 
 #rbind (w/ fill) matches back to data_uses_flat_crit
 dim(data_uses_flat_crit)
