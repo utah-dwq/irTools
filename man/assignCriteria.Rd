@@ -4,11 +4,13 @@
 \alias{assignCriteria}
 \title{Assign numeric criteria to WQP data}
 \usage{
-assignCriteria(data, translation_wb, crit_sheetname, ss_sheetname,
-  crit_startRow = 1, ss_startRow = 1)
+assignCriteria(data, crit_wb, crit_sheetname, ss_sheetname, crit_startRow = 1,
+  ss_startRow = 1)
 }
 \arguments{
 \item{data}{A merged, parameter translated, spatially referenced WQP result object.}
+
+\item{crit_wb}{Full path and filename for workbook containing criteria.}
 
 \item{crit_sheetname}{Name of sheet in workbook holding criteria to be assigned.}
 
@@ -17,8 +19,6 @@ assignCriteria(data, translation_wb, crit_sheetname, ss_sheetname,
 \item{crit_startRow}{Row to start reading criteria table excel sheet from (in case headers have been added). Defaults to 1.}
 
 \item{ss_startRow}{Row to start reading site specific criteria table excel sheet from (in case headers have been added). Defaults to 1.}
-
-\item{crit_wb}{Full path and filename for workbook containing criteria.}
 }
 \value{
 A flattened & expanded sample x use x parameter x criterion data.frame.

@@ -70,7 +70,7 @@ uses_mat=data.frame(data$BEN_CLASS,colsplit(data$BEN_CLASS,",",use_colnames))
 names(uses_mat)[names(uses_mat)=="data.BEN_CLASS"]="BEN_CLASS"
 
 #Flatten uses
-uses_flat=melt(uses_mat, id.vars="BEN_CLASS", value.name = "BeneficialUse")
+uses_flat=reshape2::melt(uses_mat, id.vars="BEN_CLASS", value.name = "BeneficialUse")
 uses_flat=unique(uses_flat[,!names(uses_flat)=="variable"])
 uses_flat=uses_flat[uses_flat$BeneficialUse!="" & !is.na(uses_flat$BeneficialUse),]
 
