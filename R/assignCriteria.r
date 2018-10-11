@@ -11,6 +11,7 @@
 #' @importFrom openxlsx loadWorkbook
 #' @importFrom openxlsx readWorkbook
 #' @importFrom reshape2 colsplit
+#' @importFrom reshape2 melt
 #' @importFrom plyr rbind.fill
 #' @importFrom lubridate month
 #' @export
