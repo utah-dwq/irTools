@@ -14,7 +14,7 @@
 #' @importFrom plyr rbind.fill
 #' @importFrom lubridate month
 #' @export
-assignCriteria=function(data, translation_wb, crit_sheetname, ss_sheetname, crit_startRow=1, ss_startRow=1){ 
+assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startRow=1, ss_startRow=1){ 
 
 
 ###Assign numeric criteria to WQP data
