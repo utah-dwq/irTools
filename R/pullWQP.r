@@ -10,7 +10,7 @@
 #' @export 
 
 pullWQP<-function(StartDate,EndDate,retrieve=c("narrowresult","activity","sites","detquantlim"), retry=TRUE){
-
+  
   out=list()
   
 if(retry==TRUE){
@@ -142,8 +142,9 @@ if(retry==TRUE){
         print(paste("Object 'detquantlim' created. Consists of",dim(detquantlim)[1],"rows and",dim(detquantlim)[2],"columns."))
         }else{print("Object 'detquantlim' not created")}
     }
-  }
-return(out)
+}
+assign("out", out, envir=globalenv())
+ifelse(any(names(.GlobalEnv)=="out"),print("List 'out' created in Global Environment"),print("List 'out' NOT created in Global Environment"))
 }
 
 
