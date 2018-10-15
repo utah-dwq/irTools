@@ -561,7 +561,7 @@ stn_new$IR_FLAG = ifelse(stn_new$IR_FLAG=="REVIEW"&stn_new$MLID_Count==1&stn_new
 stn_new$IR_REASON = ifelse(stn_new$IR_FLAG=="ACCEPT","ACCEPT",stn_new$IR_REASON)
 sum(table(stn_new$IR_FLAG))
 
-#Review where MonitoringLocationTypeName is a stream or spring type & AU_Type=="Canal"
+#Review where MonitoringLocationTypeName is a stream or spring type & AU_Type=="Canal" NOTE: currently has potential to overwrite rejected sites to review, may want to exclude already rejected from conditional
 stn_new$IR_FLAG[
 	(stn_new$MonitoringLocationTypeName=="Stream" & stn_new$AU_Type == "Canal")|
 	(stn_new$MonitoringLocationTypeName=="River/Stream" & stn_new$AU_Type == "Canal")|
