@@ -143,8 +143,9 @@ if(retry==TRUE){
         }else{print("Object 'detquantlim' not created")}
     }
 }
-assign("out", out, envir=globalenv())
-ifelse(any(names(.GlobalEnv)=="out"),print("List 'out' created in Global Environment"),print("List 'out' NOT created in Global Environment"))
+
+return(out)
+
 }
 
 
