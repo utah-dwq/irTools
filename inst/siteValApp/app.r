@@ -1,7 +1,15 @@
 
 
 
-#runApp("P:\\WQ\\Integrated Report\\Automation_Development\\jake\\03site_validation")
+
+#library(shiny)
+#shiny::runApp("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\draft_code\\site_review_app")
+
+###SET UP
+master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
+polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
+edit_log_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\edit_logs"
+###
 
 #library(shiny)
 library(raster)
@@ -76,20 +84,14 @@ tags$head(
 )
 
 server <- function(input, output, session){
-
-	sites=read.csv(master_site_file)
-	
-	##User notes modal:
-	#showModal(modalDialog(title="Instructions","Initial map drawing is slow. Please be patient. Attempts to rapidly draw map may crash the app. Checkboxes on left allow.",size="l")
-	#
-	
-	
+		
 	##Reactive checkbox inputs
 	reactive_objects=reactiveValues()
-	
+
+	reactive_objects$sites=read.csv(master_site_file)
 
 	observe({
-		reactive_objects$IR_reason_choices=unique(sites[sites$IR_FLAG %in% input$flag_checkbox, "IR_COMMENT"])
+		reactive_objects$IR_reason_choices=unique(reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$flag_checkbox, "IR_COMMENT"])
 	})
 
 	output$reason_checkbox <- renderUI({
@@ -97,7 +99,7 @@ server <- function(input, output, session){
 	})
 
 	observe({
-		reactive_objects$IR_sitetype_choices=unique(sites[sites$IR_FLAG %in% input$flag_checkbox & sites$IR_COMMENT %in% input$reason_checkbox, "MonitoringLocationTypeName"])
+		reactive_objects$IR_sitetype_choices=unique(reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$flag_checkbox & reactive_objects$sites$IR_COMMENT %in% input$reason_checkbox, "MonitoringLocationTypeName"])
 	})
     
 	output$sitetype_checkbox <- renderUI({
@@ -105,7 +107,7 @@ server <- function(input, output, session){
 	})
 
 	observe({
-		reactive_objects$autype_choices=unique(sites[sites$IR_FLAG %in% input$flag_checkbox & sites$IR_COMMENT %in% input$reason_checkbox & sites$MonitoringLocationTypeName %in% input$sitetype_checkbox, "AU_Type"])
+		reactive_objects$autype_choices=unique(reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$flag_checkbox & reactive_objects$sites$IR_COMMENT %in% input$reason_checkbox & reactive_objects$sites$MonitoringLocationTypeName %in% input$sitetype_checkbox, "AU_Type"])
 	})
     
 	output$autype_checkbox <- renderUI({
@@ -118,30 +120,29 @@ server <- function(input, output, session){
 		showModal(modalDialog(
 		title = "User instructions",
 		HTML("
-				1. Select desired site attributes via checkboxes.<br> <br>
-				2. Click 'Draw map' button to produce map (a bit slow, be patient).<br><br>
-				3. Select desired sites by drawing a polygon or square on the map. Always draw just one polygon at a time and clear polygon when finished.<br><br>
-				4. If necessary, edit feature attributes in table below map. Only IR_FLAG, IR_COMMENT, & IR_MLID columns are editable.<br><br>
-				5. When satisfied, click 'Save edits' to save edits. Sites for which edits have been made to IR_FLAG will continue to display until the map is refreshed.<br><br>
-				6. Click 'Refresh app' to refresh and redraw map to reflect previously saved edits.
-			")
+				1. Ensure the master site and edit log files are closed.
+				2. Select desired site attributes via checkboxes.<br> <br>
+				3. Click 'Draw map' button to produce map (a bit slow, be patient).<br><br>
+				4. Select desired sites by drawing a polygon or square on the map. Always draw just one polygon at a time and clear polygon when finished.<br><br>
+				5. If necessary, edit feature attributes in table below map. Only IR_FLAG, IR_COMMENT, & IR_MLID columns are editable.<br><br>
+				6. When satisfied, click 'Save edits' to save edits. Sites for which edits have been made to IR_FLAG will continue to display until the map is refreshed.<br><br>
+				7. Click 'Refresh app' to refresh and redraw map to reflect previously saved edits.
+			"),size="l"
 		))
 	})
 	
 	
 	observeEvent(input$draw,{
-		showModal(modalDialog(title="PLEASE WAIT...","Please wait for map to (re-)draw before proceeding (a bit slow).",size="l"))
-		sites=read.csv(file=master_site_file)
-		reason_choices=unique(sites$IR_COMMENT)
-		reason_choices=unique(as.factor(append(as.vector(reason_choices),c("Non-jurisdictional","Merged","Inaccurate location", "Unclear location", "Other"))))
-		#levels(sites$IR_MLID)=unique(as.factor(append(as.vector(sites$IR_MLID),"REJECT")))
-		pal <- colorFactor('Set1', sites$IR_FLAG)	
-		review<<-sites[sites$IR_FLAG%in%input$flag_checkbox & sites$IR_COMMENT%in%input$reason_checkbox & sites$MonitoringLocationTypeName%in%input$sitetype_checkbox & sites$AU_Type %in% input$autype_checkbox,]
-		#review<<-sites[sites$IR_FLAG %in% c("ACCEPT","REJECT") & sites$MonitoringLocationTypeName %in% c("Canal Drainage","Canal Irrigation","Canal Transport"),]
-		other_sites<<-sites[!(sites$UID%in%review$UID),]	
-		review_points<<-st_as_sf(review, coords = c("LongitudeMeasure", "LatitudeMeasure"), crs = 4326, remove=FALSE) # crs 4326 is WGS84
-		if(dim(review_points)[1]>0){
-			review_map<<-leaflet(review) %>%
+		showModal(modalDialog(title="MAP DRAWING - PLEASE WAIT...","Please wait for map to draw before proceeding (a bit slow).",size="l",footer=NULL))
+		reactive_objects$sites=read.csv(master_site_file)	
+		reason_choices=unique(reactive_objects$sites$IR_COMMENT)
+		reactive_objects$reason_choices=unique(as.factor(append(as.vector(reason_choices),c("Non-jurisdictional","Merged","Inaccurate location", "Unclear location", "Other"))))
+		pal <- colorFactor('Set1', reactive_objects$sites$IR_FLAG)	
+		reactive_objects$review<-reactive_objects$sites[reactive_objects$sites$IR_FLAG%in%input$flag_checkbox & reactive_objects$sites$IR_COMMENT%in%input$reason_checkbox & reactive_objects$sites$MonitoringLocationTypeName%in%input$sitetype_checkbox & reactive_objects$sites$AU_Type %in% input$autype_checkbox,]
+		reactive_objects$other_sites<-reactive_objects$sites[!(reactive_objects$sites$UID%in%reactive_objects$review$UID),]	
+		reactive_objects$review_points<-st_as_sf(reactive_objects$review, coords = c("LongitudeMeasure", "LatitudeMeasure"), crs = 4326, remove=FALSE) # crs 4326 is WGS84
+		if(dim(reactive_objects$review_points)[1]>0){
+			review_map<-leaflet(reactive_objects$review) %>%
 				addTiles() %>%
 				addProviderTiles("Esri.WorldTopoMap", group = "Topo") %>%
 				addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
@@ -173,31 +174,31 @@ server <- function(input, output, session){
 				hideGroup("Site labels")%>%
 				hideGroup("State of Utah")%>%
 				addLegend(position = 'topright',
-					colors = ~pal(unique(sites$IR_FLAG)), 
-					labels = ~unique(sites$IR_FLAG))%>%
+					colors = ~pal(unique(reactive_objects$sites$IR_FLAG)), 
+					labels = ~unique(reactive_objects$sites$IR_FLAG))%>%
 				addMeasure(position = "topright", primaryLengthUnit = "meters")%>%
-				addFeatures(review_points,group="Sites",
+				addFeatures(reactive_objects$review_points,group="Sites",
 					popup = paste0(
-						"Organization: ", review_points$OrganizationIdentifier,
-						"<br> MLID: ", review_points$MonitoringLocationIdentifier,
-						"<br> MLNAME: ", review_points$MonitoringLocationName,
-						"<br> MLTYPE: ", review_points$MonitoringLocationTypeName,
-						"<br> IR_FLAG: ", review_points$IR_FLAG,
-						"<br> IR_COMMENT: ", review_points$IR_COMMENT,
-						"<br> Lat: ", review_points$LatitudeMeasure,
-						"<br> Long: ", review_points$LongitudeMeasure,
-						"<br> MLID_Count: ", review_points$MLID_Count,
-						"<br> Lat_Count: ", review_points$Lat_Count,
-						"<br> Long_Count: ", review_points$Long_Count,
-						"<br> sites100m_count: ", review_points$sites100m_count
+						"Organization: ", reactive_objects$review_points$OrganizationIdentifier,
+						"<br> MLID: ", reactive_objects$review_points$MonitoringLocationIdentifier,
+						"<br> MLNAME: ", reactive_objects$review_points$MonitoringLocationName,
+						"<br> MLTYPE: ", reactive_objects$review_points$MonitoringLocationTypeName,
+						"<br> IR_FLAG: ", reactive_objects$review_points$IR_FLAG,
+						"<br> IR_COMMENT: ", reactive_objects$review_points$IR_COMMENT,
+						"<br> Lat: ", reactive_objects$review_points$LatitudeMeasure,
+						"<br> Long: ", reactive_objects$review_points$LongitudeMeasure,
+						"<br> MLID_Count: ", reactive_objects$review_points$MLID_Count,
+						"<br> Lat_Count: ", reactive_objects$review_points$Lat_Count,
+						"<br> Long_Count: ", reactive_objects$review_points$Long_Count,
+						"<br> sites100m_count: ", reactive_objects$review_points$sites100m_count
 					),
-					color=~pal(IR_FLAG))%>%
-				addLabelOnlyMarkers(lng=review_points$LongitudeMeasure, lat=review_points$LatitudeMeasure,group="Site labels",label=~(review_points$MonitoringLocationIdentifier),labelOptions = labelOptions(noHide = T),
-					clusterOptions=markerClusterOptions(spiderfyOnMaxZoom=T))
-		
-		
+					color=~pal(reactive_objects$review_points$IR_FLAG))%>%
+				addLabelOnlyMarkers(lng=reactive_objects$review_points$LongitudeMeasure, lat=reactive_objects$review_points$LatitudeMeasure,group="Site labels",label=~(reactive_objects$review_points$MonitoringLocationIdentifier),labelOptions = labelOptions(noHide = T),
+					clusterOptions=markerClusterOptions(spiderfyOnMaxZoom=T))		
+			reactive_objects$polysel<-callModule(editMod, "selection", review_map)
+
 		}else{
-			review_map<<-leaflet(sites) %>%
+			review_map<-leaflet(reactive_objects$sites) %>%
 				addTiles() %>%
 				addProviderTiles("Esri.WorldTopoMap", group = "Topo") %>%
 				addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
@@ -226,45 +227,53 @@ server <- function(input, output, session){
 				hideGroup("Benficial uses")%>%
 				hideGroup("Site labels")%>%
 				addLegend(position = 'topright',
-					colors = ~pal(unique(sites$IR_FLAG)), 
-					labels = ~unique(sites$IR_FLAG))%>%
+					colors = ~pal(unique(reactive_objects$sites$IR_FLAG)), 
+					labels = ~unique(reactive_objects$sites$IR_FLAG))%>%
 				addMeasure(position = "topright", primaryLengthUnit = "meters")
-		}
-		
-		
-		
-		polysel<<-callModule(editMod, "selection", review_map)
-		
-		
-		output$hot <<-renderRHandsontable({
-				req(polysel()$finished)
-				intersection <- st_intersection(polysel()$finished, review_points)
-				intersection=st_set_geometry(intersection,NULL)
-				intersection=intersection[,-c(1,2)]
-				hot_data<<-review[review$UID%in%intersection$UID,]
-				MLID_Choices=append(as.vector(hot_data$MonitoringLocationIdentifier),"REJECT")
-				rhandsontable(data.frame(hot_data),readOnly=TRUE)%>%
-					hot_col(col="IR_FLAG",type="dropdown",readOnly=FALSE,source=IR_flag_choices)%>%
-					hot_col(col="IR_MLID",type="dropdown",readOnly=FALSE,source=MLID_Choices)%>%
-					hot_col(col="IR_COMMENT",readOnly=FALSE,type="dropdown",source=reason_choices)#%>%
-		})
+			reactive_objects$polysel<-callModule(editMod, "selection", review_map)
 
-	
+		}
+	})
+
+	observe({
+		req(reactive_objects$polysel)
+		removeModal()
 	})
 	
-	
+	output$hot <-renderRHandsontable({
+		req(reactive_objects$polysel)
+		req(reactive_objects$polysel()$finished)
+		suppressWarnings({
+			suppressMessages({
+				if(dim(reactive_objects$polysel()$finished)[1]>=1){
+					intersection <- st_intersection(reactive_objects$polysel()$finished, reactive_objects$review_points)
+				}
+			})
+		})
+		req(intersection)
+		intersection=st_set_geometry(intersection,NULL)
+		intersection=intersection[,-c(1,2)]
+		reactive_objects$hot_data<-reactive_objects$review[reactive_objects$review$UID%in%intersection$UID,]
+		MLID_Choices=append(as.vector(reactive_objects$hot_data$MonitoringLocationIdentifier),"REJECT")
+		rhandsontable(data.frame(reactive_objects$hot_data),readOnly=TRUE)%>%
+			hot_col(col="IR_FLAG",type="dropdown",readOnly=FALSE,source=IR_flag_choices)%>%
+			hot_col(col="IR_MLID",type="dropdown",readOnly=FALSE,source=MLID_Choices)%>%
+			hot_col(col="IR_COMMENT",readOnly=FALSE,type="dropdown",source=reactive_objects$reason_choices)#%>%
+	})
+
+	####Potential plotting example
 	#output$plotwindow=renderPlot({
 	#	req(input$hot)
 	#	req(polysel()$finished)
-	#	other=review[!(review$UID%in%hot_data$UID),]
+	#	other=review[!(review$UID%in%reactive_objects$hot_data$UID),]
 	#	if(input$plot_type=="Boxplot"){
 	#		par(mar=c(2.1,4.1,3.1,1.1))
-	#		boxplot(review$randomnorm2,hot_data$randomnorm2,other$randomnorm2,names=c("All","Selected","Other"),main="Random data")
+	#		boxplot(review$randomnorm2,reactive_objects$hot_data$randomnorm2,other$randomnorm2,names=c("All","Selected","Other"),main="Random data")
 	#	}
 	#	if(input$plot_type=="Scatter plot"){
 	#		par(mfrow=c(2,2),mar=c(4.1,4.1,3.1,1.1))
-	#		plot(randomnorm2~randomnorm,data=hot_data,main="Selected",cex=2)
-	#		lm1=lm(randomnorm2~randomnorm,data=hot_data)
+	#		plot(randomnorm2~randomnorm,data=reactive_objects$hot_data,main="Selected",cex=2)
+	#		lm1=lm(randomnorm2~randomnorm,data=reactive_objects$hot_data)
 	#		abline(lm1$coefficients[1],lm1$coefficients[2],lwd=3,lty=2,col="green")
 	#		plot(randomnorm2~randomnorm,data=other,main="Other",cex=2)
 	#		lm2=lm(randomnorm2~randomnorm,data=other)
@@ -278,8 +287,6 @@ server <- function(input, output, session){
 
 	observeEvent(input$save, {
 		req(input$hot)
-		print(levels(input$hot))
-		print((input$hot$IR_MLID))
 		edits=hot_to_r(input$hot)
 
 		#Require MLID input before saving (i.e. MLID!="REVIEW" & MLID!="REJECT")
@@ -290,9 +297,12 @@ server <- function(input, output, session){
 			edits$ValidationType="MANUAL"
 			
 			#Auto-fill IR_Lat & IR_Long
-			edits$IR_Lat=edits[as.vector(edits$MonitoringLocationIdentifier)==as.vector(edits$IR_MLID),"LatitudeMeasure"]
-			edits$IR_Long=edits[as.vector(edits$MonitoringLocationIdentifier)==as.vector(edits$IR_MLID),"LongitudeMeasure"]
- 
+			lat_long=reactive_objects$sites[,c("MonitoringLocationIdentifier","LatitudeMeasure","LongitudeMeasure")]
+			edits=edits[,!names(edits) %in% c("LatitudeMeasure","LongitudeMeasure")]
+			edits=merge(edits,lat_long,by.x="IR_MLID",by.y="MonitoringLocationIdentifier",all.x=T)
+			edits$IR_Lat=edits$LatitudeMeasure
+			edits$IR_Long=edits$LongitudeMeasure
+			
 			#save running csv of all edits
 				if(!file.exists(paste0(edit_log_path,"//edit_log.csv"))){
 					write.csv(edits,file=paste0(edit_log_path,"//edit_log.csv"),row.names=FALSE)
@@ -301,17 +311,22 @@ server <- function(input, output, session){
 					edits2=rbind(edits1,edits)
 					write.csv(edits2,file=paste0(edit_log_path,"//edit_log.csv"),row.names=FALSE)
 				}
+
 			#Remove edited rows from review
-				review=review[!(review$UID%in%edits$UID),]			
+				review_locenv=reactive_objects$review[!(reactive_objects$review$UID%in%edits$UID),]			
+
 			#Append edited rows to review, then review to sites (in hindsight, could have edited sites directly and saved a couple lines of code, may update this in future)
-				review<<-rbind(review,edits)
-				output=rbind(other_sites,review,edits)
-    
+				reactive_objects$review<-rbind(review_locenv,edits)
+				output=rbind(reactive_objects$other_sites,review_locenv,edits)
+			
+			showModal(modalDialog(title="EDITS SAVING...",size="l",footer=NULL))
+			#Save sites to external file
+				write.csv(output,file=master_site_file,row.names=FALSE)
+			
 			#Message
+				removeModal()
 				showModal(modalDialog(title="EDITS SAVED","Clear polygon before proceeding.",size="l",footer=modalButton("OK")))
 
-				#Save sites to external file
-				write.csv(output,file=master_site_file,row.names=FALSE)
   	
 		}
 	},ignoreInit=TRUE)
