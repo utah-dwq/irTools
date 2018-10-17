@@ -36,27 +36,27 @@ autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_p
 ){
 
 ##########
-###TESTING SETUP
+####TESTING SETUP
 #library(sp)
 #library(sf)
-#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites171001-180930.csv"
-#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
+#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites101001-180930_EHduptest.csv"
+#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\wqp_master_site_file_EH.csv"
 #polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-#outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation"
+#outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation"
 #site_type_keep=c("Lake, Reservoir, Impoundment",
-#				 "Stream",
-#				 "Spring",
-#				 "Stream: Canal",
-#				 "Stream: Ditch",
-#				 "River/Stream",
-#				 "Lake",
-#				 "River/Stream Intermittent",
-#				 "River/Stream Perennial",
-#				 "Reservoir",
-#				 "Canal Transport",
-#				 "Canal Drainage",
-#				 "Canal Irrigation")
-########
+#			 "Stream",
+#			 "Spring",
+#			 "Stream: Canal",
+#			 "Stream: Ditch",
+#			 "River/Stream",
+#			 "Lake",
+#			 "River/Stream Intermittent",
+#			 "River/Stream Perennial",
+#			 "Reservoir",
+#			 "Canal Transport",
+#			 "Canal Drainage",
+#			 "Canal Irrigation")
+#########
 
 
 setwd(outfile_path)
@@ -321,6 +321,24 @@ stn_new$IR_FLAG=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$WellHoleDepthMea
 table(stn_new$IR_FLAG)
 table(stn_new$IR_REASON)
 
+#Reject sites with AquiferName populated
+stn_new$IR_REASON=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$AquiferName),"Aquifer name populated: associated with unassessed wells",stn_new$IR_REASON)
+stn_new$IR_FLAG=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$AquiferName),"REJECT",stn_new$IR_FLAG)
+table(stn_new$IR_FLAG)
+table(stn_new$IR_REASON)
+
+#Reject sites with FormationTypeText populated
+stn_new$IR_REASON=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$FormationTypeText),"Formation type populated: associated with unassessed wells",stn_new$IR_REASON)
+stn_new$IR_FLAG=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$FormationTypeText),"REJECT",stn_new$IR_FLAG)
+table(stn_new$IR_FLAG)
+table(stn_new$IR_REASON)
+
+#Reject sites with AquiferTypeName populated
+stn_new$IR_REASON=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$AquiferTypeName),"Aquifer type name populated: associated with unassessed wells",stn_new$IR_REASON)
+stn_new$IR_FLAG=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$AquiferTypeName),"REJECT",stn_new$IR_FLAG)
+table(stn_new$IR_FLAG)
+table(stn_new$IR_REASON)
+
 #Reject sites where MonitoringLocationTypeName !%in% site_type_keep argument
 stn_new$IR_FLAG=ifelse(stn_new$MonitoringLocationTypeName%in%site_type_keep,stn_new$IR_FLAG,"REJECT")
 stn_new$IR_REASON=ifelse(stn_new$MonitoringLocationTypeName%in%site_type_keep,stn_new$IR_REASON,"Non-assessed site type")
@@ -475,6 +493,12 @@ stn_new$IR_REASON[
 	]="MLID type is lake/reservoir, but AU_Type is not - potential new AU needed"
 table(stn_new$IR_REASON)
 
+#Reject sites with same MLIDs as other REJECT sites
+# This can happen when a site is rejected due to populated fields associated with demos, duplicates, well construction, etc., but a second record with a duplicate MLID does not have these same "flag" fields populated.
+# This steps errs on the side of caution so well/demo/qa/qc sites are not assessed.
+mlid_rejects <- unique(stn_new$MonitoringLocationIdentifier[stn_new$IR_FLAG=="REJECT"])
+stn_new$IR_REASON <- ifelse(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationIdentifier%in%mlid_rejects,"Site shares MLID with rejected site(s)", stn_new$IR_REASON)
+stn_new$IR_FLAG <- ifelse(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationIdentifier%in%mlid_rejects,"REJECT",stn_new$IR_FLAG)
 
 
 ##########
@@ -627,7 +651,6 @@ master_new$IR_FLAG = ifelse(master_new$IR_FLAG!="REJECT" & !is.na(master_new$Id)
 master_new=master_new[,!names(master_new)%in%c("Id")]
 table(master_new$IR_FLAG)
 sum(table(master_new$IR_FLAG))
-
 
 ####Sort by UID and re-order columns before writing
 master_new=master_new[order(master_new$UID),]
