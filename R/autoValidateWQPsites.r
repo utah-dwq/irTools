@@ -494,8 +494,10 @@ stn_new$IR_REASON[
 table(stn_new$IR_REASON)
 
 #Reject sites with same MLIDs as other REJECT sites
+# This can happen when a site is rejected due to populated fields associated with demos, duplicates, well construction, etc., but a second record with a duplicate MLID does not have these same "flag" fields populated.
+# This steps errs on the side of caution so well/demo/qa/qc sites are not assessed.
 mlid_rejects <- unique(stn_new$MonitoringLocationIdentifier[stn_new$IR_FLAG=="REJECT"])
-stn_new$IR_REASON <- ifelse(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationIdentifier%in%mlid_rejects,"Rejected MLID Duplicate", stn_new$IR_REASON)
+stn_new$IR_REASON <- ifelse(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationIdentifier%in%mlid_rejects,"Site shares MLID with rejected site(s)", stn_new$IR_REASON)
 stn_new$IR_FLAG <- ifelse(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationIdentifier%in%mlid_rejects,"REJECT",stn_new$IR_FLAG)
 
 
