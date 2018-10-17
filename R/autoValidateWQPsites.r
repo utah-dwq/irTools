@@ -36,27 +36,27 @@ autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_p
 ){
 
 ##########
-###TESTING SETUP
-library(sp)
-library(sf)
-sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites101001-180930_EHduptest.csv"
-master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\wqp_master_site_file_EH.csv"
-polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation"
-site_type_keep=c("Lake, Reservoir, Impoundment",
-			 "Stream",
-			 "Spring",
-			 "Stream: Canal",
-			 "Stream: Ditch",
-			 "River/Stream",
-			 "Lake",
-			 "River/Stream Intermittent",
-			 "River/Stream Perennial",
-			 "Reservoir",
-			 "Canal Transport",
-			 "Canal Drainage",
-			 "Canal Irrigation")
-########
+####TESTING SETUP
+#library(sp)
+#library(sf)
+#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites101001-180930_EHduptest.csv"
+#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\wqp_master_site_file_EH.csv"
+#polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
+#outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation"
+#site_type_keep=c("Lake, Reservoir, Impoundment",
+#			 "Stream",
+#			 "Spring",
+#			 "Stream: Canal",
+#			 "Stream: Ditch",
+#			 "River/Stream",
+#			 "Lake",
+#			 "River/Stream Intermittent",
+#			 "River/Stream Perennial",
+#			 "Reservoir",
+#			 "Canal Transport",
+#			 "Canal Drainage",
+#			 "Canal Irrigation")
+#########
 
 
 setwd(outfile_path)
