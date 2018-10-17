@@ -8,7 +8,7 @@ assignCriteria(data, crit_wb, crit_sheetname, ss_sheetname, crit_startRow = 1,
   ss_startRow = 1)
 }
 \arguments{
-\item{data}{A merged, parameter translated, spatially referenced WQP result object.}
+\item{data}{A merged, parameter translated, spatially referenced WQP result object. Must be post parameter translation step.}
 
 \item{crit_wb}{Full path and filename for workbook containing criteria.}
 
