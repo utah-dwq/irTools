@@ -158,25 +158,25 @@ if(dim(master_site)[1]>0){
 	dim(master_site)
 	
 	#Intersect sites w/ Utah poly
-	isect=st_intersection(sites, ut_poly)
+	isect=suppressWarnings({st_intersection(sites, ut_poly)})
 	st_geometry(isect)=NULL
 	master_site=merge(master_site,isect,all.x=TRUE)
 	dim(master_site)
 	
 	#Intersect sites w/ AU poly
-	isect=st_intersection(sites, au_poly)
+	isect=suppressWarnings({st_intersection(sites, au_poly)})
 	st_geometry(isect)=NULL
 	master_site=merge(master_site,isect,all.x=TRUE)
 	dim(master_site)
 
 	#Intersect sites w/ BU poly
-	isect=st_intersection(sites, bu_poly)
+	isect=suppressWarnings({st_intersection(sites, bu_poly)})
 	st_geometry(isect)=NULL
 	master_site=merge(master_site,isect,all.x=TRUE)
 	dim(master_site)
 
 	#Intersect sites w/ SS poly
-	isect=st_intersection(sites, ss_poly)
+	isect=suppressWarnings({st_intersection(sites, ss_poly)})
 	st_geometry(isect)=NULL
 	master_site=merge(master_site,isect,all.x=TRUE)
 	dim(master_site)
@@ -400,7 +400,7 @@ proj4string(sites)=CRS("+init=epsg:4326")
 sites=st_as_sf(sites)
 
 #Intersect sites w/ Utah poly
-isect=st_intersection(sites, ut_poly)
+isect=suppressWarnings({st_intersection(sites, ut_poly)})
 st_geometry(isect)=NULL
 stn_new=merge(stn_new,isect,all.x=TRUE)
 dim(stn_new)
@@ -408,19 +408,19 @@ dim(stn_new)
 stn_new[stn_new$MonitoringLocationIdentifier=="USGS-395040113592601",]
 
 #Intersect sites w/ AU poly
-isect=st_intersection(sites, au_poly)
+isect=suppressWarnings({st_intersection(sites, au_poly)})
 st_geometry(isect)=NULL
 stn_new=merge(stn_new,isect,all.x=TRUE)
 dim(stn_new)
 
 #Intersect sites w/ BU poly
-isect=st_intersection(sites, bu_poly)
+isect=suppressWarnings({st_intersection(sites, bu_poly)})
 st_geometry(isect)=NULL
 stn_new=merge(stn_new,isect,all.x=TRUE)
 dim(stn_new)
 
 #Intersect sites w/ SS poly
-isect=st_intersection(sites, ss_poly)
+isect=suppressWarnings({st_intersection(sites, ss_poly)})
 st_geometry(isect)=NULL
 stn_new=merge(stn_new,isect,all.x=TRUE)
 dim(stn_new)
@@ -641,7 +641,7 @@ coordinates(sites)=c("LongitudeMeasure","LatitudeMeasure")
 proj4string(sites)=CRS("+init=epsg:4326")
 sites=st_as_sf(sites)
 gsl_poly=st_read(paste0(polygon_path),"GSL_poly_wgs84")
-accept_review_lo_int=st_intersection(sites, gsl_poly)
+accept_review_lo_int=sppressWarnings({st_intersection(sites, gsl_poly)})
 st_geometry(accept_review_lo_int)=NULL
 master_new=merge(master_new,accept_review_lo_int,all.x=TRUE)
 
