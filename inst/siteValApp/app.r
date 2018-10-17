@@ -5,11 +5,11 @@
 #library(shiny)
 #shiny::runApp("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\draft_code\\site_review_app")
 
-###SET UP
-master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
-polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-edit_log_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\edit_logs"
-###
+####SET UP
+#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
+#polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
+#edit_log_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\edit_logs"
+####
 
 #library(shiny)
 library(raster)
@@ -298,10 +298,11 @@ server <- function(input, output, session){
 			
 			#Auto-fill IR_Lat & IR_Long
 			lat_long=reactive_objects$sites[,c("MonitoringLocationIdentifier","LatitudeMeasure","LongitudeMeasure")]
-			edits=edits[,!names(edits) %in% c("LatitudeMeasure","LongitudeMeasure")]
+			names(lat_long)=c("MonitoringLocationIdentifier","LatitudeMeasure2","LongitudeMeasure2")
 			edits=merge(edits,lat_long,by.x="IR_MLID",by.y="MonitoringLocationIdentifier",all.x=T)
-			edits$IR_Lat=edits$LatitudeMeasure
-			edits$IR_Long=edits$LongitudeMeasure
+			edits$IR_Lat=edits$LatitudeMeasure2
+			edits$IR_Long=edits$LongitudeMeasure2
+			edits=edits[,!names(edits) %in% c("LatitudeMeasure2","LongitudeMeasure2")]
 			
 			#save running csv of all edits
 				if(!file.exists(paste0(edit_log_path,"//edit_log.csv"))){
