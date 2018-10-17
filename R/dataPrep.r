@@ -4,7 +4,7 @@
 #'
 #' @param data A merged, translated, and numeric criteria assigned WQP results R-object. Target units for conversions are defined by units associated with assigned numeric critera.
 #' @param translation_wb Full path and filename for IR translation workbook (.xlsx).
-#' @param sheetname Name of sheet in workbook holding IR unit conversion table. Defaults to "unitConvTable".
+#' @param unit_sheetname Name of sheet in workbook holding IR unit conversion table. Defaults to "unitConvTable".
 #' @param startRow Row to start reading the unit conversion table excel sheet from (in case headers have been added). Defaults to 1.
 
 
@@ -16,22 +16,29 @@
 #' @importFrom openxlsx writeData
 #' @importFrom openxlsx removeFilter
 
+
+#SETUP
+data=
+translation_wb=
+unit_sheetname=
+startRow=
+
 #' @export
 dataPrep=function(data){
 
 #Load translation workbook
-trans_wb=loadWorkbook(translation_wb)
+trans_wb=openxlsx::loadWorkbook(translation_wb)
 
 #Remove filters from all sheets in trans_wb (filtering seems to cause file corruption occassionally...)
-sheetnames=getSheetNames(translation_wb)
+sheetnames=openxlsx::getSheetNames(translation_wb)
 for(n in 1:length(sheetnames)){
-	removeFilter(trans_wb, sheetnames[n])
+	openxlsx::removeFilter(trans_wb, sheetnames[n])
 	}
 
 
 #Read unit conversion table
 #Identify unique ActivityCommentText values
-unit_convs=data.frame(readWorkbook(trans_wb, sheet=sheetname, startRow=startRow, detectDates=TRUE))
+unit_convs=data.frame(openxlsx::readWorkbook(trans_wb, sheet=unit_sheetname, startRow=startRow, detectDates=TRUE))
 
 
 #Unit conversions
