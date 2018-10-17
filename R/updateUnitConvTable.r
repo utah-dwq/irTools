@@ -18,8 +18,9 @@
 #' @export
 updateUnitConvTable=function(data, translation_wb, sheetname="unitConvTable", startRow=1, startCol=1){
 
+
 ######TESTING SETUP
-# translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook_EH.xlsx"
+# translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
 # data=data_crit
 # sheetname="unitConvTable"
 # startRow=1
@@ -28,24 +29,24 @@ updateUnitConvTable=function(data, translation_wb, sheetname="unitConvTable", st
 
 
 #Load translation workbook
-trans_wb=loadWorkbook(translation_wb)
+trans_wb=openxlsx::loadWorkbook(translation_wb)
 
 #Remove filters from all sheets in trans_wb (filtering seems to cause file corruption occassionally...)
-sheetnames=getSheetNames(translation_wb)
+sheetnames=openxlsx::getSheetNames(translation_wb)
 for(n in 1:length(sheetnames)){
-	removeFilter(trans_wb, sheetnames[n])
+	openxlsx::removeFilter(trans_wb, sheetnames[n])
 	}
 
 
 ####Unit Conversions
-#Identify unique combinations of ResultMeasureUnitCode and CriterionUnits.
-rcunits=data.frame(unique(data[,c("ResultMeasure.MeasureUnitCode", "CriterionUnits")]))
+#Identify unique combinations of IR_Unit and CriterionUnits.
+rcunits=data.frame(unique(data[,c("IR_Unit", "CriterionUnits")]))
 rcunits$InData="Y"
 rcunits[rcunits==""]<-NA
+rcunits=na.omit(rcunits)
 
 # Load unitConvTable sheet, set all blanks to NA, and reset InData column.
-unitconv_table=data.frame(readWorkbook(trans_wb, sheet="unitConvTable", startRow=startRow, detectDates=TRUE))
-unitconv_table[unitconv_table==""] <- NA
+unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet="unitConvTable", startRow=startRow, detectDates=TRUE))
 column_names=names(unitconv_table)
 unitconv_table=unitconv_table[,!names(unitconv_table)%in%"InData"]
 
@@ -55,7 +56,7 @@ unit_merge=unit_merge[,column_names]
 
 # Document date new combination added.
 unit_merge$DateAdded[is.na(unit_merge$DateAdded)]=Sys.Date() # this does not work with an empty dataframe
-writeData(trans_wb, "unitConvTable", unit_merge, startRow=startRow, startCol=startCol)
+openxlsx::writeData(trans_wb, "unitConvTable", unit_merge, startRow=startRow, startCol=startCol)
 
 # Check to see if new combinations exist and alert user.
 new_unitcombo_count=dim(unit_merge)[1]-dim(unitconv_table)[1]
@@ -64,11 +65,9 @@ if(new_unitcombo_count>0){
   readline(prompt="Press [enter] to continue")
   print("unitConvTable updated.")} else{print("No new result-criterion unit combinations identified.")}
 
-
 ###Save translation workbook
-saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
+openxlsx::saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
 print("Translation workbook updated & saved.")
-
 
 }
 
