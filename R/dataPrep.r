@@ -16,15 +16,16 @@
 #' @importFrom openxlsx writeData
 #' @importFrom openxlsx removeFilter
 
-
-#SETUP
-data=
-translation_wb=
-unit_sheetname=
-startRow=
-
 #' @export
 dataPrep=function(data){
+
+
+#SETUP
+data=data_crit
+translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
+unit_sheetname="unitConvTable"
+startRow=1
+
 
 #Load translation workbook
 trans_wb=openxlsx::loadWorkbook(translation_wb)
@@ -36,12 +37,24 @@ for(n in 1:length(sheetnames)){
 	}
 
 
+###Unit conversions
+
 #Read unit conversion table
-#Identify unique ActivityCommentText values
 unit_convs=data.frame(openxlsx::readWorkbook(trans_wb, sheet=unit_sheetname, startRow=startRow, detectDates=TRUE))
+unit_convs=unit_convs[!names(unit_convs) %in% "DateAdded"]
+unit_convs[unit_convs==""]=NA
+names(unit_convs)[names(unit_convs)=="IR_FLAG"]="IR_UnitConv_FLAG"
 
+#Double check that blanks are all NA in data (shouldn't really need this at this point)
+data[data==""]=NA
 
-#Unit conversions
+#merge conversion table to data
+data=merge(data,unit_convs,all.x=T)
+
+#Check for NA conversion factors (where units needed)
+any(is.na(data$UnitConversionFactor) & !is.na(data$IR_Unit) & !is.na(data$CriterionUnits) & data$IR_UnitConv_FLAG=="ACCEPT")
+
+#Set conversion factor to 1 where both IR_Unit & criterion units are NA (e.g. pH)
 
 #Dissolved vs. total fraction check
 
