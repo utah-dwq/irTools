@@ -43,7 +43,7 @@ for(n in 1:length(sheetnames)){
 rcunits=data.frame(unique(data[,c("IR_Unit", "CriterionUnits")]))
 rcunits$InData="Y"
 rcunits[rcunits==""]<-NA
-rcunits=na.omit(rcunits)
+#rcunits=na.omit(rcunits)
 
 # Load unitConvTable sheet, set all blanks to NA, and reset InData column.
 unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet="unitConvTable", startRow=startRow, detectDates=TRUE))
@@ -61,7 +61,7 @@ openxlsx::writeData(trans_wb, "unitConvTable", unit_merge, startRow=startRow, st
 # Check to see if new combinations exist and alert user.
 new_unitcombo_count=dim(unit_merge)[1]-dim(unitconv_table)[1]
 if(new_unitcombo_count>0){
-  print(paste("WARNING:",new_unitcombo_count,"new result-criterion unit combination(s) identified. Populate necessary correction factors in unitConvTable."))
+  print(paste("WARNING:",new_unitcombo_count,"new result-criterion unit combination(s) identified. Populate necessary correction factors in unitConvTable. Be aware that some combinations may be associated with pH (unitless)"))
   readline(prompt="Press [enter] to continue")
   print("unitConvTable updated.")} else{print("No new result-criterion unit combinations identified.")}
 
