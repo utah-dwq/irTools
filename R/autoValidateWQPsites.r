@@ -126,6 +126,7 @@ names(bu_poly)[names(bu_poly)=="BenUseClas"]="BEN_CLASS"
 ss_poly=st_read(polygon_path,"SiteSpecific_wgs84")
 ss_poly=ss_poly[ss_poly$Status=="ACTIVE","R317Descrp"]
 names(ss_poly)[names(ss_poly)=="R317Descrp"]="ss_R317Descrp"
+gsl_poly=st_read(paste0(polygon_path),"GSL_poly_wgs84")
 
 
 ##################################
@@ -410,7 +411,15 @@ st_geometry(isect)=NULL
 stn_new=merge(stn_new,isect,all.x=TRUE)
 dim(stn_new)
 
+#Intersect sites w/ GSL AU
+isect=suppressMessages({suppressWarnings({st_intersection(sites, gsl_poly)})})
+st_geometry(isect)=NULL
+stn_new=merge(stn_new,isect,all.x=TRUE)
+dim(stn_new)
+
+
 rm(sites)
+
 
 #Reject by is.na(AU)
 table(stn_new$IR_FLAG)
@@ -424,6 +433,9 @@ stn_new$IR_FLAG[is.na(stn_new$STATE_NAME)]="REJECT"
 stn_new$IR_REASON[is.na(stn_new$STATE_NAME)]="Non-jurisdictional: out of state or within tribal boundaries."
 table(stn_new$IR_FLAG)
 stn_new=stn_new[,!names(stn_new) %in% "STATE_NAME"]
+
+
+#Reject by GSL poly
 
 
 #Reject where 	MonitoringLocationTypeName is a canal type & AU_Type!="Canal"
@@ -464,19 +476,13 @@ stn_new$IR_REASON[
 table(stn_new$IR_REASON)
 
 
-#Review where MonitoringLocationTypeName is a lake type & AU_Type!="Reservoir/Lake"
-stn_new$IR_FLAG[
-	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Lake, Reservoir, Impoundment" & stn_new$AU_Type != "Reservoir/Lake")|
-	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Lake" & stn_new$AU_Type != "Reservoir/Lake")|
-	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Reservoir" & stn_new$AU_Type != "Reservoir/Lake")
-	]="REVIEW"
-table(stn_new$IR_FLAG)
-stn_new$IR_REASON[
-	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Lake, Reservoir, Impoundment" & stn_new$AU_Type != "Reservoir/Lake")|
-	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Lake" & stn_new$AU_Type != "Reservoir/Lake")|
-	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Reservoir" & stn_new$AU_Type != "Reservoir/Lake")
-	]="MLID type is lake/reservoir, but AU_Type is not - potential new AU needed"
-table(stn_new$IR_REASON)
+
+
+
+
+
+
+
 
 #Reject sites with same MLIDs as other REJECT sites
 # This can happen when a site is rejected due to populated fields associated with demos, duplicates, well construction, etc., but a second record with a duplicate MLID does not have these same "flag" fields populated.
@@ -570,6 +576,12 @@ stn_new$IR_FLAG = ifelse(stn_new$IR_FLAG=="REVIEW"&stn_new$MLID_Count==1&stn_new
 stn_new$IR_REASON = ifelse(stn_new$IR_FLAG=="ACCEPT","ACCEPT",stn_new$IR_REASON)
 sum(table(stn_new$IR_FLAG))
 
+
+
+
+
+###MOVE?
+
 #Review where MonitoringLocationTypeName is a stream or spring type & AU_Type=="Canal"
 stn_new$IR_FLAG[
 	stn_new$IR_FLAG!="REJECT" &
@@ -593,6 +605,31 @@ stn_new$IR_REASON[
 		)
 	]="Stream or spring site type in canal AU type"
 table(stn_new$IR_REASON)
+
+
+
+
+#Review where MonitoringLocationTypeName is a lake type & AU_Type!="Reservoir/Lake"
+stn_new$IR_FLAG[
+	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Lake, Reservoir, Impoundment" & stn_new$AU_Type != "Reservoir/Lake")|
+	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Lake" & stn_new$AU_Type != "Reservoir/Lake")|
+	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Reservoir" & stn_new$AU_Type != "Reservoir/Lake")
+	]="REVIEW"
+table(stn_new$IR_FLAG)
+stn_new$IR_REASON[
+	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Lake, Reservoir, Impoundment" & stn_new$AU_Type != "Reservoir/Lake")|
+	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Lake" & stn_new$AU_Type != "Reservoir/Lake")|
+	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Reservoir" & stn_new$AU_Type != "Reservoir/Lake")
+	]="MLID type is lake/reservoir, but AU_Type is not - potential new AU needed"
+table(stn_new$IR_REASON)
+
+
+
+
+
+
+
+
 
 #Join spatial checks to master_site
 spatial_check_data=spatial_check_data[,names(spatial_check_data) %in% c("UID","MLID_Count","Lat_Count","Long_Count","sites100m_count")]
@@ -626,22 +663,6 @@ stn_new$IR_REASON=as.factor(stn_new$IR_REASON)
 master_new=rbind(master_site, stn_new)
 
 
-#Intersect sites w/ GSL AU
-sites=master_new
-coordinates(sites)=c("LongitudeMeasure","LatitudeMeasure")
-proj4string(sites)=CRS("+init=epsg:4326")
-sites=st_as_sf(sites)
-gsl_poly=st_read(paste0(polygon_path),"GSL_poly_wgs84")
-accept_review_lo_int=suppressMessages({suppressWarnings({st_intersection(sites, gsl_poly)})})
-st_geometry(accept_review_lo_int)=NULL
-master_new=merge(master_new,accept_review_lo_int,all.x=TRUE)
-
-#Reject GSL sites
-master_new$IR_REASON = ifelse(master_new$IR_FLAG!="REJECT" & !is.na(master_new$Id),"GSL assessed through separate program",as.character(master_new$IR_REASON))
-master_new$IR_FLAG = ifelse(master_new$IR_FLAG!="REJECT" & !is.na(master_new$Id),"REJECT",as.character(master_new$IR_FLAG))
-master_new=master_new[,!names(master_new)%in%c("Id")]
-table(master_new$IR_FLAG)
-sum(table(master_new$IR_FLAG))
 
 ####Sort by UID and re-order columns before writing
 master_new=master_new[order(master_new$UID),]
