@@ -35,32 +35,32 @@ autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_p
 
 ){
 
-##########
-####TESTING SETUP
-#library(sp)
-#library(sf)
-#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites101001-180930_EHduptest.csv"
-#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\wqp_master_site_file_EH.csv"
-#polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-#outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation"
-#site_type_keep=c("Lake, Reservoir, Impoundment",
-#			 "Stream",
-#			 "Spring",
-#			 "Stream: Canal",
-#			 "Stream: Ditch",
-#			 "River/Stream",
-#			 "Lake",
-#			 "River/Stream Intermittent",
-#			 "River/Stream Perennial",
-#			 "Reservoir",
-#			 "Canal Transport",
-#			 "Canal Drainage",
-#			 "Canal Irrigation")
 #########
+###TESTING SETUP
+library(sp)
+library(sf)
+sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites141001-160930.csv"
+master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
+polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
+outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation"
+correct_longitude=FALSE
+site_type_keep=c("Lake, Reservoir, Impoundment",
+			 "Stream",
+			 "Spring",
+			 "Stream: Canal",
+			 "Stream: Ditch",
+			 "River/Stream",
+			 "Lake",
+			 "River/Stream Intermittent",
+			 "River/Stream Perennial",
+			 "Reservoir",
+			 "Canal Transport",
+			 "Canal Drainage",
+			 "Canal Irrigation")
+########
 
 
 setwd(outfile_path)
-
 
 # Read in WQP station and results data
 stn = read.csv(sites_file, stringsAsFactors=FALSE)
@@ -260,90 +260,72 @@ if(correct_longitude==TRUE){
 }
 
 
-##Auto review new sites & master sites re-flagged to AUTO...
 
-# Create IR specific columns, all values filled w/ "REVIEW"
-stn_new[,c("IR_MLID","IR_FLAG","IR_REASON")] = "REVIEW"
-stn_new[,c("IR_Lat","IR_Long")] = NA
+##Auto review new sites & master sites re-flagged to AUTO...
+rej_reasons=data.frame(matrix(nrow=0,ncol=2))
 
 # If [MonitoringLocationDescriptionText] contains "Duplicate","Replicate","Dummy","replaced","Blank","QA", or "QC", reject as QAQC
-stn_new$IR_FLAG = ifelse(grepl("Duplicate",stn_new$MonitoringLocationDescriptionText) | grepl("Replicate",stn_new$MonitoringLocationDescriptionText) | grepl("Dummy",stn_new$MonitoringLocationDescriptionText) | 
+reason_n = ifelse(grepl("Duplicate",stn_new$MonitoringLocationDescriptionText) | grepl("Replicate",stn_new$MonitoringLocationDescriptionText) | grepl("Dummy",stn_new$MonitoringLocationDescriptionText) | 
                         grepl("replaced",stn_new$MonitoringLocationDescriptionText) | grepl("Blank",stn_new$MonitoringLocationDescriptionText) | grepl("QA",stn_new$MonitoringLocationDescriptionText) | 
-                        grepl("QC",stn_new$MonitoringLocationDescriptionText),"REJECT",stn_new$IR_FLAG)
-stn_new$IR_REASON = ifelse(grepl("Duplicate",stn_new$MonitoringLocationDescriptionText),"QAQC-Duplicate",stn_new$IR_REASON)
-stn_new$IR_REASON = ifelse(grepl("Replicate",stn_new$MonitoringLocationDescriptionText),"QAQC-Replicate",stn_new$IR_REASON)
-stn_new$IR_REASON = ifelse(grepl("Dummy",stn_new$MonitoringLocationDescriptionText),"QAQC-Dummy",stn_new$IR_REASON)
-stn_new$IR_REASON = ifelse(grepl("replaced",stn_new$MonitoringLocationDescriptionText),"QAQC-Replaced",stn_new$IR_REASON)
-stn_new$IR_REASON = ifelse(grepl("Blank",stn_new$MonitoringLocationDescriptionText),"QAQC-Blank",stn_new$IR_REASON)
-stn_new$IR_REASON = ifelse(grepl("QA",stn_new$MonitoringLocationDescriptionText) | grepl("QC",stn_new$MonitoringLocationDescriptionText),"QAQC-Quality Control",stn_new$IR_REASON)
-table(stn_new$IR_FLAG)
-table(stn_new$IR_REASON)
+                        grepl("QC",stn_new$MonitoringLocationDescriptionText),"Attributes indicate dup, rep, blank, dummy, or QAQC site",NA)
+
+if(dim(table(reason_n))[1]>0){print(table(reason_n))}
+rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
 
 # If [OrganizationIdentifier] is test or demo, reject site.
-stn_new$IR_FLAG=ifelse(stn_new$OrganizationIdentifier%in%c("OST_SHPD_TEST","DEMOTEST"),"REJECT",stn_new$IR_FLAG)
-stn_new$IR_REASON=ifelse(stn_new$OrganizationIdentifier%in%c("OST_SHPD_TEST","DEMOTEST"),"Organization identifier indicates test/demo",stn_new$IR_REASON)
-table(stn_new$IR_FLAG)
-table(stn_new$IR_REASON)
+reason_n=ifelse(stn_new$OrganizationIdentifier%in%c("OST_SHPD_TEST","DEMOTEST"),"Organization identifier indicates test/demo",NA)
+rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
 
 #Reject sites where horizontal datum =="UNKWN")
-stn_new$IR_REASON=ifelse(stn_new$IR_FLAG!="REJECT"&stn_new$HorizontalCoordinateReferenceSystemDatumName=="UNKWN","Horizontal datum unknown",stn_new$IR_REASON)
-stn_new$IR_FLAG=ifelse(stn_new$IR_FLAG!="REJECT"&stn_new$HorizontalCoordinateReferenceSystemDatumName=="UNKWN","REJECT",stn_new$IR_FLAG)
-table(stn_new$IR_FLAG)
-table(stn_new$IR_REASON)
+reason_n=ifelse(stn_new$HorizontalCoordinateReferenceSystemDatumName=="UNKWN","Horizontal datum unknown",NA)
+rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
 
 #Reject sites with ConstructionDateText populated
-stn_new$IR_REASON=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$ConstructionDateText),"Construction date text populated",stn_new$IR_REASON)
-stn_new$IR_FLAG=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$ConstructionDateText),"REJECT",stn_new$IR_FLAG)
-table(stn_new$IR_FLAG)
-table(stn_new$IR_REASON)
+reason_n=ifelse(!is.na(stn_new$ConstructionDateText),"Construction date text populated",NA)
+rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
 
 #Reject sites with WellDepthMeasure.MeasureValue populated
-stn_new$IR_REASON=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$WellDepthMeasure.MeasureValue),"Well depth measure populated",stn_new$IR_REASON)
-stn_new$IR_FLAG=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$WellDepthMeasure.MeasureValue),"REJECT",stn_new$IR_FLAG)
-table(stn_new$IR_FLAG)
-table(stn_new$IR_REASON)
+reason_n=ifelse(!is.na(stn_new$WellDepthMeasure.MeasureValue),"Well depth measure populated",NA)
+rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
 
 #Reject sites with WellDepthMeasure.MeasureUnitCode populated
-stn_new$IR_REASON=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$WellDepthMeasure.MeasureUnitCode),"Well depth measure unit code populated",stn_new$IR_REASON)
-stn_new$IR_FLAG=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$WellDepthMeasure.MeasureUnitCode),"REJECT",stn_new$IR_FLAG)
-table(stn_new$IR_FLAG)
-table(stn_new$IR_REASON)
+reason_n=ifelse(!is.na(stn_new$WellDepthMeasure.MeasureUnitCode),"Well depth measure unit code populated",NA)
+rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
 
 #Reject sites with WellHoleDepthMeasure.MeasureValue populated
-stn_new$IR_REASON=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$WellHoleDepthMeasure.MeasureValue),"Well hole depth measure populated",stn_new$IR_REASON)
-stn_new$IR_FLAG=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$WellHoleDepthMeasure.MeasureValue),"REJECT",stn_new$IR_FLAG)
-table(stn_new$IR_FLAG)
-table(stn_new$IR_REASON)
+reason_n=ifelse(!is.na(stn_new$WellHoleDepthMeasure.MeasureValue),"Well hole depth measure populated",NA)
+rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
 
 #Reject sites with WellHoleDepthMeasure.MeasureUnitCode populated
-stn_new$IR_REASON=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$WellHoleDepthMeasure.MeasureUnitCode),"Well hole depth measure unit code populated",stn_new$IR_REASON)
-stn_new$IR_FLAG=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$WellHoleDepthMeasure.MeasureUnitCode),"REJECT",stn_new$IR_FLAG)
-table(stn_new$IR_FLAG)
-table(stn_new$IR_REASON)
+reason_n=ifelse(!is.na(stn_new$WellHoleDepthMeasure.MeasureUnitCode),"Well hole depth measure unit code populated",NA)
+rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
 
 #Reject sites with AquiferName populated
-stn_new$IR_REASON=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$AquiferName),"Aquifer name populated: associated with unassessed wells",stn_new$IR_REASON)
-stn_new$IR_FLAG=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$AquiferName),"REJECT",stn_new$IR_FLAG)
-table(stn_new$IR_FLAG)
-table(stn_new$IR_REASON)
+reason_n=ifelse(!is.na(stn_new$AquiferName),"Aquifer name populated: associated with unassessed wells",NA)
+rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
 
 #Reject sites with FormationTypeText populated
-stn_new$IR_REASON=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$FormationTypeText),"Formation type populated: associated with unassessed wells",stn_new$IR_REASON)
-stn_new$IR_FLAG=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$FormationTypeText),"REJECT",stn_new$IR_FLAG)
-table(stn_new$IR_FLAG)
-table(stn_new$IR_REASON)
+reason_n=ifelse(!is.na(stn_new$FormationTypeText),"Formation type populated: associated with unassessed wells",NA)
+rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
 
 #Reject sites with AquiferTypeName populated
-stn_new$IR_REASON=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$AquiferTypeName),"Aquifer type name populated: associated with unassessed wells",stn_new$IR_REASON)
-stn_new$IR_FLAG=ifelse(stn_new$IR_FLAG!="REJECT"&!is.na(stn_new$AquiferTypeName),"REJECT",stn_new$IR_FLAG)
-table(stn_new$IR_FLAG)
-table(stn_new$IR_REASON)
+reason_n=ifelse(!is.na(stn_new$AquiferTypeName),"Aquifer type name populated: associated with unassessed wells",NA)
+rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
 
 #Reject sites where MonitoringLocationTypeName !%in% site_type_keep argument
-stn_new$IR_FLAG=ifelse(stn_new$MonitoringLocationTypeName%in%site_type_keep,stn_new$IR_FLAG,"REJECT")
-stn_new$IR_REASON=ifelse(stn_new$MonitoringLocationTypeName%in%site_type_keep,stn_new$IR_REASON,"Non-assessed site type")
-table(stn_new$IR_FLAG)
-table(stn_new$IR_REASON)
+reason_n=ifelse(!stn_new$MonitoringLocationTypeName%in%site_type_keep,"Non-assessed site type",NA)
+rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
+
+names(rej_reasons)=c("MonitoringLocationIdentifier","SiteRejReason")
+rej_reasons$ReasonType="Attribute based"
+head(rej_reasons)
+
+print("Attribute based site rejection reasons count:")
+print(table(rej_reasons$reason_n))
+
+#Set stn_new IR_FLAG and reason for attribute based site rejections
+stn_new$IR_FLAG[stn_new$MonitoringLocationIdentifier %in% rej_reasons$MonitoringLocationIdentifier]
+
 
 
 ####################
@@ -585,21 +567,27 @@ stn_new$IR_FLAG = ifelse(stn_new$IR_FLAG=="REVIEW"&stn_new$MLID_Count==1&stn_new
 stn_new$IR_REASON = ifelse(stn_new$IR_FLAG=="ACCEPT","ACCEPT",stn_new$IR_REASON)
 sum(table(stn_new$IR_FLAG))
 
-#Review where MonitoringLocationTypeName is a stream or spring type & AU_Type=="Canal" NOTE: currently has potential to overwrite rejected sites to review, may want to exclude already rejected from conditional
+#Review where MonitoringLocationTypeName is a stream or spring type & AU_Type=="Canal"
 stn_new$IR_FLAG[
-	(stn_new$MonitoringLocationTypeName=="Stream" & stn_new$AU_Type == "Canal")|
-	(stn_new$MonitoringLocationTypeName=="River/Stream" & stn_new$AU_Type == "Canal")|
-	(stn_new$MonitoringLocationTypeName=="River/Stream Intermittent" & stn_new$AU_Type == "Canal")|
-	(stn_new$MonitoringLocationTypeName=="River/Stream Perennial" & stn_new$AU_Type == "Canal")|
-	(stn_new$MonitoringLocationTypeName=="Spring" & stn_new$AU_Type == "Canal")
+	stn_new$IR_FLAG!="REJECT" &
+		(
+			(stn_new$MonitoringLocationTypeName=="Stream" & stn_new$AU_Type == "Canal")|
+			(stn_new$MonitoringLocationTypeName=="River/Stream" & stn_new$AU_Type == "Canal")|
+			(stn_new$MonitoringLocationTypeName=="River/Stream Intermittent" & stn_new$AU_Type == "Canal")|
+			(stn_new$MonitoringLocationTypeName=="River/Stream Perennial" & stn_new$AU_Type == "Canal")|
+			(stn_new$MonitoringLocationTypeName=="Spring" & stn_new$AU_Type == "Canal")
+		)
 	]="REVIEW"
 table(stn_new$IR_FLAG)
 stn_new$IR_REASON[
-	(stn_new$MonitoringLocationTypeName=="Stream" & stn_new$AU_Type == "Canal")|
-	(stn_new$MonitoringLocationTypeName=="River/Stream" & stn_new$AU_Type == "Canal")|
-	(stn_new$MonitoringLocationTypeName=="River/Stream Intermittent" & stn_new$AU_Type == "Canal")|
-	(stn_new$MonitoringLocationTypeName=="River/Stream Perennial" & stn_new$AU_Type == "Canal")|
-	(stn_new$MonitoringLocationTypeName=="Spring" & stn_new$AU_Type == "Canal")
+	stn_new$IR_FLAG!="REJECT" &
+		(
+			(stn_new$MonitoringLocationTypeName=="Stream" & stn_new$AU_Type == "Canal")|
+			(stn_new$MonitoringLocationTypeName=="River/Stream" & stn_new$AU_Type == "Canal")|
+			(stn_new$MonitoringLocationTypeName=="River/Stream Intermittent" & stn_new$AU_Type == "Canal")|
+			(stn_new$MonitoringLocationTypeName=="River/Stream Perennial" & stn_new$AU_Type == "Canal")|
+			(stn_new$MonitoringLocationTypeName=="Spring" & stn_new$AU_Type == "Canal")
+		)
 	]="Stream or spring site type in canal AU type"
 table(stn_new$IR_REASON)
 
