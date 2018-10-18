@@ -259,6 +259,9 @@ if(correct_longitude==TRUE){
   stn_new$LongitudeMeasure[stn_new$LongitudeMeasure>0]<- -stn_new$LongitudeMeasure[stn_new$LongitudeMeasure>0]
 }
 
+# Create IR specific columns, all values filled w/ "REVIEW"
+stn_new[,c("IR_MLID","IR_FLAG","IR_REASON")] = "REVIEW"
+stn_new[,c("IR_Lat","IR_Long")] = NA
 
 
 ##Auto review new sites & master sites re-flagged to AUTO...
@@ -321,11 +324,11 @@ rej_reasons$ReasonType="Attribute based"
 head(rej_reasons)
 
 print("Attribute based site rejection reasons count:")
-print(table(rej_reasons$reason_n))
+print(table(rej_reasons$SiteRejReason))
 
 #Set stn_new IR_FLAG and reason for attribute based site rejections
-stn_new$IR_FLAG[stn_new$MonitoringLocationIdentifier %in% rej_reasons$MonitoringLocationIdentifier]
-
+stn_new$IR_FLAG[stn_new$MonitoringLocationIdentifier %in% rej_reasons$MonitoringLocationIdentifier]="REJECT"
+stn_new$IR_REASON[stn_new$MonitoringLocationIdentifier %in% rej_reasons$MonitoringLocationIdentifier]="Site attribute based rejection"
 
 
 ####################
