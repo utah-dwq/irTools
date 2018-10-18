@@ -36,10 +36,11 @@ for(n in 1:length(sheetnames)){
 	openxlsx::removeFilter(trans_wb, sheetnames[n])
 	}
 
+######################
+###Unit conversions###
+######################
 
-###Unit conversions
-
-#Read unit conversion table
+#Read unit conversion table 
 unit_convs=data.frame(openxlsx::readWorkbook(trans_wb, sheet=unit_sheetname, startRow=startRow, detectDates=TRUE))
 unit_convs=unit_convs[!names(unit_convs) %in% "DateAdded"]
 unit_convs[unit_convs==""]=NA
@@ -48,15 +49,32 @@ names(unit_convs)[names(unit_convs)=="IR_FLAG"]="IR_UnitConv_FLAG"
 #Double check that blanks are all NA in data (shouldn't really need this at this point)
 data[data==""]=NA
 
-#merge conversion table to data
+#Merge conversion table to data (up through this point, same functionality as applyScreenTable)
 data=merge(data,unit_convs,all.x=T)
+dim(data)
+
+#Retain only rows where IR_UnitConv_FLAG is ACCEPT
+table(data$IR_UnitConv_FLAG)
+data = data[data$IR_UnitConv_FLAG=="ACCEPT",]
+dim(data)
 
 #Check for NA conversion factors (where units needed)
-any(is.na(data$UnitConversionFactor) & !is.na(data$IR_Unit) & !is.na(data$CriterionUnits) & data$IR_UnitConv_FLAG=="ACCEPT")
+NAconvcheck <- any(is.na(data$UnitConversionFactor) & !is.na(data$IR_Unit) & !is.na(data$CriterionUnits) & data$IR_UnitConv_FLAG=="ACCEPT")
+if(NAconvcheck=="TRUE"){
+  print("WARNING: unitConvTable missing conversion factor(s) for accepted IR_Unit/CriterionUnits combination(s)")
+}
 
-#Set conversion factor to 1 where both IR_Unit & criterion units are NA (e.g. pH)
+#When IR_Unit = CriterionUnit, make UnitConversionFactor 1
+data$UnitConversionFactor[data$IR_Unit==data$CriterionUnits]=1
 
-#Dissolved vs. total fraction check
+#Convert IR_Value using Unit Conversion Value
+data$IR_Value <- data$IR_Value*data$UnitConversionFactor
+data$IR_Unit = data$CriterionUnits
+
+########################################
+###Dissolved vs. total fraction check###
+########################################
+
 
 #Aggregate to daily values
 
@@ -69,6 +87,8 @@ any(is.na(data$UnitConversionFactor) & !is.na(data$IR_Unit) & !is.na(data$Criter
 #Value based flags & rejections (if performing, desired flags/rejections should be input to param translation table)
 #Estimated & calculated value check
 #Holding times
+
+data[data$CharacteristicName=="Arsenic",names(data)%in%c("IR_Unit","CriterionUnits","R3172ParameterName","BeneficialUse","IR_Value","UnitConversionFactor","RejectMax","RejectMin", "IR_UnitConv_FLAG")]
 
 
 }
