@@ -22,7 +22,6 @@ dataPrep=function(data){
 
 #SETUP
 data=data_crit
-translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
 translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
 unit_sheetname="unitConvTable"
 startRow=1
@@ -43,8 +42,15 @@ for(n in 1:length(sheetnames)){
 
 #Read unit conversion table 
 unit_convs=data.frame(openxlsx::readWorkbook(trans_wb, sheet=unit_sheetname, startRow=startRow, detectDates=TRUE))
+unit_convs=subset(unit_convs,unit_convs$InData=="Y")
+unit_convs=unit_convs[!names(unit_convs) %in% c("DateAdded","InData")]
 unit_convs[unit_convs==""]=NA
 names(unit_convs)[names(unit_convs)=="IR_FLAG"]="IR_UnitConv_FLAG"
+
+# Check to make sure all IR_UnitConv_FLAG populated
+if(any(is.na(unit_convs$IR_UnitConv_FLAG))){
+  print("WARNING: Unit conversion table missing required IR_FLAG information. Please correct the table before proceeding.")
+}
 
 #Double check that blanks are all NA in data (shouldn't really need this at this point)
 data[data==""]=NA
