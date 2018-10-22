@@ -17,7 +17,7 @@
 #' @import sf
 
 #' @export
-autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_path,correct_longitude=TRUE,
+autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_path,correct_longitude=FALSE,
 	site_type_keep=c(
 		"Lake, Reservoir, Impoundment",
 		"Stream",
@@ -35,29 +35,29 @@ autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_p
 
 ){
 
+##########
+####TESTING SETUP
+#library(sp)
+#library(sf)
+#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites141001-160930.csv"
+#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
+#polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
+#outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation"
+#correct_longitude=FALSE
+#site_type_keep=c("Lake, Reservoir, Impoundment",
+#			 "Stream",
+#			 "Spring",
+#			 "Stream: Canal",
+#			 "Stream: Ditch",
+#			 "River/Stream",
+#			 "Lake",
+#			 "River/Stream Intermittent",
+#			 "River/Stream Perennial",
+#			 "Reservoir",
+#			 "Canal Transport",
+#			 "Canal Drainage",
+#			 "Canal Irrigation")
 #########
-###TESTING SETUP
-library(sp)
-library(sf)
-sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites141001-160930.csv"
-master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
-polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation"
-correct_longitude=FALSE
-site_type_keep=c("Lake, Reservoir, Impoundment",
-			 "Stream",
-			 "Spring",
-			 "Stream: Canal",
-			 "Stream: Ditch",
-			 "River/Stream",
-			 "Lake",
-			 "River/Stream Intermittent",
-			 "River/Stream Perennial",
-			 "Reservoir",
-			 "Canal Transport",
-			 "Canal Drainage",
-			 "Canal Irrigation")
-########
 
 
 setwd(outfile_path)
@@ -266,7 +266,7 @@ stn_new[,c("IR_Lat","IR_Long")] = NA
 
 
 ##Auto review new sites & master sites re-flagged to AUTO...
-rej_reasons=data.frame(matrix(nrow=0,ncol=2))
+rej_reasons_att=data.frame(matrix(nrow=0,ncol=2))
 
 # If [MonitoringLocationDescriptionText] contains "Duplicate","Replicate","Dummy","replaced","Blank","QA", or "QC", reject as QAQC
 reason_n = ifelse(grepl("Duplicate",stn_new$MonitoringLocationDescriptionText) | grepl("Replicate",stn_new$MonitoringLocationDescriptionText) | grepl("Dummy",stn_new$MonitoringLocationDescriptionText) | 
@@ -274,62 +274,66 @@ reason_n = ifelse(grepl("Duplicate",stn_new$MonitoringLocationDescriptionText) |
                         grepl("QC",stn_new$MonitoringLocationDescriptionText),"Attributes indicate dup, rep, blank, dummy, or QAQC site",NA)
 
 if(dim(table(reason_n))[1]>0){print(table(reason_n))}
-rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
+if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 # If [OrganizationIdentifier] is test or demo, reject site.
 reason_n=ifelse(stn_new$OrganizationIdentifier%in%c("OST_SHPD_TEST","DEMOTEST"),"Organization identifier indicates test/demo",NA)
-rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
+if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 #Reject sites where horizontal datum =="UNKWN")
 reason_n=ifelse(stn_new$HorizontalCoordinateReferenceSystemDatumName=="UNKWN","Horizontal datum unknown",NA)
-rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
+if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 #Reject sites with ConstructionDateText populated
 reason_n=ifelse(!is.na(stn_new$ConstructionDateText),"Construction date text populated",NA)
-rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
+if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 #Reject sites with WellDepthMeasure.MeasureValue populated
 reason_n=ifelse(!is.na(stn_new$WellDepthMeasure.MeasureValue),"Well depth measure populated",NA)
-rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
+if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 #Reject sites with WellDepthMeasure.MeasureUnitCode populated
 reason_n=ifelse(!is.na(stn_new$WellDepthMeasure.MeasureUnitCode),"Well depth measure unit code populated",NA)
-rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
+if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 #Reject sites with WellHoleDepthMeasure.MeasureValue populated
 reason_n=ifelse(!is.na(stn_new$WellHoleDepthMeasure.MeasureValue),"Well hole depth measure populated",NA)
-rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
+if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 #Reject sites with WellHoleDepthMeasure.MeasureUnitCode populated
 reason_n=ifelse(!is.na(stn_new$WellHoleDepthMeasure.MeasureUnitCode),"Well hole depth measure unit code populated",NA)
-rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
+if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 #Reject sites with AquiferName populated
 reason_n=ifelse(!is.na(stn_new$AquiferName),"Aquifer name populated: associated with unassessed wells",NA)
-rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
+if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 #Reject sites with FormationTypeText populated
 reason_n=ifelse(!is.na(stn_new$FormationTypeText),"Formation type populated: associated with unassessed wells",NA)
-rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
+if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 #Reject sites with AquiferTypeName populated
 reason_n=ifelse(!is.na(stn_new$AquiferTypeName),"Aquifer type name populated: associated with unassessed wells",NA)
-rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
+if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 #Reject sites where MonitoringLocationTypeName !%in% site_type_keep argument
 reason_n=ifelse(!stn_new$MonitoringLocationTypeName%in%site_type_keep,"Non-assessed site type",NA)
-rej_reasons=rbind(rej_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
+if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
-names(rej_reasons)=c("MonitoringLocationIdentifier","SiteRejReason")
-rej_reasons$ReasonType="Attribute based"
-head(rej_reasons)
+names(rej_reasons_att)=c("MonitoringLocationIdentifier","Reason")
+rej_reasons_att$ReasonType="Attribute based"
+rej_reasons_att$FLAG="REJECT"
+head(rej_reasons_att)
 
-print("Attribute based site rejection reasons count:")
-print(table(rej_reasons$SiteRejReason))
+print("Attribute based site rejection reason count:")
+print(table(rej_reasons_att$Reason))
 
 #Set stn_new IR_FLAG and reason for attribute based site rejections
-stn_new$IR_FLAG[stn_new$MonitoringLocationIdentifier %in% rej_reasons$MonitoringLocationIdentifier]="REJECT"
-stn_new$IR_REASON[stn_new$MonitoringLocationIdentifier %in% rej_reasons$MonitoringLocationIdentifier]="Site attribute based rejection"
+stn_new$IR_FLAG[stn_new$MonitoringLocationIdentifier %in% rej_reasons_att$MonitoringLocationIdentifier]="REJECT"
+table(stn_new$IR_FLAG)
+
+
+
 
 
 ####################
@@ -391,8 +395,6 @@ st_geometry(isect)=NULL
 stn_new=merge(stn_new,isect,all.x=TRUE)
 dim(stn_new)
 
-stn_new[stn_new$MonitoringLocationIdentifier=="USGS-395040113592601",]
-
 #Intersect sites w/ AU poly
 isect=suppressMessages({suppressWarnings({st_intersection(sites, au_poly)})})
 st_geometry(isect)=NULL
@@ -421,75 +423,58 @@ dim(stn_new)
 rm(sites)
 
 
+
+###Spatial rejections
+rej_reasons_spat=data.frame(matrix(nrow=0,ncol=2))
+
 #Reject by is.na(AU)
-table(stn_new$IR_FLAG)
-stn_new$IR_FLAG[is.na(stn_new$ASSESS_ID)]="REJECT"
-stn_new$IR_REASON[is.na(stn_new$ASSESS_ID)]="Undefined AU"
-table(stn_new$IR_FLAG)
+reason_n=ifelse(is.na(stn_new$ASSESS_ID),"Undefined AU",NA)
+if(length(reason_n)>0){rej_reasons_spat=rbind(rej_reasons_spat,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 #Reject by is.na(STATE_NAME)
-table(stn_new$IR_FLAG)
-stn_new$IR_FLAG[is.na(stn_new$STATE_NAME)]="REJECT"
-stn_new$IR_REASON[is.na(stn_new$STATE_NAME)]="Non-jurisdictional: out of state or within tribal boundaries."
-table(stn_new$IR_FLAG)
-stn_new=stn_new[,!names(stn_new) %in% "STATE_NAME"]
-
+reason_n=ifelse(is.na(stn_new$STATE_NAME),"Non-jurisdictional: out of state or within tribal boundaries",NA)
+if(length(reason_n)>0){rej_reasons_spat=rbind(rej_reasons_spat,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 #Reject by GSL poly
+reason_n=ifelse(!is.na(stn_new$Id),"GSL assessed through separate program",NA)
+if(length(reason_n)>0){rej_reasons_spat=rbind(rej_reasons_spat,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
+#Remove unneeded spatial join columns
+stn_new=stn_new[,!names(stn_new)%in%c("STATE_NAME","Id")]
 
 #Reject where 	MonitoringLocationTypeName is a canal type & AU_Type!="Canal"
-stn_new$IR_FLAG[
-	(stn_new$MonitoringLocationTypeName=="Stream: Canal" & stn_new$AU_Type != "Canal")|
-	(stn_new$MonitoringLocationTypeName=="Stream: Ditch" & stn_new$AU_Type != "Canal")|
-	(stn_new$MonitoringLocationTypeName=="Canal Transport" & stn_new$AU_Type != "Canal")|
-	(stn_new$MonitoringLocationTypeName=="Canal Drainage" & stn_new$AU_Type != "Canal")|
-	(stn_new$MonitoringLocationTypeName=="Canal Irrigation" & stn_new$AU_Type != "Canal")
-	]="REJECT"
-table(stn_new$IR_FLAG)
-stn_new$IR_REASON[
-	(stn_new$MonitoringLocationTypeName=="Stream: Canal" & stn_new$AU_Type != "Canal")|
-	(stn_new$MonitoringLocationTypeName=="Stream: Ditch" & stn_new$AU_Type != "Canal")|
-	(stn_new$MonitoringLocationTypeName=="Canal Transport" & stn_new$AU_Type != "Canal")|
-	(stn_new$MonitoringLocationTypeName=="Canal Drainage" & stn_new$AU_Type != "Canal")|
-	(stn_new$MonitoringLocationTypeName=="Canal Irrigation" & stn_new$AU_Type != "Canal")
-	]="Non-assessed canal or ditch"
-table(stn_new$IR_REASON)
+reason_n=ifelse(
+				(stn_new$MonitoringLocationTypeName=="Stream: Canal" & stn_new$AU_Type != "Canal")|
+				(stn_new$MonitoringLocationTypeName=="Stream: Ditch" & stn_new$AU_Type != "Canal")|
+				(stn_new$MonitoringLocationTypeName=="Canal Transport" & stn_new$AU_Type != "Canal")|
+				(stn_new$MonitoringLocationTypeName=="Canal Drainage" & stn_new$AU_Type != "Canal")|
+				(stn_new$MonitoringLocationTypeName=="Canal Irrigation" & stn_new$AU_Type != "Canal")
+		,"Non-assessed canal or ditch",NA)
+if(length(reason_n)>0){rej_reasons_spat=rbind(rej_reasons_spat,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 
 #Reject where 	MonitoringLocationTypeName is a stream or spring type & AU_Type!="River/Stream"
-stn_new$IR_FLAG[
-	(stn_new$MonitoringLocationTypeName=="Stream" & stn_new$AU_Type != "River/Stream")|
-	(stn_new$MonitoringLocationTypeName=="River/Stream" & stn_new$AU_Type != "River/Stream")|
-	(stn_new$MonitoringLocationTypeName=="River/Stream Intermittent" & stn_new$AU_Type != "River/Stream")|
-	(stn_new$MonitoringLocationTypeName=="River/Stream Perennial" & stn_new$AU_Type != "River/Stream")|
-	(stn_new$MonitoringLocationTypeName=="Spring" & stn_new$AU_Type != "River/Stream")
-	]="REJECT"
+reason_n=ifelse(
+		(stn_new$MonitoringLocationTypeName=="Stream" & stn_new$AU_Type != "River/Stream")|
+		(stn_new$MonitoringLocationTypeName=="River/Stream" & stn_new$AU_Type != "River/Stream")|
+		(stn_new$MonitoringLocationTypeName=="River/Stream Intermittent" & stn_new$AU_Type != "River/Stream")|
+		(stn_new$MonitoringLocationTypeName=="River/Stream Perennial" & stn_new$AU_Type != "River/Stream")|
+		(stn_new$MonitoringLocationTypeName=="Spring" & stn_new$AU_Type != "River/Stream")
+	,"Stream or spring site type in non-River/Stream AU",NA)
+
+if(length(reason_n)>0){rej_reasons_spat=rbind(rej_reasons_spat,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
+
+names(rej_reasons_spat)=c("MonitoringLocationIdentifier","Reason")
+rej_reasons_spat$ReasonType="Spatial"
+rej_reasons_spat$FLAG="REJECT"
+head(rej_reasons_spat)
+
+print("Spatial site rejection reason count:")
+print(table(rej_reasons_spat$Reason))
+
+#Set stn_new IR_FLAG and reason for spatial site rejections
+stn_new$IR_FLAG[stn_new$MonitoringLocationIdentifier %in% rej_reasons_spat$MonitoringLocationIdentifier]="REJECT"
 table(stn_new$IR_FLAG)
-stn_new$IR_REASON[
-	(stn_new$MonitoringLocationTypeName=="Stream" & stn_new$AU_Type != "River/Stream")|
-	(stn_new$MonitoringLocationTypeName=="River/Stream" & stn_new$AU_Type != "River/Stream")|
-	(stn_new$MonitoringLocationTypeName=="River/Stream Intermittent" & stn_new$AU_Type != "River/Stream")|
-	(stn_new$MonitoringLocationTypeName=="River/Stream Perennial" & stn_new$AU_Type != "River/Stream")|
-	(stn_new$MonitoringLocationTypeName=="Spring" & stn_new$AU_Type != "River/Stream")
-	]="Stream or spring site type in non-River/Stream AU"
-table(stn_new$IR_REASON)
-
-
-
-
-
-
-
-
-
-
-#Reject sites with same MLIDs as other REJECT sites
-# This can happen when a site is rejected due to populated fields associated with demos, duplicates, well construction, etc., but a second record with a duplicate MLID does not have these same "flag" fields populated.
-# This steps errs on the side of caution so well/demo/qa/qc sites are not assessed.
-mlid_rejects <- unique(stn_new$MonitoringLocationIdentifier[stn_new$IR_FLAG=="REJECT"])
-stn_new$IR_REASON <- ifelse(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationIdentifier%in%mlid_rejects,"Site shares MLID with rejected site(s)", stn_new$IR_REASON)
-stn_new$IR_FLAG <- ifelse(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationIdentifier%in%mlid_rejects,"REJECT",stn_new$IR_FLAG)
 
 
 ##########
@@ -558,7 +543,8 @@ stn_new=merge(stn_new,spatial_check_data,all.x=T)
 dim(stn_new)
 stn_new$ValidationType="AUTO"
 
-#Apply next 4 to stn_new only
+
+#Spatial review flags & reasons (Apply to stn_new only)
 #Populate stn_new$MLID & lat/long for new sites w/ no duplicate MLIDS, lats, longs, and 0 other sites w/in 100m (IR_FLAG=="REVIEW" for all non-rejected new sites at this point)
 stn_new$IR_MLID = ifelse(stn_new$IR_FLAG=="REVIEW"&stn_new$MLID_Count==1&stn_new$Lat_Count==1&stn_new$Long_Count==1&stn_new$sites100m_count==0,as.vector(stn_new$MonitoringLocationIdentifier),"REVIEW")
 stn_new$IR_Lat = ifelse(stn_new$IR_FLAG=="REVIEW"&stn_new$MLID_Count==1&stn_new$Lat_Count==1&stn_new$Long_Count==1&stn_new$sites100m_count==0,stn_new$LatitudeMeasure,NA)
@@ -569,66 +555,39 @@ stn_new$IR_MLID = ifelse(stn_new$IR_FLAG=="REJECT","REJECT",as.vector(stn_new$IR
 stn_new$IR_Lat = ifelse(stn_new$IR_FLAG=="REJECT",NA,stn_new$IR_Lat)
 stn_new$IR_Long = ifelse(stn_new$IR_FLAG=="REJECT",NA,stn_new$IR_Long)
 
-#Populate ACCEPT for new sites w/ no duplicate MLIDS, lats, longs, and 0 other sites w/in 100m (IR_FLAG=="REVIEW" for all non-rejected new sites at this point)
-stn_new$IR_REASON = ifelse(stn_new$IR_FLAG=="REVIEW"&stn_new$MLID_Count==1&stn_new$Lat_Count==1&stn_new$Long_Count==1&stn_new$sites100m_count==0,"ACCEPT",stn_new$IR_REASON)
-stn_new$IR_REASON = ifelse(stn_new$IR_FLAG=="REVIEW","Manual review required",stn_new$IR_REASON)
-stn_new$IR_FLAG = ifelse(stn_new$IR_FLAG=="REVIEW"&stn_new$MLID_Count==1&stn_new$Lat_Count==1&stn_new$Long_Count==1&stn_new$sites100m_count==0,"ACCEPT",stn_new$IR_FLAG)
-stn_new$IR_REASON = ifelse(stn_new$IR_FLAG=="ACCEPT","ACCEPT",stn_new$IR_REASON)
-sum(table(stn_new$IR_FLAG))
 
+#Review reasons
+review_reasons=data.frame(matrix(nrow=0,ncol=2))
 
+#MLID, lat/long, and site 100 m counts
+reason_n=ifelse(stn_new$MLID_Count>1,"Duplicated MLID",NA)
+if(length(reason_n)>0){review_reasons=rbind(review_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
+reason_n=ifelse(stn_new$Lat_Count>1 | stn_new$Long_Count>1,"Duplicated lat or long",NA)
+if(length(reason_n)>0){review_reasons=rbind(review_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
+reason_n=ifelse(stn_new$sites100m_count>=1,"One or more sites w/in 100 m",NA)
+if(length(reason_n)>0){review_reasons=rbind(review_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
-###MOVE?
-
-#Review where MonitoringLocationTypeName is a stream or spring type & AU_Type=="Canal"
-stn_new$IR_FLAG[
-	stn_new$IR_FLAG!="REJECT" &
-		(
+#MonitoringLocationTypeName is a stream or spring type & AU_Type=="Canal"
+reason_n=ifelse(
 			(stn_new$MonitoringLocationTypeName=="Stream" & stn_new$AU_Type == "Canal")|
 			(stn_new$MonitoringLocationTypeName=="River/Stream" & stn_new$AU_Type == "Canal")|
 			(stn_new$MonitoringLocationTypeName=="River/Stream Intermittent" & stn_new$AU_Type == "Canal")|
 			(stn_new$MonitoringLocationTypeName=="River/Stream Perennial" & stn_new$AU_Type == "Canal")|
 			(stn_new$MonitoringLocationTypeName=="Spring" & stn_new$AU_Type == "Canal")
-		)
-	]="REVIEW"
-table(stn_new$IR_FLAG)
-stn_new$IR_REASON[
-	stn_new$IR_FLAG!="REJECT" &
-		(
-			(stn_new$MonitoringLocationTypeName=="Stream" & stn_new$AU_Type == "Canal")|
-			(stn_new$MonitoringLocationTypeName=="River/Stream" & stn_new$AU_Type == "Canal")|
-			(stn_new$MonitoringLocationTypeName=="River/Stream Intermittent" & stn_new$AU_Type == "Canal")|
-			(stn_new$MonitoringLocationTypeName=="River/Stream Perennial" & stn_new$AU_Type == "Canal")|
-			(stn_new$MonitoringLocationTypeName=="Spring" & stn_new$AU_Type == "Canal")
-		)
-	]="Stream or spring site type in canal AU type"
-table(stn_new$IR_REASON)
+		,"Stream or spring site type in canal AU type",NA)
+if(length(reason_n)>0){review_reasons=rbind(review_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
+table(review_reasons$reason_n)
 
-
-
-
-#Review where MonitoringLocationTypeName is a lake type & AU_Type!="Reservoir/Lake"
-stn_new$IR_FLAG[
-	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Lake, Reservoir, Impoundment" & stn_new$AU_Type != "Reservoir/Lake")|
-	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Lake" & stn_new$AU_Type != "Reservoir/Lake")|
-	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Reservoir" & stn_new$AU_Type != "Reservoir/Lake")
-	]="REVIEW"
-table(stn_new$IR_FLAG)
-stn_new$IR_REASON[
-	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Lake, Reservoir, Impoundment" & stn_new$AU_Type != "Reservoir/Lake")|
-	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Lake" & stn_new$AU_Type != "Reservoir/Lake")|
-	(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationTypeName=="Reservoir" & stn_new$AU_Type != "Reservoir/Lake")
-	]="MLID type is lake/reservoir, but AU_Type is not - potential new AU needed"
-table(stn_new$IR_REASON)
-
-
-
-
-
-
-
+#MonitoringLocationTypeName is a lake type & AU_Type!="Reservoir/Lake"
+reason_n=ifelse(
+	(stn_new$MonitoringLocationTypeName=="Lake, Reservoir, Impoundment" & stn_new$AU_Type != "Reservoir/Lake")|
+	(stn_new$MonitoringLocationTypeName=="Lake" & stn_new$AU_Type != "Reservoir/Lake")|
+	(stn_new$MonitoringLocationTypeName=="Reservoir" & stn_new$AU_Type != "Reservoir/Lake")
+	,"MLID type is lake/reservoir, but AU_Type is not - potential new AU needed",NA)
+if(length(reason_n)>0){review_reasons=rbind(review_reasons,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
+table(review_reasons$reason_n)
 
 
 #Join spatial checks to master_site
@@ -637,10 +596,37 @@ names(spatial_check_data)=c("UID","MLID_Count2","Lat_Count2","Long_Count2","site
 master_site=merge(master_site,spatial_check_data,all.x=T)
 
 #Check if MLID_Count, Lat_Count, Long_Count, or sites100m_count have increased, flag these for review
-master_site$IR_FLAG[master_site$MLID_Count2>master_site$MLID_Count]="REVIEW"
-master_site$IR_FLAG[master_site$Lat_Count2>master_site$Lat_Count]="REVIEW"
-master_site$IR_FLAG[master_site$Long_Count2>master_site$Long_Count]="REVIEW"
-master_site$IR_FLAG[master_site$sites100m_count2>master_site$sites100m_count]="REVIEW"
+reason_n=ifelse(master_site$MLID_Count2>master_site$MLID_Count,"Master site MLID count has increased", NA)
+if(length(reason_n)>0){review_reasons=rbind(review_reasons,na.omit(cbind(master_site$MonitoringLocationIdentifier,reason_n)))}
+table(review_reasons$reason_n)
+
+reason_n=ifelse(master_site$Lat_Count2>master_site$Lat_Count,"Master site lat count has increased", NA)
+if(length(reason_n)>0){review_reasons=rbind(review_reasons,na.omit(cbind(master_site$MonitoringLocationIdentifier,reason_n)))}
+table(review_reasons$reason_n)
+
+reason_n=ifelse(master_site$Long_Count2>master_site$Long_Count,"Master site long count has increased", NA)
+if(length(reason_n)>0){review_reasons=rbind(review_reasons,na.omit(cbind(master_site$MonitoringLocationIdentifier,reason_n)))}
+table(review_reasons$reason_n)
+
+reason_n=ifelse(master_site$sites100m_count2>master_site$sites100m_count,"Master site sites w/in 100 m count has increased", NA)
+if(length(reason_n)>0){review_reasons=rbind(review_reasons,na.omit(cbind(master_site$MonitoringLocationIdentifier,reason_n)))}
+table(review_reasons$reason_n)
+
+
+#Rename review reason columns
+names(review_reasons)=c("MonitoringLocationIdentifier","Reason")
+review_reasons$ReasonType="Spatial"
+review_reasons$FLAG="REVIEW"
+
+
+print("Spatial site review reason count:")
+print(table(review_reasons$Reason))
+
+
+#rbind reasons together
+reject_reasons=rbind(rej_reasons_att,rej_reasons_spat)
+all_reasons=rbind(reject_reasons, review_reasons)
+
 
 #Update master_site MLID_Count, Lat_Count, Long_Count, or sites100m
 master_site$MLID_Count=master_site$MLID_Count2
@@ -651,16 +637,29 @@ master_site$sites100m_count=master_site$sites100m_count2
 #Drop master_site MLID_Count2, Lat_Count2, Long_Count2, and sites100m2
 master_site=master_site[,!names(master_site) %in% c("MLID_Count2","Lat_Count2","Long_Count2","sites100m_count2")]
 
-if(dim(master_site)[1]>0){
-	levels(master_site$IR_REASON)=unique(c(levels(master_site$IR_REASON),"Manual review required"))
-	master_site$IR_REASON[master_site$IR_FLAG=="REVIEW"]="Manual review required"
-}
 
+#Populate ACCEPT for new sites w/ no duplicate MLIDS, lats, longs, and 0 other sites w/in 100m (IR_FLAG=="REVIEW" for all non-rejected new sites at this point)
+stn_new=within(stn_new,{
+	IR_FLAG[!MonitoringLocationIdentifier %in% reasons_all$MonitoringLocationIdentifier &IR_FLAG!="REJECT" & MLID_Count==1 & Lat_Count==1 & Long_Count==1 & sites100m_count==0]<-"ACCEPT"
+})
+table(stn_new$IR_FLAG)
 
 #rbind master_site & stn_new to make full list of all sites (master_new)
 master_site$IR_REASON=as.factor(master_site$IR_REASON)
 stn_new$IR_REASON=as.factor(stn_new$IR_REASON)
 master_new=rbind(master_site, stn_new)
+
+table(master_new$MonitoringLocationIdentifier[master_new$IR_FLAG=="ACCEPT"] %in% reasons_all$MonitoringLocationIdentifier)
+
+###Set IR_FLAG for REJECT & REVIEW 
+master_new=within(master_new,{
+	IR_FLAG[MonitoringLocationIdentifier %in% review_reasons$MonitoringLocationIdentifier]="REVIEW"
+	IR_FLAG[MonitoringLocationIdentifier %in% reject_reasons$MonitoringLocationIdentifier]="REJECT"
+})
+
+
+###Append reasons to master_new
+#Need feedback on ranking/storing reasons
 
 
 
@@ -686,6 +685,7 @@ if(file.exists("wqp_master_site_file.csv")){
 }
 
 write.csv(master_new, file="wqp_master_site_file.csv",row.names=F)
+write.csv(reasons_all,file="rev_rej_reasons.csv",row.names=F)
 
 print("Site validation complete.")
 print(paste0(outfile_path,"\\wqp_master_site_file.csv"))
@@ -702,6 +702,16 @@ print(paste0(outfile_path,"\\wqp_master_site_file.csv"))
 
 
 
+
+
+
+
+#Reject sites with same MLIDs as other REJECT sites (JV no longer needed, using same approach for all rejections now)
+## This can happen when a site is rejected due to populated fields associated with demos, duplicates, well construction, etc., but a second record with a duplicate MLID does not have these same "flag" fields populated.
+## This steps errs on the side of caution so well/demo/qa/qc sites are not assessed.
+#mlid_rejects <- unique(stn_new$MonitoringLocationIdentifier[stn_new$IR_FLAG=="REJECT"])
+#stn_new$IR_REASON <- ifelse(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationIdentifier%in%mlid_rejects,"Site shares MLID with rejected site(s)", stn_new$IR_REASON)
+#stn_new$IR_FLAG <- ifelse(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationIdentifier%in%mlid_rejects,"REJECT",stn_new$IR_FLAG)
 
 
 
