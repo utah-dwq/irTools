@@ -625,7 +625,7 @@ print(table(review_reasons$Reason))
 
 #rbind reasons together
 reject_reasons=rbind(rej_reasons_att,rej_reasons_spat)
-all_reasons=rbind(reject_reasons, review_reasons)
+reasons_all=rbind(reject_reasons, review_reasons)
 
 
 #Update master_site MLID_Count, Lat_Count, Long_Count, or sites100m
