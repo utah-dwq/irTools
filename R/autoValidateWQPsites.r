@@ -273,7 +273,6 @@ reason_n = ifelse(grepl("Duplicate",stn_new$MonitoringLocationDescriptionText) |
                         grepl("replaced",stn_new$MonitoringLocationDescriptionText) | grepl("Blank",stn_new$MonitoringLocationDescriptionText) | grepl("QA",stn_new$MonitoringLocationDescriptionText) | 
                         grepl("QC",stn_new$MonitoringLocationDescriptionText),"Attributes indicate dup, rep, blank, dummy, or QAQC site",NA)
 
-if(dim(table(reason_n))[1]>0){print(table(reason_n))}
 if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 # If [OrganizationIdentifier] is test or demo, reject site.
