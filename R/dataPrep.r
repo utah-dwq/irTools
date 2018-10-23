@@ -53,9 +53,9 @@ diss_tot <- merge(tot,diss, by=c("ActivityIdentifier","ActivityStartDate","R3172
 
 # Find all unique combos of TOTAL and DISSOLVED units to run through updateUnitConvTable function.
 unit_combos <- diss_tot[,names(diss_tot)%in%c("IR_Unit_Tot","IR_Unit_Diss")]
-# NOTE: IR_Unit_Diss arbitrarily made TARGET (CriterionUnits) unit.
-colnames(unit_combos) <- c("IR_Unit","CriterionUnits") # make column names consistent with unitConvTable
-
+#***NOTE***IR_Unit_Diss arbitrarily made TARGET (CriterionUnits) unit.
+names(unit_combos)[names(unit_combos)=="IR_Unit_Diss"] <- "CriterionUnits"
+names(unit_combos)[names(unit_combos)=="IR_Unit_Tot"] <- "IR_Unit"
 updateUnitConvTable(unit_combos, translation_wb, sheetname="unitConvTable", startRow=1, startCol=1)
 
 # Bind unit_combo columns to diss_tot columns (maintain original column names differentiating total with dissolved, but include duplicated columns with unitConvTable column names)
@@ -89,13 +89,29 @@ if(any(is.na(unit_convs$IR_UnitConv_FLAG))){
 # Double check that blanks are all NA in data (shouldn't really need this at this point)
 diss_tot[diss_tot==""]=NA
 
-# Merge conversion table to data (up through this point, same functionality as applyScreenTable)
-diss_tot=merge(diss_tot,unit_convs,all.x=T)
-dim(diss_tot)
+# Merge conversion table to data
+diss_tot_units=merge(diss_tot,unit_convs,all.x=T)
+dim(diss_tot_units)
+table(diss_tot_units$IR_UnitConv_FLAG)
+diss_tot_units <- diss_tot_units[diss_tot_units$IR_UnitConv_FLAG=="ACCEPT",]
+dim(diss_tot_units)
 
-#Perform conversions
-diss_tot$IR_Value_Tot=diss_tot$IR_Value_Tot*diss_tot$UnitConversionFactor
-diss_tot$IR_Unit_Tot=diss_tot$CriterionUnits
+#Convert IR_Unit/Value_Tot to same units as IR_Unit/Value_Diss
+diss_tot_units$IR_Value_Tot=diss_tot_units$IR_Value_Tot*diss_tot_units$UnitConversionFactor
+diss_tot_units$IR_Unit_Tot=diss_tot_units$CriterionUnits
+
+# Set all comparisons to baseline ACCEPT
+diss_tot_units$Dis_Tot_FLAG = "ACCEPT"
+
+# Find comparisons where TOTAL > DISSOLVED
+diss_tot_units$Dis_Tot_FLAG <- ifelse(diss_tot_units$IR_Value_Tot>diss_tot_units$IR_Value_Diss,"REJECT",diss_tot_units$Dis_Tot_FLAG)
+
+# Merge Dis_Tot_FLAG info back to data.
+ds_test <- diss_tot_units[,names(diss_tot_units)%in%c("ActivityIdentifier","ActivityStartDate","R3172ParameterName","Dis_Tot_FLAG")]
+data <- merge(data,ds_test, all.x=TRUE)
+dim(data)
+unique(data$Dis_Tot_FLAG)
+table(data$Dis_Tot_FLAG)
 
 ##################################
 ###Unit conversions for IR data###
