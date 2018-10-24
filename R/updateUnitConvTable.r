@@ -86,16 +86,16 @@ unit_merge=unit_merge[,column_names]
 unit_merge$DateAdded[is.na(unit_merge$DateAdded)]=Sys.Date() # this does not work with an empty dataframe
 openxlsx::writeData(trans_wb, "unitConvTable", unit_merge, startRow=startRow, startCol=startCol)
 
+###Save translation workbook
+openxlsx::saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
+print("Translation workbook updated & saved.")
+
 # Check to see if new combinations exist and alert user.
 new_unitcombo_count=dim(unit_merge)[1]-dim(unitconv_table)[1]
 if(new_unitcombo_count>0){
   print(paste("WARNING:",new_unitcombo_count,"new result-criterion unit combination(s) identified. Populate necessary correction factors in unitConvTable. Be aware that some combinations may be associated with pH (unitless)"))
   readline(prompt="Press [enter] to continue")
   print("unitConvTable updated.")} else{print("No new result-criterion unit combinations identified.")}
-
-###Save translation workbook
-openxlsx::saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
-print("Translation workbook updated & saved.")
 
 }
 
