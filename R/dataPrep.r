@@ -135,11 +135,38 @@ data$UnitConversionFactor[data$IR_Unit==data$CriterionUnits]=1
 data$IR_Value <- data$IR_Value*data$UnitConversionFactor
 data$IR_Unit = data$CriterionUnits
 
-#Aggregate to daily values
 
 #Activity type check
 
 #Fraction type check
+
+
+#Aggregate to daily values
+
+
+
+###################################
+#Generate & cast correction factors
+
+#Correction factors
+#pH, temp, hardness (Ca+Mg > hardness >100(?), max=400 mg/l)
+
+#-Build correction factor subdataset
+#-Cast correction factor subdataset
+#-Merge correction factors to records needing calculated criteria
+#-Apply formulas to calculate criteria
+#-rbind corrections back to data (keep columns of correction factors, fill w/ NA for other data)
+
+data=data_crit
+cf=data[data$BeneficialUse=="CF",c("R3172ParameterName","BeneficialUse","MonitoringLocationIdentifier","ActivityIdentifier","ActivityStartDate","IR_Value","IR_Unit","IR_DetCond","DailyAggFun","ResultDepthHeightMeasure.MeasureValue")]
+cf_n=cf[cf$DailyAggFun=="max",]
+cf_n=cf_n[!is.na(cf_n$IR_Value),]
+suppressWarnings({cf_n_cast=reshape2::dcast(cf_n, MonitoringLocationIdentifier+ActivityIdentifier+ActivityStartDate+ResultDepthHeightMeasure.MeasureValue~R3172ParameterName, value.var="IR_Value", fun.aggregate=max)})
+
+
+
+
+
 
 #Other possible checks - execution TBD
 #Rivers/streams depth check

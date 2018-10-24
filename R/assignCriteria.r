@@ -148,16 +148,6 @@ dim(data_uses_flat_crit)
 #5. Calculated criteria
 #JV note I think this will be better done separately (prob stand-alone function), following unit conversions.
 
-#Correction factors
-#pH, temp, hardness (Ca+Mg > hardness >100(?), max=400 mg/l)
-
-#-Build correction factor subdataset
-#-Cast correction factor subdataset
-#-Merge correction factors to records needing calculated criteria
-#-Apply formulas to calculate criteria
-#-rbind corrections back to data (keep columns of correction factors, fill w/ NA for other data)
-
-
 return(data_uses_flat_crit)
 
 
