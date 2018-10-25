@@ -25,10 +25,10 @@ updateUnitConvTable=function(data, translation_wb, sheetname="unitConvTable", st
 # sheetname="unitConvTable"
 # startRow=1
 # startCol=1
-######
-
-
-#Load translation workbook
+# ######
+# 
+# 
+# #Load translation workbook
 trans_wb=openxlsx::loadWorkbook(translation_wb)
 
 #Remove filters from all sheets in trans_wb (filtering seems to cause file corruption occassionally...)
@@ -70,11 +70,12 @@ rcunits=data.frame(unique(data[,c("IR_Unit", "CriterionUnits")]))
 
 ##Combine these unit conversions into one dataframe
 all_unit_combos <- rbind(dtunits,rcunits)
+all_unit_combos <- unique(all_unit_combos)
 all_unit_combos$InData="Y"
 all_unit_combos[all_unit_combos==""]<-NA
 
 # Load unitConvTable sheet, set all blanks to NA, and reset InData column.
-unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet="unitConvTable", startRow=startRow, detectDates=TRUE))
+unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=sheetname, startRow=startRow, detectDates=TRUE))
 column_names=names(unitconv_table)
 unitconv_table=unitconv_table[,!names(unitconv_table)%in%"InData"]
 

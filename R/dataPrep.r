@@ -95,6 +95,11 @@ diss_tot_units$Data_Prep_FLAG = "ACCEPT" # start them all off as ACCEPT
 diss_tot_units$Data_Prep_FLAG <- ifelse(diss_tot_units$IR_Value_Tot<diss_tot_units$IR_Value_Diss,"REJECT",diss_tot_units$Data_Prep_FLAG)
 
 # Provide Data_Prep_REASON
+
+# Create dataframe to hold Data_Prep_REASON for REJECTS
+# Needs the following columns: AID, RID, ActivityStartDate, R3172ParameterName, Data_Prep_FLAG, Data_Prep_REASON
+
+# Determine rows in diss_tot_units 
 diss_tot_units$Data_Prep_REASON = "ACCEPT" # start them all off as ACCEPT
 diss_tot_units$Data_Prep_REASON[(diss_tot_units$IR_Value_Tot<diss_tot_units$IR_Value_Diss) & (diss_tot_units$Data_Prep_REASON!="ACCEPT")]<- paste(diss_tot_units$Data_Prep_REASON,"Dissolved fraction greater than total fraction", sep=",") #concatenate multiple reasons
 diss_tot_units$Data_Prep_REASON[(diss_tot_units$IR_Value_Tot<diss_tot_units$IR_Value_Diss) & (diss_tot_units$Data_Prep_REASON=="ACCEPT")]<- "Dissolved fraction greater than total fraction"
