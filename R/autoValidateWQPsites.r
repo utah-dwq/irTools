@@ -65,7 +65,9 @@ setwd(outfile_path)
 # Read in WQP station and results data
 stn = read.csv(sites_file, stringsAsFactors=FALSE)
 stn[stn==""]=NA #Make sure all blanks are NA
-
+dim(stn)
+dim(unique(stn))
+stn=unique(stn)
 
 #Read in master site file
 master_site=read.csv(master_site_file, stringsAsFactors=FALSE)
@@ -161,7 +163,11 @@ if(dim(master_site)[1]>0){
 	#Intersect sites w/ Utah poly
 	isect=suppressMessages({suppressWarnings({st_intersection(sites, ut_poly)})})
 	st_geometry(isect)=NULL
+	check=dim(master_site)[1]
 	master_site=merge(master_site,isect,all.x=TRUE)
+	if(dim(master_site)[1]!=check){
+		stop("ERROR: Spatial join and merge causing duplicated values.")
+	}
 	dim(master_site)
 	
 	#Intersect sites w/ AU poly
@@ -391,7 +397,11 @@ sites=st_as_sf(sites)
 #Intersect sites w/ Utah poly
 isect=suppressMessages({suppressWarnings({st_intersection(sites, ut_poly)})})
 st_geometry(isect)=NULL
+check=dim(stn_new)[1]
 stn_new=merge(stn_new,isect,all.x=TRUE)
+if(dim(stn_new)[1]!=check){
+	stop("ERROR: Spatial join and merge causing duplicated values.")
+}
 dim(stn_new)
 
 #Intersect sites w/ AU poly
