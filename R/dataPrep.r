@@ -101,7 +101,7 @@ diss_tot_units$Data_Prep_REASON[(diss_tot_units$IR_Value_Tot<diss_tot_units$IR_V
 
 # Merge Dis_Tot_FLAG info back to data.
 ds_test <- diss_tot_units[,names(diss_tot_units)%in%c("ActivityIdentifier","ActivityStartDate","R3172ParameterName","Data_Prep_FLAG","Data_Prep_REASON")]
-data <- merge(data,ds_test, all.x=TRUE)
+test <- merge(data,ds_test, all.x=TRUE)
 dim(data)
 unique(data$Data_Prep_FLAG)
 unique(data$Data_Prep_REASON)
@@ -142,7 +142,25 @@ data$IR_Unit = data$CriterionUnits
 
 
 #Aggregate to daily values
+aggdata=data
+#aggdata=aggdata[!is.na(aggdata$NumericCriteria)]
+aggdata$IR_Depth=with(aggdata, ifelse(!is.na(ResultDepthHeightMeasure.MeasureValue),ResultDepthHeightMeasure.MeasureValue,0))
+result=aggdata[0,]
+#for(n in 1:length(unique(data_agg$DailyAggFun))){
+	n=1
+	fun=unique(aggdata$DailyAggFun)[1]
+	aggdata_n=aggdata[aggdata$DailyAggFun==fun,]
+	agg_n=aggregate(IR_Value~IR_MLID+IR_Depth+ASSESS_ID+AU_NAME+AU_Type+Water_Type+ActivityStartDate+R3172ParameterName+BeneficialUse+FractionGroup+IR_Unit+IR_DetCond#+
+	#TargetFraction+CriterionLabel#+CriterionType+AsmntAggPeriod+AsmntAggPeriodUnit+AsmntAggFun+NumericCriteria+CriterionUnits+SSC_StartMon+SSC_EndMon+SSC_MLID,
+	,aggdata_n, FUN=fun)
+	dim(agg_n)
 
+#}
+
+
+
+	
+	,
 
 
 ###################################
@@ -161,7 +179,14 @@ data=data_crit
 cf=data[data$BeneficialUse=="CF",c("R3172ParameterName","BeneficialUse","MonitoringLocationIdentifier","ActivityIdentifier","ActivityStartDate","IR_Value","IR_Unit","IR_DetCond","DailyAggFun","ResultDepthHeightMeasure.MeasureValue")]
 cf_n=cf[cf$DailyAggFun=="max",]
 cf_n=cf_n[!is.na(cf_n$IR_Value),]
-suppressWarnings({cf_n_cast=reshape2::dcast(cf_n, MonitoringLocationIdentifier+ActivityIdentifier+ActivityStartDate+ResultDepthHeightMeasure.MeasureValue~R3172ParameterName, value.var="IR_Value", fun.aggregate=max)})
+
+
+
+
+
+
+fun="max"
+suppressWarnings({cf_n_cast=reshape2::dcast(cf_n, MonitoringLocationIdentifier+ActivityIdentifier+ActivityStartDate+ResultDepthHeightMeasure.MeasureValue~R3172ParameterName, value.var="IR_Value", fun.aggregate=fun)})
 
 
 
