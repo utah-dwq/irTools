@@ -21,39 +21,13 @@ dataPrep=function(data){
 
 
 #SETUP
+#data_crit <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\data_criteria.csv")
 data=data_crit
 translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
 unit_sheetname="unitConvTable"
 startRow=1
 
-######################################################
-###Data prep for dissolved vs. total fraction check###
-######################################################
-
-# Reduce dataframe to columns of interest for comparing total and dissolved, narrow down rows to unique values (currently values are duplicated if measurement subject to multiple uses/standards)
-unique(data$ResultSampleFractionText)# note that NA's may be in this list.
-data1 <- data[,names(data)%in%c("ActivityStartDate","ActivityIdentifier","R3172ParameterName","FractionGroup","IR_Unit", "IR_Value","Data_Prep_FLAG","Data_Prep_REASON")]
-data1 <- unique(data1)
-
-# Separate into TOTAL and DISSOLVED objects, and give unit/value columns unique names specific to total or dissolved
-#***NOTE***IR_Unit column in tot retains original "IR_Unit", while IR_Unit in diss converted to "CriterionUnits" (consistent with updateUnitConvTable function)
-tot <- subset(data1, data1$FractionGroup=="TOTAL")
-dim(tot)
-tot <- tot[,!names(tot)%in%c("FractionGroup","Data_Prep_FLAG","Data_Prep_REASON")]
-names(tot)[names(tot)=="IR_Value"]<- "IR_Value_Tot"
-
-diss <- subset(data1, data1$FractionGroup=="DISSOLVED")
-dim(diss)
-diss <- diss[,!names(diss)%in%c("FractionGroup")]
-names(diss)[names(diss)=="IR_Value"]<- "IR_Value_Diss"
-names(diss)[names(diss)=="IR_Unit"]<- "CriterionUnits"
-
-# Merge TOTAL and DISSOLVED objects based on AID, Start Date, and Parameter name
-diss_tot <- merge(tot,diss, by=c("ActivityIdentifier","ActivityStartDate","R3172ParameterName"))
-
-##################################
-###Unit conversion table checks###
-##################################
+data$Data_Prep_FLAG="ACCEPT"
 
 #Load translation workbook updated from comparison of TOTAL/DISSOLVED units above.
 trans_wb=openxlsx::loadWorkbook(translation_wb)
@@ -64,17 +38,73 @@ for(n in 1:length(sheetnames)){
   openxlsx::removeFilter(trans_wb, sheetnames[n])
 }
 
-#Read unit conversion table 
+####################################
+######Activity type check###########
+####################################
+print("Unique IR_ActivityTypes:")
+print(unique(data$IR_ActivityType))
+print("If this list contains types beyond 'LAB', 'FIELD', 'Sample', and 'Field' labels, review labnameActivityTable translation workbook.")
+data$IR_ActivityType[data$IR_ActivityType=="Sample"] <- "LAB"
+data$IR_ActivityType[data$IR_ActivityType=="Field"] <- "FIELD"
+data$Data_Prep_FLAG = ifelse(data$IR_ActivityType!=data$ParamMeasureType,"REJECT",data$Data_Prep_FLAG)
+print(table(data$Data_Prep_FLAG))
+
+####################################
+######Fraction type check###########
+####################################
+print("Unique IR_Fractions:")
+print(unique(data$FractionGroup))
+print("If this list contains NA's or anything other than 'TOTAL' and 'DISSOLVED', review paramTransTable in translation workbook.")
+data$Data_Prep_FLAG = ifelse(is.na(data$FractionGroup)|is.na(data$TargetFraction)|data$FractionGroup!=data$TargetFraction,"REJECT",data$Data_Prep_FLAG)
+table(data$Data_Prep_FLAG)
+if(table(data$Data_Prep_FLAG)[1]+table(data$Data_Prep_FLAG)[2]!=dim(data)[1]){
+  print("WARNING: NAs coerced in Data_Prep_FLAG due to NA's in IR_Fraction or Target Fraction")
+}
+######################################################
+###Data prep for dissolved vs. total fraction check###
+######################################################
+
+# Reduce dataframe to columns of interest for comparing total and dissolved, narrow down rows to unique values (currently values are duplicated if measurement subject to multiple uses/standards)
+unique(data$ResultSampleFractionText)# note that NA's may be in this list.
+data1 <- data[,names(data)%in%c("ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","FractionGroup","IR_Unit", "IR_Value","Data_Prep_FLAG","Data_Prep_REASON")]
+data1 <- unique(data1)
+
+# Separate into TOTAL and DISSOLVED objects, and give unit/value columns unique names specific to total or dissolved
+#***NOTE***IR_Unit column in tot retains original "IR_Unit", while IR_Unit in diss converted to "CriterionUnits" (consistent with updateUnitConvTable function)
+tot <- subset(data1, data1$FractionGroup=="TOTAL")
+dim(tot)
+tot <- tot[,!names(tot)%in%c("FractionGroup")]
+names(tot)[names(tot)=="IR_Value"]<- "IR_Value_Tot"
+
+diss <- subset(data1, data1$FractionGroup=="DISSOLVED")
+dim(diss)
+diss <- diss[,!names(diss)%in%c("FractionGroup")]
+names(diss)[names(diss)=="IR_Value"]<- "IR_Value_Diss"
+names(diss)[names(diss)=="IR_Unit"]<- "CriterionUnits"
+
+# Merge TOTAL and DISSOLVED objects based on AID, Start Date, and Parameter name
+diss_tot <- merge(tot,diss, by=c("ActivityIdentifier","ActivityStartDate","R3172ParameterName"))
+dim(diss_tot)
+
+##################################
+###Unit conversion table checks###
+##################################
+
+#Read unit conversion table from translation workbook (loaded above)
 unit_convs=data.frame(openxlsx::readWorkbook(trans_wb, sheet=unit_sheetname, startRow=startRow, detectDates=TRUE))
+
+# UNIT CONV TABLE CHECKS: make sure all IR_UnitConv_FLAG and UnitConversionFactor (for ACCEPT combinations) are populated
+if(any(is.na(unit_convs$IR_FLAG))){
+  stop("Unit conversion table missing required IR_FLAG information. Please correct the table before proceeding.")
+}
+if(any((is.na(unit_convs$UnitConversionFactor) & unit_convs$IR_FLAG=="ACCEPT")|(is.na(unit_convs$UnitConversionFactor) & is.na(unit_convs$IR_FLAG)))){
+  stop("Unit conversion table missing conversion factor(s) for potentially accepted IR_Unit/CriterionUnits combination(s). Please correct the table before proceeding.")
+}
+
 unit_convs=subset(unit_convs,unit_convs$InData=="Y")
 unit_convs=unit_convs[!names(unit_convs) %in% c("DateAdded","InData")]
 unit_convs[unit_convs==""]=NA
 names(unit_convs)[names(unit_convs)=="IR_FLAG"]="IR_UnitConv_FLAG"
-
-# Check to make sure all IR_UnitConv_FLAG populated
-if(any(is.na(unit_convs$IR_UnitConv_FLAG))){
-  print("WARNING: Unit conversion table missing required IR_FLAG information. Please correct the table before proceeding.")
-}
 
 # Double check that blanks are all NA in data (shouldn't really need this at this point)
 diss_tot[diss_tot==""]=NA
@@ -104,9 +134,13 @@ diss_tot_units$Data_Prep_REASON = "ACCEPT" # start them all off as ACCEPT
 diss_tot_units$Data_Prep_REASON[(diss_tot_units$IR_Value_Tot<diss_tot_units$IR_Value_Diss) & (diss_tot_units$Data_Prep_REASON!="ACCEPT")]<- paste(diss_tot_units$Data_Prep_REASON,"Dissolved fraction greater than total fraction", sep=",") #concatenate multiple reasons
 diss_tot_units$Data_Prep_REASON[(diss_tot_units$IR_Value_Tot<diss_tot_units$IR_Value_Diss) & (diss_tot_units$Data_Prep_REASON=="ACCEPT")]<- "Dissolved fraction greater than total fraction"
 
+# # Check to make sure FLAG and REASON reflect same number of changes.
+# length(diss_tot_units$Data_Prep_FLAG[diss_tot_units$Data_Prep_FLAG=="REJECT"])
+# length(diss_tot_units$Data_Prep_REASON[grepl("Dissolved fraction greater than total fraction",diss_tot_units$Data_Prep_REASON)])
+
 # Merge Dis_Tot_FLAG info back to data.
 ds_test <- diss_tot_units[,names(diss_tot_units)%in%c("ActivityIdentifier","ActivityStartDate","R3172ParameterName","Data_Prep_FLAG","Data_Prep_REASON")]
-data <- merge(data,ds_test, all.x=TRUE)
+data <- merge(data,ds_test, all=TRUE)
 dim(data)
 unique(data$Data_Prep_FLAG)
 unique(data$Data_Prep_REASON)
@@ -127,12 +161,6 @@ table(data$IR_UnitConv_FLAG)
 data = data[data$IR_UnitConv_FLAG=="ACCEPT",]
 dim(data)
 
-#Check for NA conversion factors (where units needed)
-NAconvcheck <- any(is.na(data$UnitConversionFactor) & !is.na(data$IR_Unit) & !is.na(data$CriterionUnits) & data$IR_UnitConv_FLAG=="ACCEPT")
-if(NAconvcheck=="TRUE"){
-  print("WARNING: unitConvTable missing conversion factor(s) for accepted IR_Unit/CriterionUnits combination(s)")
-}
-
 #When IR_Unit = CriterionUnit, make UnitConversionFactor 1
 data$UnitConversionFactor[data$IR_Unit==data$CriterionUnits]=1
 
@@ -141,10 +169,6 @@ data$IR_Value <- data$IR_Value*data$UnitConversionFactor
 data$IR_Unit = data$CriterionUnits
 
 #Aggregate to daily values
-
-#Activity type check
-
-#Fraction type check
 
 #Other possible checks - execution TBD
 #Rivers/streams depth check
