@@ -27,22 +27,19 @@ translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\
 unit_sheetname="unitConvTable"
 startRow=1
 
+
+
 data$Data_Prep_FLAG="ACCEPT"
 
-#Load translation workbook updated from comparison of TOTAL/DISSOLVED units above.
-trans_wb=openxlsx::loadWorkbook(translation_wb)
-
-#Remove filters from all sheets in trans_wb (filtering seems to cause file corruption occassionally...)
-sheetnames=openxlsx::getSheetNames(translation_wb)
-for(n in 1:length(sheetnames)){
-  openxlsx::removeFilter(trans_wb, sheetnames[n])
-}
 
 ####################################
 ######Activity type check###########
 ####################################
 ### EH #### Changed my translation workbook IR_ActivityType(s) to match ParamMeasureType values
-data$Data_Prep_FLAG = ifelse(data$IR_ActivityType!=data$ParamMeasureType,"REJECT",data$Data_Prep_FLAG)
+data$Data_Prep_FLAG = within(data, )
+
+
+ifelse(data$IR_ActivityType!=data$TargetActivityType,"REJECT",data$Data_Prep_FLAG)
 print(table(data$Data_Prep_FLAG))
 
 ####################################
@@ -55,6 +52,28 @@ print(table(data$Data_Prep_FLAG))
 if(table(data$Data_Prep_FLAG)[1]+table(data$Data_Prep_FLAG)[2]!=dim(data)[1]){
   print("WARNING: NAs coerced in Data_Prep_FLAG due to NA's in IR_Fraction or Target Fraction")
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+#Load translation workbook updated from comparison of TOTAL/DISSOLVED units above.
+trans_wb=openxlsx::loadWorkbook(translation_wb)
+
+#Remove filters from all sheets in trans_wb (filtering seems to cause file corruption occassionally...)
+sheetnames=openxlsx::getSheetNames(translation_wb)
+for(n in 1:length(sheetnames)){
+  openxlsx::removeFilter(trans_wb, sheetnames[n])
+}
+
 
 ######################################################
 ###Data prep for dissolved vs. total fraction check###
