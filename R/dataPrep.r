@@ -41,25 +41,21 @@ for(n in 1:length(sheetnames)){
 ####################################
 ######Activity type check###########
 ####################################
-print("Unique IR_ActivityTypes:")
-print(unique(data$IR_ActivityType))
-print("If this list contains types beyond 'LAB', 'FIELD', 'Sample', and 'Field' labels, review labnameActivityTable translation workbook.")
-data$IR_ActivityType[data$IR_ActivityType=="Sample"] <- "LAB"
-data$IR_ActivityType[data$IR_ActivityType=="Field"] <- "FIELD"
+### EH #### Changed my translation workbook IR_ActivityType(s) to match ParamMeasureType values
 data$Data_Prep_FLAG = ifelse(data$IR_ActivityType!=data$ParamMeasureType,"REJECT",data$Data_Prep_FLAG)
 print(table(data$Data_Prep_FLAG))
 
 ####################################
 ######Fraction type check###########
 ####################################
-print("Unique IR_Fractions:")
-print(unique(data$FractionGroup))
-print("If this list contains NA's or anything other than 'TOTAL' and 'DISSOLVED', review paramTransTable in translation workbook.")
-data$Data_Prep_FLAG = ifelse(is.na(data$FractionGroup)|is.na(data$TargetFraction)|data$FractionGroup!=data$TargetFraction,"REJECT",data$Data_Prep_FLAG)
-table(data$Data_Prep_FLAG)
+### EH ### Still need to change the FractionGroup header in the col to IR_Fraction.
+data$Data_Prep_FLAG = ifelse(data$FractionGroup!=data$TargetFraction,"REJECT",data$Data_Prep_FLAG)
+unique(data$Data_Prep_FLAG)
+print(table(data$Data_Prep_FLAG))
 if(table(data$Data_Prep_FLAG)[1]+table(data$Data_Prep_FLAG)[2]!=dim(data)[1]){
   print("WARNING: NAs coerced in Data_Prep_FLAG due to NA's in IR_Fraction or Target Fraction")
 }
+
 ######################################################
 ###Data prep for dissolved vs. total fraction check###
 ######################################################
