@@ -34,8 +34,8 @@ updateParamTrans=function(data, detquantlim=detquantlim, translation_wb,
 						  paramTransTable_sheetname="paramTransTable", paramTransTable_startRow=4, paramTransTable_startCol=16,
 						  WQPParamCASID_sheetname="WQPParamCASID", WQPParamCASID_startRow=4, WQPParamCASID_startCol=1,
 						  paramFractionGroup_sheetname="paramFractionGroup", paramFractionGroup_startRow=3, paramFractionGroup_startCol=3,
-						  fun_cols=c("CASLinked","R3172ParamAssessmentType","CASLinked","ParamAssessmentType","ParamMeasureType","AssessmentType","R3172ParameterStatus","R3172ParameterName",
-							"KeytoPrevIRParamTble","FractionGroup","ToLabHoldingTime","ToExtractHoldingTime","AfterExtractHoldingTime",
+						  fun_cols=c("CASLinked","R3172ParamAssessmentType","CASLinked","ParamAssessmentType","IR_ActivityType","AssessmentType","R3172ParameterStatus","R3172ParameterName",
+							"KeytoPrevIRParamTble","IR_Fraction","ToLabHoldingTime","ToExtractHoldingTime","AfterExtractHoldingTime",
 							"HoldingTimeFrozen","TotalHoldingTime","HoldingTimeUnit","Source")){
 
 ###################						  
@@ -52,8 +52,8 @@ updateParamTrans=function(data, detquantlim=detquantlim, translation_wb,
 #paramFractionGroup_sheetname="paramFractionGroup"
 #paramFractionGroup_startRow=3
 #paramFractionGroup_startCol=3
-#fun_cols=c("CASLinked","R3172ParamAssessmentType","CASLinked","ParamAssessmentType","ParamMeasureType","AssessmentType","R3172ParameterStatus","R3172ParameterName",
-#			"KeytoPrevIRParamTble","FractionGroup","ToLabHoldingTime","ToExtractHoldingTime","AfterExtractHoldingTime",
+#fun_cols=c("CASLinked","R3172ParamAssessmentType","CASLinked","ParamAssessmentType","IR_ActivityType","AssessmentType","R3172ParameterStatus","R3172ParameterName",
+#			"KeytoPrevIRParamTble","IR_Fraction","ToLabHoldingTime","ToExtractHoldingTime","AfterExtractHoldingTime",
 #			"HoldingTimeFrozen","TotalHoldingTime","HoldingTimeUnit","Source")
 ################
 
