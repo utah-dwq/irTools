@@ -24,18 +24,21 @@ updateParamTrans(data, detquantlim = detquantlim, translation_wb,
 \item{paramTransTable_startRow}{Row to start reading the paramTransTable excel sheet from (in case additional headers have been added). Defaults to 4.}
 
 \item{paramTransTable_startCol}{Col to start writing the paramTransTable excel sheet to (to the right of all formula based columns, do not include blank columns w/o headers in this count). Defaults to 16.}
+\item{paramTransTable_startCol}{Col to start writing the paramTransTable excel sheet to (to the right of all formula based columns). Defaults to 16.}
 
 \item{WQPParamCASID_sheetname}{Name of sheet in workbook holding parameter/CAS ID table. Defaults to "WQPParamCASID".}
 
 \item{WQPParamCASID_startRow}{Row to start reading the WQPParamCASID excel sheet from (in case additional headers have been added). Defaults to 3.}
 
 \item{WQPParamCASID_startCol}{Col to start writing the WQPParamCASID excel sheet to (to the right of all formula based columns, do not include blank columns w/o headers in this count). Defaults to 1.}
+\item{WQPParamCASID_startCol}{Col to start writing the WQPParamCASID excel sheet to (to the right of all formula based columns). Defaults to 1.}
 
 \item{paramFractionGroup_sheetname}{Name of sheet in workbook holding the WQP fraction names. Defaults to "paramFractionGroup".}
 
 \item{paramFractionGroup_startRow}{Row to start reading the paramFractionGroup excel sheet from (in case additional headers have been added). Defaults to 3.}
 
 \item{paramFractionGroup_startCol}{Col to start writing the paramFractionGroup excel sheet to (to the right of all formula based columns, do not include blank columns w/o headers in this count). Defaults to 2.}
+\item{paramFractionGroup_startCol}{Col to start writing the paramFractionGroup excel sheet to (to the right of all formula based columns, note col w/ header 'spacer' in table). Defaults to 3.}
 }
 \value{
 Appends any new parameter/fraction/unit combinations in WQP data to translation_wb. This updates the input translation_wb with those new rows with system date in the "DateAdded" column.
