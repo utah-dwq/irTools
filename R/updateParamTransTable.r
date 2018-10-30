@@ -8,17 +8,14 @@
 
 #' @param paramTransTable_sheetname Name of sheet in workbook holding parameter translation table. Defaults to "paramTransTable".
 #' @param paramTransTable_startRow Row to start reading the paramTransTable excel sheet from (in case additional headers have been added). Defaults to 4.
-#' @param paramTransTable_startCol Col to start writing the paramTransTable excel sheet to (to the right of all formula based columns, do not include blank columns w/o headers in this count). Defaults to 16.
 #' @param paramTransTable_startCol Col to start writing the paramTransTable excel sheet to (to the right of all formula based columns). Defaults to 16.
 
 #' @param WQPParamCASID_sheetname Name of sheet in workbook holding parameter/CAS ID table. Defaults to "WQPParamCASID".
 #' @param WQPParamCASID_startRow Row to start reading the WQPParamCASID excel sheet from (in case additional headers have been added). Defaults to 3.
-#' @param WQPParamCASID_startCol Col to start writing the WQPParamCASID excel sheet to (to the right of all formula based columns, do not include blank columns w/o headers in this count). Defaults to 1.
 #' @param WQPParamCASID_startCol Col to start writing the WQPParamCASID excel sheet to (to the right of all formula based columns). Defaults to 1.
 
 #' @param paramFractionGroup_sheetname Name of sheet in workbook holding the WQP fraction names. Defaults to "paramFractionGroup".
 #' @param paramFractionGroup_startRow Row to start reading the paramFractionGroup excel sheet from (in case additional headers have been added). Defaults to 3.
-#' @param paramFractionGroup_startCol Col to start writing the paramFractionGroup excel sheet to (to the right of all formula based columns, do not include blank columns w/o headers in this count). Defaults to 2.
 #' @param paramFractionGroup_startCol Col to start writing the paramFractionGroup excel sheet to (to the right of all formula based columns, note col w/ header 'spacer' in table). Defaults to 3.
 
 #' @return Appends any new parameter/fraction/unit combinations in WQP data to translation_wb. This updates the input translation_wb with those new rows with system date in the "DateAdded" column.
@@ -34,19 +31,8 @@
 updateParamTrans=function(data, detquantlim=detquantlim, translation_wb,
 						  paramTransTable_sheetname="paramTransTable", paramTransTable_startRow=4, paramTransTable_startCol=16,
 						  WQPParamCASID_sheetname="WQPParamCASID", WQPParamCASID_startRow=4, WQPParamCASID_startCol=1,
-<<<<<<< HEAD
-<<<<<<< HEAD
-						  paramFractionGroup_sheetname="paramFractionGroup", paramFractionGroup_startRow=3, paramFractionGroup_startCol=3,
-						  fun_cols=c("CASLinked","R3172ParamAssessmentType","CASLinked","ParamAssessmentType","IR_ActivityType","AssessmentType","R3172ParameterStatus","R3172ParameterName",
-							"KeytoPrevIRParamTble","IR_Fraction","ToLabHoldingTime","ToExtractHoldingTime","AfterExtractHoldingTime",
-							"HoldingTimeFrozen","TotalHoldingTime","HoldingTimeUnit","Source")){
-=======
-						  paramFractionGroup_sheetname="paramFractionGroup", paramFractionGroup_startRow=3, paramFractionGroup_startCol=2
-=======
 						  paramFractionGroup_sheetname="paramFractionGroup", paramFractionGroup_startRow=3, paramFractionGroup_startCol=3
->>>>>>> master
 						){
->>>>>>> master
 
 ###################						  
 ####TESTING SETUP
@@ -61,19 +47,11 @@ updateParamTrans=function(data, detquantlim=detquantlim, translation_wb,
 #WQPParamCASID_startCol=1
 #paramFractionGroup_sheetname="paramFractionGroup"
 #paramFractionGroup_startRow=3
-<<<<<<< HEAD
-#paramFractionGroup_startCol=3
-#fun_cols=c("CASLinked","R3172ParamAssessmentType","CASLinked","ParamAssessmentType","IR_ActivityType","AssessmentType","R3172ParameterStatus","R3172ParameterName",
-#			"KeytoPrevIRParamTble","IR_Fraction","ToLabHoldingTime","ToExtractHoldingTime","AfterExtractHoldingTime",
-#			"HoldingTimeFrozen","TotalHoldingTime","HoldingTimeUnit","Source")
-################
-=======
 #paramFractionGroup_startCol=2
 ##fun_cols=c("CASLinked","R3172ParamAssessmentType","CASLinked","ParamAssessmentType","IR_ActivityType","AssessmentType","R3172ParameterStatus","R3172ParameterName",
 ##			"KeytoPrevIRParamTble","IR_Fraction","ToLabHoldingTime","ToExtractHoldingTime","AfterExtractHoldingTime",
 ##			"HoldingTimeFrozen","TotalHoldingTime","HoldingTimeUnit","Source")
 #################
->>>>>>> master
 
 
 #Reading translation workbook and table
