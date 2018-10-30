@@ -668,11 +668,11 @@ master_new=within(master_new,{
 })
 
 
-#Set IR_COMMENT
+#Set IR_REASON
 master_new=within(master_new,{
-	IR_COMMENT[IR_FLAG=="REJECT" & ValidationType=="AUTO"]="Automatically flagged for rejection"
-	IR_COMMENT[IR_FLAG=="REVIEW" & ValidationType=="AUTO"]="Automatically flagged for review"
-	IR_COMMENT[IR_FLAG=="ACCEPT" & ValidationType=="AUTO"]="Automatically accepted"
+	IR_REASON[IR_FLAG=="REJECT" & ValidationType=="AUTO"]="Automatically flagged for rejection"
+	IR_REASON[IR_FLAG=="REVIEW" & ValidationType=="AUTO"]="Automatically flagged for review"
+	IR_REASON[IR_FLAG=="ACCEPT" & ValidationType=="AUTO"]="Automatically accepted"
 })
 
 
