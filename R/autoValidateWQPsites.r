@@ -709,7 +709,7 @@ write.csv(reasons_all,file="rev_rej_reasons.csv",row.names=F)
 new_site_count=dim(master_new)[1]-ms_dim
 
 print("Site validation complete.")
-print(paste(new_site_count,"new sites identified.")
+print(paste(new_site_count,"new sites identified."))
 print(paste0(outfile_path,"\\wqp_master_site_file.csv"))
 
 }
