@@ -37,28 +37,28 @@ autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_p
 
 ###########
 #####TESTING SETUP
-#library(sp)
-#library(sf)
-#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites001001-180930.csv"
-##sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites101001-180930_EHduptest.csv"
-#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
-#polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-#outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation"
-#correct_longitude=FALSE
-#site_type_keep=c("Lake, Reservoir, Impoundment",
-#			 "Stream",
-#			 "Spring",
-#			 "Stream: Canal",
-#			 "Stream: Ditch",
-#			 "River/Stream",
-#			 "Lake",
-#			 "River/Stream Intermittent",
-#			 "River/Stream Perennial",
-#			 "Reservoir",
-#			 "Canal Transport",
-#			 "Canal Drainage",
-#			 "Canal Irrigation")
-#########
+library(sp)
+library(sf)
+sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites161001-180930.csv"
+#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites101001-180930_EHduptest.csv"
+master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
+polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
+outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation"
+correct_longitude=FALSE
+site_type_keep=c("Lake, Reservoir, Impoundment",
+			 "Stream",
+			 "Spring",
+			 "Stream: Canal",
+			 "Stream: Ditch",
+			 "River/Stream",
+			 "Lake",
+			 "River/Stream Intermittent",
+			 "River/Stream Perennial",
+			 "Reservoir",
+			 "Canal Transport",
+			 "Canal Drainage",
+			 "Canal Irrigation")
+########
 
 
 setwd(outfile_path)
@@ -72,6 +72,7 @@ stn=unique(stn)
 
 #Read in master site file
 master_site=read.csv(master_site_file, stringsAsFactors=FALSE)
+ms_dim=dim(master_site)[1]
 names(master_site)[names(master_site)=="IR_COMMENT"]="IR_REASON"
 if(dim(master_site)[1]>0){master_site[master_site==""]=NA} #Make sure all blanks are NA
 
@@ -669,6 +670,7 @@ master_new=within(master_new,{
 
 
 #Set IR_REASON
+master_new$IR_REASON=as.character(master_new$IR_REASON)
 master_new=within(master_new,{
 	IR_REASON[IR_FLAG=="REJECT" & ValidationType=="AUTO"]="Automatically flagged for rejection"
 	IR_REASON[IR_FLAG=="REVIEW" & ValidationType=="AUTO"]="Automatically flagged for review"
@@ -704,7 +706,10 @@ if(file.exists("wqp_master_site_file.csv")){
 write.csv(master_new, file="wqp_master_site_file.csv",row.names=F)
 write.csv(reasons_all,file="rev_rej_reasons.csv",row.names=F)
 
+new_site_count=dim(master_new)[1]-ms_dim
+
 print("Site validation complete.")
+print(paste(new_site_count,"new sites identified.")
 print(paste0(outfile_path,"\\wqp_master_site_file.csv"))
 
 }
