@@ -5,12 +5,11 @@
 #library(shiny)
 #shiny::runApp("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\draft_code\\site_review_app")
 
-#####SET UP
+####SET UP
 #master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
 #polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
 #edit_log_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\edit_logs"
-#reasons_flat_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\rev_rej_reasons.csv"
-#####
+####
 
 #library(shiny)
 library(raster)
@@ -27,16 +26,14 @@ library(rgdal)
 
 #Map flag filter choices
 IR_flag_choices=c("ACCEPT","REJECT","REVIEW")
-reasons_flat=read.csv(reasons_flat_file, stringsAsFactors=F)
-names(reasons_flat)[names(reasons_flat)=="Reason"]="ReasonsFlat"
-names(reasons_flat)[names(reasons_flat)=="FLAG"]="FlagFlat"
-reasons_flat=reasons_flat[,!names(reasons_flat) %in% "ReasonType"]
 
-au_poly <- readOGR(dsn = polygon_path, layer = "AU_poly_wgs84")
-ut_poly <- readOGR(dsn = polygon_path, layer = "UT_state_bnd_noTribal_wgs84")
-bu_poly <- readOGR(dsn = polygon_path, layer = "Beneficial_Uses_All_2020IR_wgs84")
+
+au_poly=st_read(polygon_path,"AU_poly_wgs84")
+bu_poly=st_read(polygon_path,"Beneficial_Uses_All_2020IR_wgs84")
+ut_poly=st_read(polygon_path,"UT_state_bnd_noTribal_wgs84")
 au_poly=au_poly[au_poly$Status=="ACTIVE",]
 bu_poly=bu_poly[bu_poly$Status=="ACTIVE",]
+
 
 
 jscode <- "shinyjs.refresh = function() { history.go(0); }"
@@ -90,27 +87,19 @@ server <- function(input, output, session){
 		
 	##Reactive checkbox inputs
 	reactive_objects=reactiveValues()
-	
-	sites=read.csv(master_site_file, stringsAsFactors=F)
-	sites=merge(sites, reasons_flat, all=T)
-	sites$ReasonsFlat=ifelse(is.na(sites$ReasonsFlat), sites$IR_COMMENT, sites$ReasonsFlat)
-	sites$FlagFlat=ifelse(is.na(sites$FlagFlat), sites$IR_FLAG, sites$FlagFlat)
-	sites$ReasonsFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_COMMENT, sites$ReasonsFlat)
-	sites$FlagFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_FLAG, sites$FlagFlat)
-	reactive_objects$sites=sites
-	
+
+	reactive_objects$sites=read.csv(master_site_file)
+
 	observe({
-		req(reactive_objects$sites)
-		reactive_objects$IR_reason_choices=unique(reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$flag_checkbox & sites$IR_FLAG==reactive_objects$sites$FlagFlat, "ReasonsFlat"])
-		})
+		reactive_objects$IR_reason_choices=unique(reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$flag_checkbox, "IR_COMMENT"])
+	})
 
 	output$reason_checkbox <- renderUI({
-		req(reactive_objects$IR_reason_choices)
 		checkboxGroupInput("reason_checkbox", h3("Review reason"), reactive_objects$IR_reason_choices, selected=reactive_objects$IR_reason_choices, inline=TRUE)
 	})
 
 	observe({
-		reactive_objects$IR_sitetype_choices=unique(reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$flag_checkbox & reactive_objects$sites$ReasonsFlat %in% input$reason_checkbox, "MonitoringLocationTypeName"])
+		reactive_objects$IR_sitetype_choices=unique(reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$flag_checkbox & reactive_objects$sites$IR_COMMENT %in% input$reason_checkbox, "MonitoringLocationTypeName"])
 	})
     
 	output$sitetype_checkbox <- renderUI({
@@ -118,7 +107,7 @@ server <- function(input, output, session){
 	})
 
 	observe({
-		reactive_objects$autype_choices=unique(reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$flag_checkbox & reactive_objects$sites$ReasonsFlat %in% input$reason_checkbox & reactive_objects$sites$MonitoringLocationTypeName %in% input$sitetype_checkbox, "AU_Type"])
+		reactive_objects$autype_choices=unique(reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$flag_checkbox & reactive_objects$sites$IR_COMMENT %in% input$reason_checkbox & reactive_objects$sites$MonitoringLocationTypeName %in% input$sitetype_checkbox, "AU_Type"])
 	})
     
 	output$autype_checkbox <- renderUI({
@@ -134,7 +123,6 @@ server <- function(input, output, session){
 				1. Ensure the master site and edit log files are closed.
 				2. Select desired site attributes via checkboxes.<br> <br>
 				3. Click 'Draw map' button to produce map (a bit slow, be patient).<br><br>
-				4. Click on sites or polygons for popup info. Note that the most recently drawn layer is the top (and click-able) layer. To bring a layer to the top turn it off and back on in the layers control panel.<br><br>
 				4. Select desired sites by drawing a polygon or square on the map. Always draw just one polygon at a time and clear polygon when finished.<br><br>
 				5. If necessary, edit feature attributes in table below map. Only IR_FLAG, IR_COMMENT, & IR_MLID columns are editable.<br><br>
 				6. When satisfied, click 'Save edits' to save edits. Sites for which edits have been made to IR_FLAG will continue to display until the map is refreshed.<br><br>
@@ -146,29 +134,15 @@ server <- function(input, output, session){
 	
 	observeEvent(input$draw,{
 		showModal(modalDialog(title="MAP DRAWING - PLEASE WAIT...","Please wait for map to draw before proceeding (a bit slow).",size="l",footer=NULL))
-		sites=read.csv(master_site_file, stringsAsFactors=F)
-		sites=merge(sites, reasons_flat, all=T)
-		sites$ReasonsFlat=ifelse(is.na(sites$ReasonsFlat), sites$IR_COMMENT, sites$ReasonsFlat)
-		sites$FlagFlat=ifelse(is.na(sites$FlagFlat), sites$IR_FLAG, sites$FlagFlat)
-		sites$ReasonsFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_COMMENT, sites$ReasonsFlat)
-		sites$FlagFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_FLAG, sites$FlagFlat)
-		reactive_objects$sites=sites
-		reason_choices=unique(reactive_objects$sites$ReasonsFlat)
-		reason_choices=reason_choices[order(reason_choices)]
-		reactive_objects$reason_choices=unique(as.factor(append(as.vector(reason_choices),c("Manually accepted", "Non-jurisdictional","Merged","Inaccurate location", "Unclear location", "Other"))))
+		reactive_objects$sites=read.csv(master_site_file)	
+		reason_choices=unique(reactive_objects$sites$IR_COMMENT)
+		reactive_objects$reason_choices=unique(as.factor(append(as.vector(reason_choices),c("Non-jurisdictional","Merged","Inaccurate location", "Unclear location", "Other"))))
 		pal <- colorFactor('Set1', reactive_objects$sites$IR_FLAG)	
-		
-		review=reactive_objects$sites[reactive_objects$sites$IR_FLAG%in%input$flag_checkbox & reactive_objects$sites$ReasonsFlat%in%input$reason_checkbox & reactive_objects$sites$MonitoringLocationTypeName%in%input$sitetype_checkbox & reactive_objects$sites$AU_Type %in% input$autype_checkbox,]
-		review=unique(review[,!names(review) %in% c("ReasonsFlat","FlagFlat")])
-		reactive_objects$review<-review
-		
-		other_sites<-reactive_objects$sites[!(reactive_objects$sites$UID%in%reactive_objects$review$UID),]	
-		other_sites=unique(other_sites[,!names(other_sites) %in% c("ReasonsFlat","FlagFlat")])
-		reactive_objects$other_sites=other_sites
-		
-		if(dim(reactive_objects$review)[1]>0){
-			reactive_objects$review_points<-st_as_sf(reactive_objects$review, coords = c("LongitudeMeasure", "LatitudeMeasure"), crs = 4326, remove=FALSE) # crs 4326 is WGS84
-			review_map<-leaflet(reactive_objects$review_points) %>%
+		reactive_objects$review<-reactive_objects$sites[reactive_objects$sites$IR_FLAG%in%input$flag_checkbox & reactive_objects$sites$IR_COMMENT%in%input$reason_checkbox & reactive_objects$sites$MonitoringLocationTypeName%in%input$sitetype_checkbox & reactive_objects$sites$AU_Type %in% input$autype_checkbox,]
+		reactive_objects$other_sites<-reactive_objects$sites[!(reactive_objects$sites$UID%in%reactive_objects$review$UID),]	
+		reactive_objects$review_points<-st_as_sf(reactive_objects$review, coords = c("LongitudeMeasure", "LatitudeMeasure"), crs = 4326, remove=FALSE) # crs 4326 is WGS84
+		if(dim(reactive_objects$review_points)[1]>0){
+			review_map<-leaflet(reactive_objects$review) %>%
 				addTiles() %>%
 				addProviderTiles("Esri.WorldTopoMap", group = "Topo") %>%
 				addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
@@ -314,7 +288,7 @@ server <- function(input, output, session){
 	observeEvent(input$save, {
 		req(input$hot)
 		edits=hot_to_r(input$hot)
-		
+
 		#Require MLID input before saving (i.e. MLID!="REVIEW" & MLID!="REJECT")
 		if(any(edits$IR_MLID=="REVIEW") | any(edits$IR_FLAG=="REVIEW") | any(edits$IR_COMMENT=="Manual review required")){
 			showModal(modalDialog(title="TABLE UPDATES REQUIRED...","Please update IR_FLAG, IR_MLID, and IR_COMMENT columns for all selected sites before saving.",size="l"))
@@ -325,7 +299,7 @@ server <- function(input, output, session){
 			#Auto-fill IR_Lat & IR_Long
 			lat_long=reactive_objects$sites[,c("MonitoringLocationIdentifier","LatitudeMeasure","LongitudeMeasure")]
 			names(lat_long)=c("MonitoringLocationIdentifier","LatitudeMeasure2","LongitudeMeasure2")
-			edits=unique(merge(edits,lat_long,by.x="IR_MLID",by.y="MonitoringLocationIdentifier",all.x=T))
+			edits=merge(edits,lat_long,by.x="IR_MLID",by.y="MonitoringLocationIdentifier",all.x=T)
 			edits$IR_Lat=edits$LatitudeMeasure2
 			edits$IR_Long=edits$LongitudeMeasure2
 			edits=edits[,!names(edits) %in% c("LatitudeMeasure2","LongitudeMeasure2")]
@@ -340,7 +314,8 @@ server <- function(input, output, session){
 				}
 
 			#Remove edited rows from review
-				review_locenv=reactive_objects$review[!(reactive_objects$review$UID%in%edits$UID),]
+				review_locenv=reactive_objects$review[!(reactive_objects$review$UID%in%edits$UID),]			
+
 			#Append edited rows to review, then review to sites (in hindsight, could have edited sites directly and saved a couple lines of code, may update this in future)
 				reactive_objects$review<-rbind(review_locenv,edits)
 				output=rbind(reactive_objects$other_sites,review_locenv,edits)
