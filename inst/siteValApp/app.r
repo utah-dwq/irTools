@@ -135,10 +135,10 @@ server <- function(input, output, session){
 				2. Select desired site attributes via checkboxes.<br> <br>
 				3. Click 'Draw map' button to produce map (a bit slow, be patient).<br><br>
 				4. Click on sites or polygons for popup info. Note that the most recently drawn layer is the top (and click-able) layer. To bring a layer to the top turn it off and back on in the layers control panel.<br><br>
-				4. Select desired sites by drawing a polygon or square on the map. Always draw just one polygon at a time and clear polygon when finished.<br><br>
-				5. If necessary, edit feature attributes in table below map. Only IR_FLAG, IR_COMMENT, & IR_MLID columns are editable.<br><br>
-				6. When satisfied, click 'Save edits' to save edits. Sites for which edits have been made to IR_FLAG will continue to display until the map is refreshed.<br><br>
-				7. Click 'Refresh app' to refresh and redraw map to reflect previously saved edits.
+				5. Select desired sites by drawing a polygon or square on the map. Always draw just one polygon at a time and clear polygon when finished.<br><br>
+				6. If necessary, edit feature attributes in table below map. Only IR_FLAG, IR_COMMENT, & IR_MLID columns are editable.<br><br>
+				7. When satisfied, click 'Save edits' to save edits. Sites for which edits have been made to IR_FLAG will continue to display until the map is refreshed.<br><br>
+				8. Click 'Refresh app' to refresh and redraw map to reflect previously saved edits.
 			"),size="l"
 		))
 	})
