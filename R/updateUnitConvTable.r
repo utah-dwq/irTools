@@ -66,7 +66,7 @@ dtunits <- data.frame(unique(diss_tot[,c("IR_Unit","CriterionUnits")]))
 
 ##IR_Unit versus CriterionUnits
 #Identify unique combinations of IR_Unit and CriterionUnits.
-rcunits=data.frame(unique(data[,c("IR_Unit", "CriterionUnits")]))
+rcunits=data.frame(unique(data[data$BeneficialUse=="CF" | !is.na(data$NumericCriterion),c("IR_Unit", "CriterionUnits")]))
 #rcunits=na.omit(rcunits)
 
 ##Combine these unit conversions into one dataframe
@@ -80,7 +80,7 @@ unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=sheetname, star
 column_names=names(unitconv_table)
 unitconv_table=unitconv_table[,!names(unitconv_table)%in%"InData"]
 
-# Merge NEW unique combinations of ResultMeasure.MeasureUnitCode/CriterionUnits to unitConvTable.
+# Merge NEW unique combinations of IR_Unit/CriterionUnits to unitConvTable.
 unit_merge=merge(all_unit_combos,unitconv_table,all=T)
 unit_merge=unit_merge[,column_names]
 
