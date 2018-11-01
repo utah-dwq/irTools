@@ -19,7 +19,12 @@ endlab = format(strptime(EndDate, "%m-%d-%Y"),"%y%m%d") # set label as yymmdd fo
 #alternative option to skip/replace download read.csv("https://www.waterqualitydata.us/Result/search?&statecode=US%3A49&startDateLo=01-01-2010&startDateHi=01-01-2018&mimeType=csv&zip=no&sorted=no&dataProfile=narrowResult&siteType=Aggregate%20surface-water-use&siteType=Lake%2C%20Reservoir%2C%20Impoundment&siteType=Spring&siteType=Stream")
 ####
 
-
+# Warning that all WQP data used in irTools should come from the same download.
+complete <- c("narrowresult","activity","sites","detquantlim")
+if(any(!(complete%in%retrieve))){
+  print("WARNING: Data files with records from the same date range but downloaded at different times may differ in ResultIdentifier or other database-generated ID's. All WQP .csvs needed in irTools should come from one download event (e.g. single run of downloadWQP for sites, activity, narrowresult, and detquantlim files).")
+}
+rm(complete)
 
 #Set everything inside while + try loop to check for existence of desired files (generate file name list first) - occasionally the connection gets timed out, this lets R keep trying until all files are downloaded even if time out occurs
 file_list=vector(length=length(retrieve))

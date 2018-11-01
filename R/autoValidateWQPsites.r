@@ -37,27 +37,27 @@ autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_p
 
 ##########
 ####TESTING SETUP
-#library(sp)
-#library(sf)
-#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites141001-160930.csv"
-#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites101001-180930_EHduptest.csv"
-#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
-#polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-#outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation"
-#correct_longitude=FALSE
-#site_type_keep=c("Lake, Reservoir, Impoundment",
-#			 "Stream",
-#			 "Spring",
-#			 "Stream: Canal",
-#			 "Stream: Ditch",
-#			 "River/Stream",
-#			 "Lake",
-#			 "River/Stream Intermittent",
-#			 "River/Stream Perennial",
-#			 "Reservoir",
-#			 "Canal Transport",
-#			 "Canal Drainage",
-#			 "Canal Irrigation")
+library(sp)
+library(sf)
+# sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites141001-160930.csv"
+sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites001001-020930.csv"
+master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\wqp_master_site_file_EH.csv"
+polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
+outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation"
+correct_longitude=FALSE
+site_type_keep=c("Lake, Reservoir, Impoundment",
+		 "Stream",
+		 "Spring",
+		 "Stream: Canal",
+		 "Stream: Ditch",
+		 "River/Stream",
+		 "Lake",
+		 "River/Stream Intermittent",
+		 "River/Stream Perennial",
+		 "Reservoir",
+		 "Canal Transport",
+		 "Canal Drainage",
+		 "Canal Irrigation")
 #########
 
 
@@ -66,17 +66,25 @@ setwd(outfile_path)
 # Read in WQP station and results data
 stn = read.csv(sites_file, stringsAsFactors=FALSE)
 stn[stn==""]=NA #Make sure all blanks are NA
-dim(stn)
-dim(unique(stn))
+if(dim(stn)[1]!=dim(unique(stn))[1]){
+  print("WARNING: duplicate records detected in sites_file. autovalidateWQPsites will retain only the unique set of sites and remove any duplicates.")
+}
 stn=unique(stn)
 
 #Read in master site file
 master_site=read.csv(master_site_file, stringsAsFactors=FALSE)
+# Ensure no duplicates in master site file which could cause erroneous duplication during merges.
+if(dim(master_site)[1]!=dim(unique(master_site))[1]){
+  print("WARNING: duplicate records detected in master_site_file. autovalidateWQPsites will retain only the unique set of master sites and remove any duplicates.")
+}
+master_site=unique(master_site)
 names(master_site)[names(master_site)=="IR_COMMENT"]="IR_REASON"
 if(dim(master_site)[1]>0){master_site[master_site==""]=NA} #Make sure all blanks are NA
-
+if(length(master_site$ValidationType[is.na(master_site$ValidationType)==TRUE])>0){
+  stop("NA's detected in ValidationType column of master_site_file. Correct NA's before re-running autovalidateWQPsites.")
+}
 suppressWarnings({class(stn$HorizontalAccuracyMeasure.MeasureValue)="numeric"}) #Non-numeric values introduced to this column were causing appearance of duplicates in master_site_file
-class(master_site$HorizontalAccuracyMeasure.MeasureValue)="numeric"
+suppressWarnings({class(master_site$HorizontalAccuracyMeasure.MeasureValue)="numeric"})
 
 #Check for new site types...
 master_site_types=unique(master_site$MonitoringLocationTypeName)
@@ -94,6 +102,7 @@ stn2[stn2==""]=NA #Make sure all blanks are NA
 stn2=merge(stn2,master_site,all.x=TRUE)
 stn_new=stn2[is.na(stn2$UID),]
 dim(stn_new)
+print(paste(dim(stn_new)[1],"sites found in sites_file not present in master_site_file."))
 rm(stn2)
 
 
@@ -159,38 +168,24 @@ if(dim(master_site)[1]>0){
 	proj4string(sites)=CRS("+init=epsg:4326")
 	sites=st_as_sf(sites)
 	
-	dim(master_site)
-	
-	#Intersect sites w/ Utah poly
-	isect=suppressMessages({suppressWarnings({st_intersection(sites, ut_poly)})})
-	st_geometry(isect)=NULL
-	check=dim(master_site)[1]
-	master_site=merge(master_site,isect,all.x=TRUE)
-	if(dim(master_site)[1]!=check){
-		stop("ERROR: Spatial join and merge causing duplicated values.")
-	}
-	dim(master_site)
-	
-	#Intersect sites w/ AU poly
-	isect=suppressMessages({suppressWarnings({st_intersection(sites, au_poly)})})
-	st_geometry(isect)=NULL
-	master_site=merge(master_site,isect,all.x=TRUE)
-	dim(master_site)
-
-	#Intersect sites w/ BU poly
-	isect=suppressMessages({suppressWarnings({st_intersection(sites, bu_poly)})})
-	st_geometry(isect)=NULL
-	master_site=merge(master_site,isect,all.x=TRUE)
-	dim(master_site)
-
-	#Intersect sites w/ SS poly
-	isect=suppressMessages({suppressWarnings({st_intersection(sites, ss_poly)})})
-	st_geometry(isect)=NULL
-	master_site=merge(master_site,isect,all.x=TRUE)
-	dim(master_site)
+	#Intersect sites with polygons using intpoly function
+	intpoly <- function(polygon){
+	  isect=suppressMessages({suppressWarnings({st_intersection(sites, polygon)})})
+	  st_geometry(isect)=NULL
+	  check=dim(master_site)[1]
+	  master_site=merge(master_site,isect,all.x=TRUE)
+	  if(dim(master_site)[1]!=check){
+	    stop("Spatial join and merge causing duplicated values.")
+	  }
+	  return(master_site)
+	 }
+	#Intersect sites w/ Utah poly, AU poly, BU poly, and SS poly 
+	master_site <- intpoly(ut_poly)
+	master_site <- intpoly(au_poly)
+	master_site <- intpoly(bu_poly)
+	master_site <- intpoly(ss_poly)
 	
 	rm(sites)
-
 
 	#Send to AUTO review by is.na(STATE_NAME)
 	table(master_site$ValidationType)
@@ -395,44 +390,14 @@ coordinates(sites)=c("LongitudeMeasure","LatitudeMeasure")
 proj4string(sites)=CRS("+init=epsg:4326")
 sites=st_as_sf(sites)
 
-#Intersect sites w/ Utah poly
-isect=suppressMessages({suppressWarnings({st_intersection(sites, ut_poly)})})
-st_geometry(isect)=NULL
-check=dim(stn_new)[1]
-stn_new=merge(stn_new,isect,all.x=TRUE)
-if(dim(stn_new)[1]!=check){
-	stop("ERROR: Spatial join and merge causing duplicated values.")
-}
-dim(stn_new)
-
-#Intersect sites w/ AU poly
-isect=suppressMessages({suppressWarnings({st_intersection(sites, au_poly)})})
-st_geometry(isect)=NULL
-stn_new=merge(stn_new,isect,all.x=TRUE)
-dim(stn_new)
-
-#Intersect sites w/ BU poly
-isect=suppressMessages({suppressWarnings({st_intersection(sites, bu_poly)})})
-st_geometry(isect)=NULL
-stn_new=merge(stn_new,isect,all.x=TRUE)
-dim(stn_new)
-
-#Intersect sites w/ SS poly
-isect=suppressMessages({suppressWarnings({st_intersection(sites, ss_poly)})})
-st_geometry(isect)=NULL
-stn_new=merge(stn_new,isect,all.x=TRUE)
-dim(stn_new)
-
-#Intersect sites w/ GSL AU
-isect=suppressMessages({suppressWarnings({st_intersection(sites, gsl_poly)})})
-st_geometry(isect)=NULL
-stn_new=merge(stn_new,isect,all.x=TRUE)
-dim(stn_new)
-
+#Intersect sites w/ Utah poly, AU poly, BU poly, SS poly, and GSL poly 
+stn_new <- intpoly(ut_poly)
+stn_new <- intpoly(au_poly)
+stn_new <- intpoly(bu_poly)
+stn_new <- intpoly(ss_poly)
+stn_new <- intpoly(gsl_poly)
 
 rm(sites)
-
-
 
 ###Spatial rejections
 rej_reasons_spat=data.frame(matrix(nrow=0,ncol=2))
