@@ -57,7 +57,6 @@ site_type_keep=c("Lake, Reservoir, Impoundment",
 		 "Reservoir",
 		 "Canal Transport",
 		 "Canal Drainage",
-		 "Canal Irrigation")
 #########
 
 
@@ -91,9 +90,9 @@ master_site_types=unique(master_site$MonitoringLocationTypeName)
 stn_site_types=unique(stn$MonitoringLocationTypeName)
 new_site_types=stn_site_types[!stn_site_types %in% master_site_types]
 if(length(new_site_types)>0){
-	print("WARNING: New site type(s) encountered")
+	print("WARNING: New site type(s) encountered. If you would like to include new site type(s) in site autovalidation, stop the function and make edits to site_type_keep argument.")
 	print(cbind(new_site_types))
-	readline(prompt="Press [enter] to continue")}
+	readline(prompt="Press [enter] to continue or [esc] to end function.")}
 
 
 #Identify any new sites (all review columns == NA) and move to new data frame (stn_new)
@@ -335,8 +334,6 @@ table(stn_new$IR_FLAG)
 
 
 
-
-
 ####################
 ###Spatial checks###
 ####################
@@ -437,7 +434,7 @@ reason_n=ifelse(
 		(stn_new$MonitoringLocationTypeName=="Spring" & stn_new$AU_Type != "River/Stream")
 	,"Stream or spring site type in non-River/Stream AU",NA)
 
-if(length(reason_n)>0){rej_reasons_spat=rbind(rej_reasons_spat,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
+rej_reasons_spat=rbind(rej_reasons_spat,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))
 
 names(rej_reasons_spat)=c("MonitoringLocationIdentifier","Reason")
 rej_reasons_spat$ReasonType="Spatial"
