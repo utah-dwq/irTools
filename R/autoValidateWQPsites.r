@@ -56,7 +56,7 @@ site_type_keep=c("Lake, Reservoir, Impoundment",
 		 "River/Stream Perennial",
 		 "Reservoir",
 		 "Canal Transport",
-		 "Canal Drainage",
+		 "Canal Drainage")
 #########
 
 
