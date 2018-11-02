@@ -37,31 +37,31 @@ autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_p
 
 ##########
 ####TESTING SETUP
-library(sp)
-library(sf)
-# sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites141001-160930.csv"
-sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites001001-020930.csv"
-master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\wqp_master_site_file_EH.csv"
-polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation"
-correct_longitude=FALSE
-site_type_keep=c("Lake, Reservoir, Impoundment",
-		 "Stream",
-		 "Spring",
-		 "Stream: Canal",
-		 "Stream: Ditch",
-		 "River/Stream",
-		 "Lake",
-		 "River/Stream Intermittent",
-		 "River/Stream Perennial",
-		 "Reservoir",
-		 "Canal Transport",
-		 "Canal Drainage")
+# library(sp)
+# library(sf)
+# # sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites141001-160930.csv"
+# sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites001001-020930.csv"
+# master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\wqp_master_site_file.csv"
+# polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
+# outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation"
+# correct_longitude=FALSE
+# site_type_keep=c("Lake, Reservoir, Impoundment",
+# 		 "Stream",
+# 		 "Spring",
+# 		 "Stream: Canal",
+# 		 "Stream: Ditch",
+# 		 "River/Stream",
+# 		 "Lake",
+# 		 "River/Stream Intermittent",
+# 		 "River/Stream Perennial",
+# 		 "Reservoir",
+# 		 "Canal Transport",
+# 		 "Canal Drainage")
 #########
 
 
 setwd(outfile_path)
-
+print("Reading in sites_file and master_sites_file...")
 # Read in WQP station and results data
 stn = read.csv(sites_file, stringsAsFactors=FALSE)
 stn[stn==""]=NA #Make sure all blanks are NA
@@ -74,11 +74,15 @@ stn=unique(stn)
 master_site=read.csv(master_site_file, stringsAsFactors=FALSE)
 # Ensure no duplicates in master site file which could cause erroneous duplication during merges.
 if(dim(master_site)[1]!=dim(unique(master_site))[1]){
-  print("WARNING: duplicate records detected in master_site_file. autovalidateWQPsites will retain only the unique set of master sites and remove any duplicates.")
+  stop("Exact duplicates detected in master_site_file. Please review master_site_file before proceeding with autovalidation.")
 }
-master_site=unique(master_site)
+orig_master <- dim(master_site) # original count of the number of records in master_site
+print(paste(orig_master[1],"total master site records in file."))
+
+# Change IR_Comment to IR_Reason in master site object.
 names(master_site)[names(master_site)=="IR_COMMENT"]="IR_REASON"
 if(dim(master_site)[1]>0){master_site[master_site==""]=NA} #Make sure all blanks are NA
+
 if(length(master_site$ValidationType[is.na(master_site$ValidationType)==TRUE])>0){
   stop("NA's detected in ValidationType column of master_site_file. Correct NA's before re-running autovalidateWQPsites.")
 }
@@ -102,6 +106,9 @@ stn2=merge(stn2,master_site,all.x=TRUE)
 stn_new=stn2[is.na(stn2$UID),]
 dim(stn_new)
 print(paste(dim(stn_new)[1],"sites found in sites_file not present in master_site_file."))
+if(dim(stn_new)[1]==0){
+  readline(prompt="Press [enter] to continue with master_site autovalidation or [esc] to end function.")
+}else{readline(prompt="Press [enter] to continue.")}
 rm(stn2)
 
 
@@ -151,6 +158,8 @@ if(dim(master_site)[1]>0){
 	#master_site$ValidationType[master_site$HorizontalCoordinateReferenceSystemDatumName!="WGS84"]="AUTO"
 	#table(master_site$ValidationType)
 	
+  print("Performing master site reviews...")
+  
 	#Site type
 	table(master_site$ValidationType)
 	master_site$ValidationType[!master_site$MonitoringLocationTypeName %in% site_type_keep]="AUTO"
@@ -168,21 +177,21 @@ if(dim(master_site)[1]>0){
 	sites=st_as_sf(sites)
 	
 	#Intersect sites with polygons using intpoly function
-	intpoly <- function(polygon){
+	intpoly <- function(polygon,sites_object){
 	  isect=suppressMessages({suppressWarnings({st_intersection(sites, polygon)})})
 	  st_geometry(isect)=NULL
-	  check=dim(master_site)[1]
-	  master_site=merge(master_site,isect,all.x=TRUE)
-	  if(dim(master_site)[1]!=check){
+	  check=dim(sites_object)[1]
+	  sites_object=merge(sites_object,isect,all.x=TRUE)
+	  if(dim(sites_object)[1]!=check){
 	    stop("Spatial join and merge causing duplicated values.")
 	  }
-	  return(master_site)
+	  return(sites_object)
 	 }
 	#Intersect sites w/ Utah poly, AU poly, BU poly, and SS poly 
-	master_site <- intpoly(ut_poly)
-	master_site <- intpoly(au_poly)
-	master_site <- intpoly(bu_poly)
-	master_site <- intpoly(ss_poly)
+	master_site <- intpoly(ut_poly,master_site)
+	master_site <- intpoly(au_poly,master_site)
+	master_site <- intpoly(bu_poly,master_site)
+	master_site <- intpoly(ss_poly,master_site)
 	
 	rm(sites)
 
@@ -234,7 +243,12 @@ if(dim(master_site)[1]>0){
 	#table(master_site$ValidationType)
 	#master_site$ValidationType[!master_site$OWNERSHIP %in% ownership_assess]="AUTO"
 	#table(master_site$ValidationType)
-	
+	mast_autval <- length(master_site$ValidationType[master_site$ValidationType=="AUTO"])
+	mast_man <- length(master_site$ValidationType[master_site$ValidationType=="MANUAL"])
+	new_autval <- length(stn_new[,1])
+	if(mast_autval+mast_man!=orig_master[1]){
+	  stop("Dimensions of master_site have changed following master site reviews. Function/file check needed.")
+	}
 	#Send master sites that have only undergone AUTO validation or were flagged for AUTO review above to stn_new (i.e. re-auto review those sites to account for any changes in automated review process)
 	stn_new=rbind(stn_new,master_site[master_site$ValidationType=="AUTO",])
 	dim(stn_new)
@@ -245,15 +259,18 @@ if(dim(master_site)[1]>0){
 	master_site=master_site[!master_site$UID%in%stn_new$UID,]
 	dim(master_site)
 	dim(stn_new)
-}
+	print(paste(mast_autval,"master site(s) and", new_autval,"new site(s) sent to AUTO review.",mast_man,"master site(s) require manual review."))
+	readline(prompt="Press [enter] to continue.")
+	}
 
 
 ######################################
 ######################################
 
+print("Performing attribute based site checks...")
 
 #Stop execution if there are no new sites
-if(dim(stn_new)[1]==0){stop("ERROR - No new sites identified. This is suspicious. Double check inputs. Coding modification may be required.",call.=FALSE)}
+if(dim(stn_new)[1]==0){stop("No new sites identified. This is suspicious. Double check inputs. Coding modification may be required.",call.=FALSE)}
 
 
 #Correct positive longitudes (if correct_longitude==TRUE) (JV note, moved to apply to all stations that will undergo auto review - stn_new)
@@ -327,6 +344,7 @@ head(rej_reasons_att)
 
 print("Attribute based site rejection reason count:")
 print(table(rej_reasons_att$Reason))
+readline(prompt="Press [enter] to continue.")
 
 #Set stn_new IR_FLAG and reason for attribute based site rejections
 stn_new$IR_FLAG[stn_new$MonitoringLocationIdentifier %in% rej_reasons_att$MonitoringLocationIdentifier]="REJECT"
@@ -341,6 +359,8 @@ table(stn_new$IR_FLAG)
 
 #Check for datums that != NAD27, NAD83, or WGS84 before screening on lat/long
 #Convert NAD27 and NAD83 lat/long to WGS84, replace old rows w/new coordinates
+print("Performing spatial site checks...")
+
 if(all(stn_new$HorizontalCoordinateReferenceSystemDatumName[stn_new$IR_FLAG!="REJECT"]%in%c("NAD27","NAD83","WGS84"))=="TRUE"){
 	temp=stn_new[stn_new$HorizontalCoordinateReferenceSystemDatumName=="NAD27",]
 	if(dim(temp)[1]>0){
@@ -370,7 +390,7 @@ if(all(stn_new$HorizontalCoordinateReferenceSystemDatumName[stn_new$IR_FLAG!="RE
 	stn_new=stn_new[stn_new$HorizontalCoordinateReferenceSystemDatumName!="NAD27"&stn_new$HorizontalCoordinateReferenceSystemDatumName!="NAD83",]
 	stn_new=rbind(stn_new,coords_NAD27toWGS84,coords_NAD83toWGS84)
 	stn_new=as.data.frame(stn_new)
-	}else{stop("ERROR: datum other than NAD27, NAD83, or WGS84 present. Need to add conversion to R code.")}
+	}else{stop("Datum other than NAD27, NAD83, or WGS84 present. Need to add conversion to R code.")}
 dim(stn_new)
 table(stn_new$HorizontalCoordinateReferenceSystemDatumName)
 
@@ -388,11 +408,11 @@ proj4string(sites)=CRS("+init=epsg:4326")
 sites=st_as_sf(sites)
 
 #Intersect sites w/ Utah poly, AU poly, BU poly, SS poly, and GSL poly 
-stn_new <- intpoly(ut_poly)
-stn_new <- intpoly(au_poly)
-stn_new <- intpoly(bu_poly)
-stn_new <- intpoly(ss_poly)
-stn_new <- intpoly(gsl_poly)
+stn_new <- intpoly(ut_poly,stn_new)
+stn_new <- intpoly(au_poly,stn_new)
+stn_new <- intpoly(bu_poly,stn_new)
+stn_new <- intpoly(ss_poly,stn_new)
+stn_new <- intpoly(gsl_poly,stn_new)
 
 rm(sites)
 
@@ -443,6 +463,7 @@ head(rej_reasons_spat)
 
 print("Spatial site rejection reason count:")
 print(table(rej_reasons_spat$Reason))
+readline(prompt="Press [enter] to continue.")
 
 #Set stn_new IR_FLAG and reason for spatial site rejections
 stn_new$IR_FLAG[stn_new$MonitoringLocationIdentifier %in% rej_reasons_spat$MonitoringLocationIdentifier]="REJECT"
@@ -453,6 +474,8 @@ table(stn_new$IR_FLAG)
 ##Calculate full distance matrix, lat/long, mlid, and site 100m counts.
 ##For new sites and master flagged for re-AUTO (stn_new), apply lat/long, 100 m site count logic to determine review status
 ##For previously manually reviewed master sites, check if MLID_Count, Lat_Count, Long_Count, or sites100m_count have increased, flag these for review
+
+print("Performing 100m/duplicate MLID/duplicate lat-long checks...")
 
 #rbind new auto-validated sites back to master file and calculate distances on all non-rejected sites in master file (this way if polygons change, it is automatically accounted for in master file)
 spatial_check_data=rbind(master_site,stn_new)
@@ -614,21 +637,24 @@ master_site=master_site[,!names(master_site) %in% c("MLID_Count2","Lat_Count2","
 stn_new=within(stn_new,{
 	IR_FLAG[!MonitoringLocationIdentifier %in% reasons_all$MonitoringLocationIdentifier &IR_FLAG!="REJECT" & MLID_Count==1 & Lat_Count==1 & Long_Count==1 & sites100m_count==0]<-"ACCEPT"
 })
-table(stn_new$IR_FLAG)
+
+print(paste(" Site validation complete and autovalidation resulted in", table(stn_new$IR_FLAG)[1],"accepted sites,",table(stn_new$IR_FLAG)[2],"rejected sites, and",table(stn_new$IR_FLAG)[3],"sites in need of review."))
 
 #rbind master_site & stn_new to make full list of all sites (master_new)
 master_site$IR_REASON=as.factor(master_site$IR_REASON)
 stn_new$IR_REASON=as.factor(stn_new$IR_REASON)
 master_new=rbind(master_site, stn_new)
 
-table(master_new$MonitoringLocationIdentifier[master_new$IR_FLAG=="ACCEPT"] %in% reasons_all$MonitoringLocationIdentifier)
+if(any(master_new$MonitoringLocationIdentifier[master_new$IR_FLAG=="ACCEPT"] %in% reasons_all$MonitoringLocationIdentifier)){
+  stop("Accepted site represented in reject/review site log. Check function code rules for unintended exceptions.")
+}
+
 
 ###Set IR_FLAG for REJECT & REVIEW 
 master_new=within(master_new,{
 	IR_FLAG[MonitoringLocationIdentifier %in% review_reasons$MonitoringLocationIdentifier]="REVIEW"
 	IR_FLAG[MonitoringLocationIdentifier %in% reject_reasons$MonitoringLocationIdentifier]="REJECT"
 })
-
 
 ###Append reasons to master_new
 #Need feedback on ranking/storing reasons
@@ -649,6 +675,15 @@ levels(master_new$AU_Type)=c(levels(master_new$AU_Type),"Undefined")
 master_new$AU_Type[is.na(master_new$AU_Type)]="Undefined"
 names(master_new)[names(master_new)=="IR_REASON"]="IR_COMMENT"
 
+newsitesadded <- dim(master_new)[1]-orig_master[1]
+if(newsitesadded!=new_autval){
+  print("WARNING: discrepancy in number of sites added to master site list and number of new sites detected. Code/data review needed.")
+}
+if(dim(master_new)[2]!=orig_master[2]){
+  print("WARNING: discrepancy in number of columns in old and updated master site list. Code/data review needed.")
+}
+print(paste("Updated master site list has",dim(master_new)[1],"sites, with", newsitesadded,"new sites added to original",orig_master[1],"sites in master list."))
+
 # Export the file with all FLAG, REJECT, and FINE data included as the marked-up master file			
 if(file.exists("wqp_master_site_file.csv")){
 	file.rename("wqp_master_site_file.csv", paste0("wqp_master_site_file_",Sys.Date(),".csv"))
@@ -659,8 +694,9 @@ if(file.exists("wqp_master_site_file.csv")){
 write.csv(master_new, file="wqp_master_site_file.csv",row.names=F)
 write.csv(reasons_all,file="rev_rej_reasons.csv",row.names=F)
 
-print("Site validation complete.")
+print("Master site file updated and review/rejection reasons file created.")
 print(paste0(outfile_path,"\\wqp_master_site_file.csv"))
+print(paste0(outfile_path,"\\rev_rej_reasons.csv"))
 
 }
 
