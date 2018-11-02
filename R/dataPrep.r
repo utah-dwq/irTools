@@ -247,7 +247,12 @@ acc_data=data[data$IR_DataPrep_FLAG=="ACCEPT",]
 
 
 
-###Extract lake profiles
+###Extract lake profiles and remove profiles from acc_data
+#head(acc_data[!is.na(acc_data$DataLoggerLine),])
+result$lake_profiles=acc_data[!is.na(acc_data$DataLoggerLine),]
+acc_data=acc_data[is.na(acc_data$DataLoggerLine),]
+
+
 
 
 
