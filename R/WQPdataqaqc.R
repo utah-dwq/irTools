@@ -67,13 +67,13 @@ orph_check <- function(data1,data2){
   colkeep <- colkeep[!colkeep%in%c("ActivityStartTime.TimeZoneCode", "ActivityStartTime.Time")]
   data1_1 <- data1[,colnames(data1)%in%colkeep]
   data1_1 <- unique(data1_1)
-  data1_1$In_dat1 <- "YES"
+  data1_1$In_narrowresult <- "YES"
   data2_1 <- data2[,colnames(data2)%in%colkeep]
   data2_1 <- unique(data2_1)
-  data2_1$In_dat2 <- "YES"
+  data2_1$In_access_file <- "YES"
   
   if(dat2name=="detquantlim"){
-    print("NOTE: narrowresult will likely have many orphan records not represented in detquantlim. This occurs for a few reasons: (1) labs sometimes do not report detection quantitation limits, and (2) field mesaurements often do not report detection quantitation limits.")
+    print("NOTE: narrowresult will likely have many orphan records not represented in detquantlim. This occurs for a few reasons: (1) labs sometimes do not report detection quantitation limits, and (2) field measurements often do not report detection quantitation limits.")
     readline(prompt="Press [enter] to continue")
     }
   
@@ -83,18 +83,18 @@ orph_check <- function(data1,data2){
   }
   
   orphmerge <- merge(data1_1, data2_1, all=TRUE)
-  orphmerge1 <- orphmerge[is.na(orphmerge$In_dat1)|is.na(orphmerge$In_dat2),]
+  orphmerge1 <- orphmerge[is.na(orphmerge$In_narrowresult)|is.na(orphmerge$In_access_file),]
   
   
   # orphans in data1
-  orph1 <- orphmerge[is.na(orphmerge$In_dat2),]
+  orph1 <- orphmerge[is.na(orphmerge$In_access_file),]
   if(length(orph1[,1])>0){
     print(paste0(length(orph1[,1])," orphan records detected in ", dat1name," file with no match to ", dat2name,"."))
     readline(prompt="Press [enter] to continue")
   }
 
   # orphans in data2
-  orph2 <- orphmerge[is.na(orphmerge$In_dat1),]
+  orph2 <- orphmerge[is.na(orphmerge$In_narrowresult),]
   if(length(orph2[,1])>0){
     print(paste0(length(orph2[,1])," orphan records detected in ", dat2name," file with no match to ", dat1name,"."))
     readline(prompt="Press [enter] to continue")
