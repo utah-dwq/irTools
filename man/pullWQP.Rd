@@ -4,8 +4,8 @@
 \alias{pullWQP}
 \title{Pull water quality, station, and other data for Utah from USEPA to R global environment.}
 \usage{
-pullWQP(StartDate, EndDate, retrieve = c("narrowresult", "activity", "sites",
-  "detquantlim"), retry = TRUE)
+pullWQP(StartDate, EndDate, retrieve = c("narrowresult", "activity",
+  "sites", "detquantlim"), retry = TRUE)
 }
 \arguments{
 \item{StartDate}{Query start date. "MM-DD-YYYY" format.}

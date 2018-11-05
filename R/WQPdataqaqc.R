@@ -9,7 +9,8 @@
 #' @param narrowresult_file Full path and filename of narrowresult file queried from WQP to be reviewed (.csv).
 #' @param detquantlim_file Full path and filename of detquantlim file queried from WQP to be reviewed (.csv).
 #' @param dupcheck Vector of file names to be run through duplicate check. Allows user to save time if they already know whether some files do/do not contain duplicates. Defaults to c("narrowresult", "sites", "activity", "detquantlim)
-#' 
+#' @return Exports .csv files for all orphan checks in specified output path.
+
 
 ## Testing Function ##
 
