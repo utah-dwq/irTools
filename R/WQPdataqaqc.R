@@ -102,7 +102,7 @@ orph_check <- function(data1,data2){
   if(length(orphmerge1[,1])>0){
     name <- paste0(outfile_path,"\\",paste(dat1name,dat2name,"orphans", sep="_"),".csv")
     print(paste(name,"created containing orphan records."))
-    write.csv(orphmerge1,name)
+    write.csv(orphmerge1,name, row.names = FALSE)
   }
 }
 
