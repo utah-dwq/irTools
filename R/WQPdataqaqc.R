@@ -1,14 +1,14 @@
-#' WQP Data Screen
+#' WQP Data QA/QC Screen
 #' 
 #' Performs duplicate and orphan checks on data downloaded from WQP.
-#' Alerts user to potential issues with running data through subsequent irTool functions.
+#' Alerts user to potential issues with running data through subsequent irTools functions.
 #' 
 #' @param outfile_path Path to folder where user wishes to deposit orphan check .csv's
 #' @param sites_file Full path and filename of sites file queried from WQP to be reviewed (.csv).
 #' @param activity_file Full path and filename of activity file queried from WQP to be reviewed (.csv).
 #' @param narrowresult_file Full path and filename of narrowresult file queried from WQP to be reviewed (.csv).
 #' @param detquantlim_file Full path and filename of detquantlim file queried from WQP to be reviewed (.csv).
-#' @param dupcheck Vector of file names to be run through duplicate check. Allows user to save time if they already know whether some files do/do not contain duplicates.
+#' @param dupcheck Vector of file names to be run through duplicate check. Allows user to save time if they already know whether some files do/do not contain duplicates. Defaults to c("narrowresult", "sites", "activity", "detquantlim)
 #' 
 
 ## Testing Function ##
