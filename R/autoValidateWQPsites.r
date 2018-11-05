@@ -94,7 +94,7 @@ master_site_types=unique(master_site$MonitoringLocationTypeName)
 stn_site_types=unique(stn$MonitoringLocationTypeName)
 new_site_types=stn_site_types[!stn_site_types %in% master_site_types]
 if(length(new_site_types)>0){
-	print("WARNING: New site type(s) encountered. If you would like to include new site type(s) in site autovalidation, stop the function and make edits to site_type_keep argument.")
+	print("WARNING: New site type(s) encountered. If you would like to include new site type(s) in site autovalidation that are not in site_type_keep, stop the function and make edits to site_type_keep argument before proceeding.")
 	print(cbind(new_site_types))
 	readline(prompt="Press [enter] to continue or [esc] to end function.")}
 
@@ -261,7 +261,20 @@ if(dim(master_site)[1]>0){
 	dim(stn_new)
 	print(paste(mast_autval,"master site(s) and", new_autval,"new site(s) sent to AUTO review.",mast_man,"master site(s) require manual review."))
 	readline(prompt="Press [enter] to continue.")
-	}
+}else{
+  mast_autval <- length(master_site$ValidationType[master_site$ValidationType=="AUTO"])
+  mast_man <- length(master_site$ValidationType[master_site$ValidationType=="MANUAL"])
+  new_autval <- length(stn_new[,1])
+  intpoly <- function(polygon,sites_object){
+  isect=suppressMessages({suppressWarnings({st_intersection(sites, polygon)})})
+  st_geometry(isect)=NULL
+  check=dim(sites_object)[1]
+  sites_object=merge(sites_object,isect,all.x=TRUE)
+  if(dim(sites_object)[1]!=check){
+    stop("Spatial join and merge causing duplicated values.")
+  }
+  return(sites_object)
+}}
 
 
 ######################################
