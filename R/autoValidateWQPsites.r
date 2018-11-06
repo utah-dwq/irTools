@@ -264,7 +264,7 @@ if(dim(master_site)[1]>0){
 	master_site=master_site[!master_site$UID%in%stn_new$UID,]
 	dim(master_site)
 	dim(stn_new)
-	print(paste(mast_autval,"master site(s) and", new_autval,"new site(s) sent to AUTO review.",mast_man,"master site(s) require manual review."))
+	print(paste(mast_autval,"master site(s) and", new_autval,"new site(s) sent to AUTO review.",mast_man,"master site(s) have undergone previous manual review and have not been flagged for further review."))
 	readline(prompt="Press [enter] to continue.")
 }else{
   mast_autval <- length(master_site$ValidationType[master_site$ValidationType=="AUTO"])
@@ -663,7 +663,7 @@ master_site$IR_REASON=as.factor(master_site$IR_REASON)
 stn_new$IR_REASON=as.factor(stn_new$IR_REASON)
 master_new=rbind(master_site, stn_new)
 
-if(any(master_new$MonitoringLocationIdentifier[master_new$IR_FLAG=="ACCEPT"] %in% reasons_all$MonitoringLocationIdentifier)){
+if(any(master_new$MonitoringLocationIdentifier[master_new$IR_FLAG=="ACCEPT" & master_new$ValidationType=="AUTO"] %in% reasons_all$MonitoringLocationIdentifier)){
   stop("Accepted site represented in reject/review site log. Check function code rules for unintended exceptions.")
 }
 
@@ -683,9 +683,6 @@ master_new=within(master_new,{
 	IR_REASON[IR_FLAG=="ACCEPT" & ValidationType=="AUTO"]="Automatically accepted"
 })
 
-
-###Append reasons to master_new(?)
-#Need feedback on ranking/storing reasons - leaving in flat external file for now.
 
 
 ####Sort by UID and re-order columns before writing
