@@ -8,8 +8,7 @@ updateLabActMediaTables(data, translation_wb,
   labNameActivityTable_sheetname = "labNameActivityTable",
   labNameActivityTable_startCol = 1, labNameActivityTable_startRow = 1,
   activityMediaNameTable_sheetname = "activityMediaNameTable",
-  activityMediaNameTable_startCol = 1,
-  activityMediaNameTable_startRow = 1)
+  activityMediaNameTable_startCol = 1, activityMediaNameTable_startRow = 1)
 }
 \arguments{
 \item{data}{A WQP results (must include activity, merged objects OK) R-object}

@@ -4,9 +4,8 @@
 \alias{downloadWQP}
 \title{Download water quality, station, and other data for Utah from USEPA WQP}
 \usage{
-downloadWQP(outfile_path, StartDate, EndDate,
-  retrieve = c("narrowresult", "activity", "sites", "detquantlim"),
-  retry = FALSE)
+downloadWQP(outfile_path, StartDate, EndDate, retrieve = c("narrowresult",
+  "activity", "sites", "detquantlim"), retry = FALSE)
 }
 \arguments{
 \item{outfile_path}{Path for file outputs.}

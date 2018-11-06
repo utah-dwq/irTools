@@ -20,6 +20,7 @@
 #             "P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\activity981001-020930.csv",
 #             "P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\detquantlim981001-020930.csv")
 
+#' @export
 WQPdataqaqc <- function(outfile_path, narrowresult_file, sites_file, activity_file, detquantlim_file, dupcheck=c("narrowresult","sites","activity","detquantlim")){
   
 ## Testing setup ##

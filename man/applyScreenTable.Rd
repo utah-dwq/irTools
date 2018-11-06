@@ -4,8 +4,8 @@
 \alias{applyScreenTable}
 \title{Apply screens to WQP data by selected table}
 \usage{
-applyScreenTable(data, translation_wb, sheetname, flag_col_name,
-  com_col_name, startRow = 1, na_err = TRUE)
+applyScreenTable(data, translation_wb, sheetname, flag_col_name, com_col_name,
+  startRow = 1, na_err = TRUE)
 }
 \arguments{
 \item{data}{A merged WQP result object. Must include both narrowresult & activity files. May also be a post-fillMaskedValues() results object.}
