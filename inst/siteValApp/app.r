@@ -3,14 +3,14 @@
 
 
 #library(shiny)
-#shiny::runApp("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\draft_code\\site_review_app")
+#shiny::runApp("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\irTools\\inst\\siteValApp")
 
-#####SET UP
+######SET UP
 #master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
 #polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
 #edit_log_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\edit_logs"
 #reasons_flat_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\rev_rej_reasons.csv"
-#####
+######
 
 #library(shiny)
 library(raster)
@@ -91,21 +91,21 @@ server <- function(input, output, session){
 	##Reactive checkbox inputs
 	reactive_objects=reactiveValues()
 	
-	sites=read.csv(master_site_file, stringsAsFactors=F)
-	sites=merge(sites, reasons_flat, all=T)
-	sites$ReasonsFlat=ifelse(is.na(sites$ReasonsFlat), sites$IR_COMMENT, sites$ReasonsFlat)
-	sites$FlagFlat=ifelse(is.na(sites$FlagFlat), sites$IR_FLAG, sites$FlagFlat)
-	sites$ReasonsFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_COMMENT, sites$ReasonsFlat)
-	sites$FlagFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_FLAG, sites$FlagFlat)
-	reactive_objects$sites=sites
+	observe({
+		sites=read.csv(master_site_file, stringsAsFactors=F)
+		sites=merge(sites, reasons_flat, all=T)
+		sites$ReasonsFlat=ifelse(is.na(sites$ReasonsFlat), sites$IR_COMMENT, sites$ReasonsFlat)
+		sites$FlagFlat=ifelse(is.na(sites$FlagFlat), sites$IR_FLAG, sites$FlagFlat)
+		sites$ReasonsFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_COMMENT, sites$ReasonsFlat)
+		sites$FlagFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_FLAG, sites$FlagFlat)
+		reactive_objects$sites=sites
+	})
 	
 	observe({
-		req(reactive_objects$sites)
-		reactive_objects$IR_reason_choices=unique(reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$flag_checkbox & sites$IR_FLAG==reactive_objects$sites$FlagFlat, "ReasonsFlat"])
-		})
+		reactive_objects$IR_reason_choices=unique(reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$flag_checkbox & reactive_objects$sites$IR_FLAG==reactive_objects$sites$FlagFlat, "ReasonsFlat"])
+	})
 
 	output$reason_checkbox <- renderUI({
-		req(reactive_objects$IR_reason_choices)
 		checkboxGroupInput("reason_checkbox", h3("Review reason"), reactive_objects$IR_reason_choices, selected=reactive_objects$IR_reason_choices, inline=TRUE)
 	})
 
@@ -124,6 +124,9 @@ server <- function(input, output, session){
 	output$autype_checkbox <- renderUI({
 		checkboxGroupInput("autype_checkbox", h3("AU type"), reactive_objects$autype_choices, selected=reactive_objects$autype_choices, inline=TRUE)
 	})
+
+
+
 
 	
 	#Instructions popup
@@ -146,13 +149,13 @@ server <- function(input, output, session){
 	
 	observeEvent(input$draw,{
 		showModal(modalDialog(title="MAP DRAWING - PLEASE WAIT...","Please wait for map to draw before proceeding (a bit slow).",size="l",footer=NULL))
-		sites=read.csv(master_site_file, stringsAsFactors=F)
-		sites=merge(sites, reasons_flat, all=T)
-		sites$ReasonsFlat=ifelse(is.na(sites$ReasonsFlat), sites$IR_COMMENT, sites$ReasonsFlat)
-		sites$FlagFlat=ifelse(is.na(sites$FlagFlat), sites$IR_FLAG, sites$FlagFlat)
-		sites$ReasonsFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_COMMENT, sites$ReasonsFlat)
-		sites$FlagFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_FLAG, sites$FlagFlat)
-		reactive_objects$sites=sites
+		#sites=read.csv(master_site_file, stringsAsFactors=F)
+		#sites=merge(sites, reasons_flat, all=T)
+		#sites$ReasonsFlat=ifelse(is.na(sites$ReasonsFlat), sites$IR_COMMENT, sites$ReasonsFlat)
+		#sites$FlagFlat=ifelse(is.na(sites$FlagFlat), sites$IR_FLAG, sites$FlagFlat)
+		#sites$ReasonsFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_COMMENT, sites$ReasonsFlat)
+		#sites$FlagFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_FLAG, sites$FlagFlat)
+		#reactive_objects$sites=sites
 		reason_choices=unique(reactive_objects$sites$ReasonsFlat)
 		reason_choices=reason_choices[order(reason_choices)]
 		reactive_objects$reason_choices=unique(as.factor(append(as.vector(reason_choices),c("Manually accepted", "Non-jurisdictional","Merged","Inaccurate location", "Unclear location", "Other"))))
@@ -349,6 +352,14 @@ server <- function(input, output, session){
 			#Save sites to external file
 				write.csv(output,file=master_site_file,row.names=FALSE)
 			
+			#sites=read.csv(master_site_file, stringsAsFactors=F)
+			sites=merge(output, reasons_flat, all=T)
+			sites$ReasonsFlat=ifelse(is.na(sites$ReasonsFlat), sites$IR_COMMENT, sites$ReasonsFlat)
+			sites$FlagFlat=ifelse(is.na(sites$FlagFlat), sites$IR_FLAG, sites$FlagFlat)
+			sites$ReasonsFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_COMMENT, sites$ReasonsFlat)
+			sites$FlagFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_FLAG, sites$FlagFlat)
+			reactive_objects$sites=sites
+				
 			#Message
 				removeModal()
 				showModal(modalDialog(title="EDITS SAVED","Clear polygon before proceeding.",size="l",footer=modalButton("OK")))

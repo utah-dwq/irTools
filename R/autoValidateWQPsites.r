@@ -683,6 +683,12 @@ master_new=within(master_new,{
 	IR_REASON[IR_FLAG=="ACCEPT" & ValidationType=="AUTO"]="Automatically accepted"
 })
 
+#Set ValidationType to AUTO for any MLID in review reasons (this is for previously manually reviewed sites that now have a review reason e.g. MLID count has increased)
+master_new=within(master_new,{
+	ValidationType[MonitoringLocationIdentifier %in% reasons_all$MonitoringLocationIdentifier]="AUTO"
+})
+
+
 
 
 ####Sort by UID and re-order columns before writing
@@ -720,10 +726,6 @@ write.csv(reasons_all,file="rev_rej_reasons.csv",row.names=F)
 
 
 print("Master site file updated and review/rejection reasons file created.")
-new_site_count=dim(master_new)[1]-ms_dim
-
-print("Site validation complete.")
-print(paste(new_site_count,"new sites identified."))
 print(paste0(outfile_path,"\\wqp_master_site_file.csv"))
 print(paste0(outfile_path,"\\rev_rej_reasons.csv"))
 
