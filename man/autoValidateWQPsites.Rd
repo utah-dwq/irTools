@@ -4,8 +4,10 @@
 \alias{autoValidateWQPsites}
 \title{Auto-validate USEPA WQP stations}
 \usage{
-autoValidateWQPsites(sites_file, master_site_file, polygon_path,
-  outfile_path, correct_longitude = FALSE,
+
+autoValidateWQPsites(sites_file, master_site_file, polygon_path, outfile_path,
+  correct_longitude = FALSE,
+
   site_type_keep = c("Lake, Reservoir, Impoundment", "Stream",
   "Stream: Canal", "Stream: Ditch", "Spring", "River/Stream", "Lake",
   "River/Stream Intermittent", "River/Stream Perennial", "Reservoir",
@@ -25,7 +27,7 @@ autoValidateWQPsites(sites_file, master_site_file, polygon_path,
 \item{ownership_assess}{Vector of property ownership labels to be considered in assessment process. Defaults to c("Federal","Private","State") and exclude "Tribal".}
 }
 \value{
-Exports a new, undated master site list to the outfile_path. If one already exists in outfile_path, it is moved to the 'edit_logs' folder and renamed with the system date.
+Exports a new, undated master site list & a list of review/reject flags & reasons associated with the most recent auto valudation run to the outfile_path. If a master site file already exists in outfile_path, it is moved to the 'edit_logs' folder and renamed with the system date.
 }
 \description{
 Performs auto-validation on previously queried WQP stations combined with the existing master site list.

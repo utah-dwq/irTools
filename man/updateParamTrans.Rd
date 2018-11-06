@@ -10,13 +10,7 @@ updateParamTrans(data, detquantlim = detquantlim, translation_wb,
   WQPParamCASID_sheetname = "WQPParamCASID",
   WQPParamCASID_startRow = 4, WQPParamCASID_startCol = 1,
   paramFractionGroup_sheetname = "paramFractionGroup",
-  paramFractionGroup_startRow = 3, paramFractionGroup_startCol = 3,
-  fun_cols = c("CASLinked", "R3172ParamAssessmentType", "CASLinked",
-  "ParamAssessmentType", "ParamMeasureType", "AssessmentType",
-  "R3172ParameterStatus", "R3172ParameterName", "KeytoPrevIRParamTble",
-  "FractionGroup", "ToLabHoldingTime", "ToExtractHoldingTime",
-  "AfterExtractHoldingTime", "HoldingTimeFrozen", "TotalHoldingTime",
-  "HoldingTimeUnit", "Source"))
+  paramFractionGroup_startRow = 3, paramFractionGroup_startCol = 3)
 }
 \arguments{
 \item{data}{A WQP results (merged or narrow result) R-object}
@@ -41,9 +35,7 @@ updateParamTrans(data, detquantlim = detquantlim, translation_wb,
 
 \item{paramFractionGroup_startRow}{Row to start reading the paramFractionGroup excel sheet from (in case additional headers have been added). Defaults to 3.}
 
-\item{paramFractionGroup_startCol}{Col to start writing the paramFractionGroup excel sheet to (to the right of all formula based columns). Defaults to 3.}
-
-\item{fun_cols}{Vector of names of columns in any table that contain functions. These are excluded from reading and writing by this function.}
+\item{paramFractionGroup_startCol}{Col to start writing the paramFractionGroup excel sheet to (to the right of all formula based columns, note col w/ header 'spacer' in table). Defaults to 3.}
 }
 \value{
 Appends any new parameter/fraction/unit combinations in WQP data to translation_wb. This updates the input translation_wb with those new rows with system date in the "DateAdded" column.

@@ -11,7 +11,7 @@
 #' @param outfile_path Path for file outputs.
 #' @param site_type_keep Vector of site type names to be considered in assessment process. Non-specified site types will be automatically rejected. Additional site types can be excluded when running assessment tools. However, including extra site types here may necessetitate additional manual site reviews.
 #' @param ownership_assess Vector of property ownership labels to be considered in assessment process. Defaults to c("Federal","Private","State") and exclude "Tribal".
-#' @return Exports a new, undated master site list to the outfile_path. If one already exists in outfile_path, it is moved to the 'edit_logs' folder and renamed with the system date.
+#' @return Exports a new, undated master site list & a list of review/reject flags & reasons associated with the most recent auto valudation run to the outfile_path. If a master site file already exists in outfile_path, it is moved to the 'edit_logs' folder and renamed with the system date.
 
 #' @import sp
 #' @import sf
@@ -35,28 +35,29 @@ autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_p
 
 ){
 
-##########
-####TESTING SETUP
-# library(sp)
-# library(sf)
-# # sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites141001-160930.csv"
-# sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites001001-020930.csv"
-# master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\wqp_master_site_file.csv"
-# polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-# outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation"
-# correct_longitude=FALSE
-# site_type_keep=c("Lake, Reservoir, Impoundment",
-# 		 "Stream",
-# 		 "Spring",
-# 		 "Stream: Canal",
-# 		 "Stream: Ditch",
-# 		 "River/Stream",
-# 		 "Lake",
-# 		 "River/Stream Intermittent",
-# 		 "River/Stream Perennial",
-# 		 "Reservoir",
-# 		 "Canal Transport",
-# 		 "Canal Drainage")
+###########
+#####TESTING SETUP
+#library(sp)
+#library(sf)
+#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites161001-180930.csv"
+##sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites101001-180930_EHduptest.csv"
+#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
+#polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
+#outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation"
+#correct_longitude=FALSE
+#site_type_keep=c("Lake, Reservoir, Impoundment",
+#			 "Stream",
+#			 "Spring",
+#			 "Stream: Canal",
+#			 "Stream: Ditch",
+#			 "River/Stream",
+#			 "Lake",
+#			 "River/Stream Intermittent",
+#			 "River/Stream Perennial",
+#			 "Reservoir",
+#			 "Canal Transport",
+#			 "Canal Drainage",
+#			 "Canal Irrigation")
 #########
 
 
@@ -72,6 +73,7 @@ stn=unique(stn)
 
 #Read in master site file
 master_site=read.csv(master_site_file, stringsAsFactors=FALSE)
+
 # Ensure no duplicates in master site file which could cause erroneous duplication during merges.
 if(dim(master_site)[1]!=dim(unique(master_site))[1]){
   stop("Exact duplicates detected in master_site_file. Please review master_site_file before proceeding with autovalidation.")
@@ -80,6 +82,9 @@ orig_master <- dim(master_site) # original count of the number of records in mas
 print(paste(orig_master[1],"total master site records in file."))
 
 # Change IR_Comment to IR_Reason in master site object.
+
+ms_dim=dim(master_site)[1]
+
 names(master_site)[names(master_site)=="IR_COMMENT"]="IR_REASON"
 if(dim(master_site)[1]>0){master_site[master_site==""]=NA} #Make sure all blanks are NA
 
@@ -669,9 +674,18 @@ master_new=within(master_new,{
 	IR_FLAG[MonitoringLocationIdentifier %in% reject_reasons$MonitoringLocationIdentifier]="REJECT"
 })
 
-###Append reasons to master_new
-#Need feedback on ranking/storing reasons
 
+#Set IR_REASON
+master_new$IR_REASON=as.character(master_new$IR_REASON)
+master_new=within(master_new,{
+	IR_REASON[IR_FLAG=="REJECT" & ValidationType=="AUTO"]="Automatically flagged for rejection"
+	IR_REASON[IR_FLAG=="REVIEW" & ValidationType=="AUTO"]="Automatically flagged for review"
+	IR_REASON[IR_FLAG=="ACCEPT" & ValidationType=="AUTO"]="Automatically accepted"
+})
+
+
+###Append reasons to master_new(?)
+#Need feedback on ranking/storing reasons - leaving in flat external file for now.
 
 
 ####Sort by UID and re-order columns before writing
@@ -707,7 +721,12 @@ if(file.exists("wqp_master_site_file.csv")){
 write.csv(master_new, file="wqp_master_site_file.csv",row.names=F)
 write.csv(reasons_all,file="rev_rej_reasons.csv",row.names=F)
 
+
 print("Master site file updated and review/rejection reasons file created.")
+new_site_count=dim(master_new)[1]-ms_dim
+
+print("Site validation complete.")
+print(paste(new_site_count,"new sites identified."))
 print(paste0(outfile_path,"\\wqp_master_site_file.csv"))
 print(paste0(outfile_path,"\\rev_rej_reasons.csv"))
 

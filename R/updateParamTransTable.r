@@ -16,9 +16,7 @@
 
 #' @param paramFractionGroup_sheetname Name of sheet in workbook holding the WQP fraction names. Defaults to "paramFractionGroup".
 #' @param paramFractionGroup_startRow Row to start reading the paramFractionGroup excel sheet from (in case additional headers have been added). Defaults to 3.
-#' @param paramFractionGroup_startCol Col to start writing the paramFractionGroup excel sheet to (to the right of all formula based columns). Defaults to 3.
-
-#' @param fun_cols Vector of names of columns in any table that contain functions. These are excluded from reading and writing by this function.
+#' @param paramFractionGroup_startCol Col to start writing the paramFractionGroup excel sheet to (to the right of all formula based columns, note col w/ header 'spacer' in table). Defaults to 3.
 
 #' @return Appends any new parameter/fraction/unit combinations in WQP data to translation_wb. This updates the input translation_wb with those new rows with system date in the "DateAdded" column.
 
@@ -33,15 +31,13 @@
 updateParamTrans=function(data, detquantlim=detquantlim, translation_wb,
 						  paramTransTable_sheetname="paramTransTable", paramTransTable_startRow=4, paramTransTable_startCol=16,
 						  WQPParamCASID_sheetname="WQPParamCASID", WQPParamCASID_startRow=4, WQPParamCASID_startCol=1,
-						  paramFractionGroup_sheetname="paramFractionGroup", paramFractionGroup_startRow=3, paramFractionGroup_startCol=3,
-						  fun_cols=c("CASLinked","R3172ParamAssessmentType","CASLinked","ParamAssessmentType","ParamMeasureType","AssessmentType","R3172ParameterStatus","R3172ParameterName",
-							"KeytoPrevIRParamTble","FractionGroup","ToLabHoldingTime","ToExtractHoldingTime","AfterExtractHoldingTime",
-							"HoldingTimeFrozen","TotalHoldingTime","HoldingTimeUnit","Source")){
+						  paramFractionGroup_sheetname="paramFractionGroup", paramFractionGroup_startRow=3, paramFractionGroup_startCol=3
+						){
 
 ###################						  
 ####TESTING SETUP
-#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\jake\\translationWorkbook\\IR_translation_workbook.xlsx"
-#data=merged_results_sub
+#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\IR_translation_workbook.xlsx"
+#data=mrf_sub
 #datatype="object"
 #paramTransTable_sheetname="paramTransTable"
 #paramTransTable_startRow=4
@@ -51,11 +47,11 @@ updateParamTrans=function(data, detquantlim=detquantlim, translation_wb,
 #WQPParamCASID_startCol=1
 #paramFractionGroup_sheetname="paramFractionGroup"
 #paramFractionGroup_startRow=3
-#paramFractionGroup_startCol=3
-#fun_cols=c("CASLinked","R3172ParamAssessmentType","CASLinked","ParamAssessmentType","ParamMeasureType","AssessmentType","R3172ParameterStatus","R3172ParameterName",
-#			"KeytoPrevIRParamTble","FractionGroup","ToLabHoldingTime","ToExtractHoldingTime","AfterExtractHoldingTime",
-#			"HoldingTimeFrozen","TotalHoldingTime","HoldingTimeUnit","Source")
-################
+#paramFractionGroup_startCol=2
+##fun_cols=c("CASLinked","R3172ParamAssessmentType","CASLinked","ParamAssessmentType","IR_ActivityType","AssessmentType","R3172ParameterStatus","R3172ParameterName",
+##			"KeytoPrevIRParamTble","IR_Fraction","ToLabHoldingTime","ToExtractHoldingTime","AfterExtractHoldingTime",
+##			"HoldingTimeFrozen","TotalHoldingTime","HoldingTimeUnit","Source")
+#################
 
 
 #Reading translation workbook and table
@@ -66,10 +62,10 @@ for(n in 1:length(sheetnames)){
 	}
 
 param_translation=data.frame(readWorkbook(trans_wb, sheet=paramTransTable_sheetname, startRow=paramTransTable_startRow, detectDates=TRUE))
-param_translation=param_translation[,!names(param_translation)%in%fun_cols]
+param_translation=param_translation[,paramTransTable_startCol:dim(param_translation)[2]]
 
 param_cas=data.frame(readWorkbook(trans_wb, sheet=WQPParamCASID_sheetname, startRow=WQPParamCASID_startRow, detectDates=TRUE))
-param_cas=param_cas[,!names(param_cas)%in%fun_cols]
+param_cas=param_cas[,WQPParamCASID_startCol:dim(param_cas)[2]]
 
 
 #Store input col names for future sorting
@@ -109,7 +105,7 @@ parameters_unique_trans_merge=parameters_unique_trans_merge[,cnames_u] #Reorder 
 #Generate fractions table
 fractions=data.frame(unique(data_dql$ResultSampleFractionText))
 fraction_table=data.frame(readWorkbook(trans_wb, sheet=paramFractionGroup_sheetname, startRow=paramFractionGroup_startRow, detectDates=TRUE))
-fraction_table=fraction_table[,!names(fraction_table)%in%fun_cols]
+fraction_table=fraction_table[,paramFractionGroup_startCol:dim(fraction_table)[2]]
 names(fractions)[1]=names(fraction_table)[1]
 fractions_merge=merge(fractions,fraction_table,all=T)
 new_fractions_count=dim(fractions_merge)[1]-dim(fraction_table)[1]
