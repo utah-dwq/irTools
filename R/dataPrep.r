@@ -108,8 +108,6 @@ unit_convs=unit_convs[!names(unit_convs) %in% c("DateAdded","InData")]
 unit_convs[unit_convs==""]=NA
 names(unit_convs)[names(unit_convs)=="IR_FLAG"]="IR_UnitConv_FLAG"
 
-# Double check that blanks are all NA in data (shouldn't really need this at this point)
-diss_tot[diss_tot==""]=NA
 
 
 
@@ -138,6 +136,10 @@ names(diss)[names(diss)=="IR_Unit"]<- "CriterionUnits"
 # Merge TOTAL and DISSOLVED objects based on AID, Start Date, and Parameter name
 diss_tot <- merge(tot,diss, by=c("ActivityIdentifier","ActivityStartDate","R3172ParameterName"))
 dim(diss_tot)
+
+# Double check that blanks are all NA in data (shouldn't really need this at this point)
+diss_tot[diss_tot==""]=NA
+
 
 # Merge conversion table to dissolved / total data
 diss_tot_units=merge(diss_tot,unit_convs,all.x=T)
@@ -211,7 +213,7 @@ reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
 print(table(reasons$reason))
 rm(data_n)
 
-#JV - in hindsight, shouldn't really be needed. Converted to error.
+#JV - in hindsight, shouldn't really be needed. Converted to warning.
 #When IR_Unit = CriterionUnit, make UnitConversionFactor 1
 if(any(na.omit(data[data$IR_Unit==data$CriterionUnits,"UnitConversionFactor"]!=1))){
 	warning("WARNING: Potential error in unit conversion table. Conversion factor !=1 for record where IR_Unit==CriterionUnits.")
@@ -255,14 +257,8 @@ acc_data=acc_data[is.na(acc_data$DataLoggerLine),]
 
 
 
-
-
-
-
-
-
 #Aggregate to daily values
-aggdata=data
+aggdata=acc_data
 #aggdata=aggdata[!is.na(aggdata$NumericCriteria)]
 aggdata$IR_Depth=with(aggdata, ifelse(!is.na(ResultDepthHeightMeasure.MeasureValue),ResultDepthHeightMeasure.MeasureValue,0))
 result=aggdata[0,]
