@@ -4,7 +4,8 @@
 \alias{autoValidateWQPsites}
 \title{Auto-validate USEPA WQP stations}
 \usage{
-autoValidateWQPsites(sites_file, master_site_file, polygon_path, outfile_path,
+autoValidateWQPsites(sites_file, master_site_file, polygon_path,
+  outfile_path, correct_longitude = FALSE,
   site_type_keep = c("Lake, Reservoir, Impoundment", "Stream",
   "Stream: Canal", "Stream: Ditch", "Spring", "River/Stream", "Lake",
   "River/Stream Intermittent", "River/Stream Perennial", "Reservoir",
