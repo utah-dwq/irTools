@@ -7,6 +7,8 @@
 #' @param crit_startRow Row to start reading criteria table excel sheet from (in case headers have been added). Defaults to 1.
 #' @param ss_sheetname Name of sheet in workbook holding site-specific criteria to be assigned. Should typically contain parameters corresponding to those in criteria table.
 #' @param ss_startRow Row to start reading site specific criteria table excel sheet from (in case headers have been added). Defaults to 1.
+#' @param rm_nocrit Logical. If TRUE (default), remove records w/o numeric criteria before returning. If FALSE, function will pass through all records with flattened uses & any matching criteria - useful for passing through non-assessed parameters for other analyses.
+
 #' @return A flattened & expanded sample x use x parameter x criterion data.frame.
 #' @importFrom openxlsx loadWorkbook
 #' @importFrom openxlsx readWorkbook
@@ -15,7 +17,7 @@
 #' @importFrom plyr rbind.fill
 #' @importFrom lubridate month
 #' @export
-assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startRow=1, ss_startRow=1){ 
+assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startRow=1, ss_startRow=1, rm_nocrit=TRUE){ 
 
 
 ###Assign numeric criteria to WQP data
@@ -146,8 +148,11 @@ dim(data_uses_flat_crit)
 #JV note I think this will be better done separately (prob stand-alone function), following unit conversions.
 
 
-#Remove records w/o criteria or not conversion factor
-data_uses_flat_crit=data_uses_flat_crit[!is.na(data_uses_flat_crit$NumericCriterion) | data_uses_flat_crit$BeneficialUse=="CF",]
+#Remove records w/o criteria or not conversion factor if rm_nocrit==TRUE
+if(rm_nocrit==TRUE){
+	data_uses_flat_crit=data_uses_flat_crit[!is.na(data_uses_flat_crit$NumericCriterion) | data_uses_flat_crit$BeneficialUse=="CF",]
+}
+
 return(data_uses_flat_crit)
 
 

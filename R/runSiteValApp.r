@@ -28,7 +28,7 @@ runSiteValApp=function(master_site_file,polygon_path,edit_log_path,reasons_flat_
    master_site_file<<-master_site_file
 	 polygon_path<<-polygon_path
 	 edit_log_path<<-edit_log_path
-	 reasons_flat_file<<-"P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\rev_rej_reasons.csv"
+	 reasons_flat_file<<-reasons_flat_file
 	 shiny::runApp(system.file('siteValApp', package='irTools'))
 	 rm(master_site_file)
 	 rm(polygon_path)

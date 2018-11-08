@@ -4,8 +4,8 @@
 \alias{updateCommentTable}
 \title{Identify New WQP comment combinations and append them into IR Parameter Translation Workbook for review (sheet name activityCommentTable)}
 \usage{
-updateCommentTable(data, translation_wb, sheetname = "activityCommentTable",
-  startRow = 1, startCol = 1)
+updateCommentTable(data, translation_wb,
+  sheetname = "activityCommentTable", startRow = 1, startCol = 1)
 }
 \arguments{
 \item{data}{A WQP results (must include activity, merged objects OK) R-object or the full path and filename to a WQP result file (.csv). If input is a path/file name, datatype must be specified as "filepath".}

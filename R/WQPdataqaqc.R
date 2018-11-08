@@ -30,7 +30,7 @@ WQPdataqaqc <- function(outfile_path, narrowresult_file, sites_file, activity_fi
 # activity_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\activity101001-110930.csv"
 # detquantlim_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\detquantlim101001-110930.csv"
 
-print("------------READING IN FILES--------------")
+print("------------READING IN FILES--------------") #JV note - recommend moving to a separate readWQPfiles() function that will call the rest of this function
 narrowresult <- read.csv(narrowresult_file, stringsAsFactors = FALSE)#, strip.white = TRUE)
 sites <- read.csv(sites_file, stringsAsFactors = FALSE)#, strip.white = TRUE)
 activity <- read.csv(activity_file, stringsAsFactors = FALSE)#, strip.white = TRUE)
