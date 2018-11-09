@@ -55,8 +55,10 @@ detLimitTypeTable=data.frame(readWorkbook(trans_wb, sheet=sheetname, startRow=st
 detLimitTypeTable=detLimitTypeTable[,c("DetectionQuantitationLimitTypeName","IRLimitPriorityRanking_lower","IRLimitPriorityRanking_upper")]
 
 dql=merge(detquantlim,detLimitTypeTable,all.x=T)
+
+# Dimension check following merge.
 if(dim(detquantlim)[1]!=dim(dql)[1]){
-  stop("Merge between detquantlim and detLimitTypeTable resulted in extra rows. Check for duplicates.")
+  stop("Merge between detquantlim and detLimitTypeTable resulted in extra rows. Check for duplicates in detLimitTypeTable.")
 }
 dim(dql)
 head(dql)
@@ -112,6 +114,7 @@ names(dql_up)[names(dql_up)=="DetectionQuantitationLimitMeasure.MeasureUnitCode"
 
 sel_dql=merge(dql_lo, dql_up)
 
+#Check to ensure merge does not result in orphans.
 if(length(unique(dql$ResultIdentifier))!=dim(sel_dql)[1]){stop("Error: selected limits not unique to each RID...")}
 
 #Convert unranked (99999) lims back to NA
