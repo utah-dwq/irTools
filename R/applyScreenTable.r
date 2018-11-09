@@ -15,13 +15,13 @@
 applyScreenTable=function(data, translation_wb, sheetname, flag_col_name, com_col_name, startRow=1, na_dup_err=TRUE){ 
 
 ##Testing setup
-data=merged_results_filled
-#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
-sheetname="paramTransTable"
-flag_col_name="IR_Parameter_FLAG"
-com_col_name="IR_Parameter_COMMENT"
-startRow=4
-na_dup_err=FALSE
+# data=merged_results_filled
+# #translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
+# sheetname="paramTransTable"
+# flag_col_name="IR_Parameter_FLAG"
+# com_col_name="IR_Parameter_COMMENT"
+# startRow=4
+# na_dup_err=FALSE
 
 #Load workbook
 trans_wb=openxlsx::loadWorkbook(translation_wb)
