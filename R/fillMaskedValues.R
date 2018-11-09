@@ -124,9 +124,9 @@ results_dql=merge(results, sel_dql, all.x=T)
 
 head(results_dql)
 print("Lower Detection Limit Types:")
-print(table(results_dql$IR_LowerLimitType, exclude=NULL))
+print(table(droplevels(results_dql$IR_LowerLimitType), exclude=NULL))
 print("Upper Detection Limit Types:")
-print(table(results_dql$IR_UpperLimitType, exclude=NULL))
+print(table(droplevels(results_dql$IR_UpperLimitType), exclude=NULL))
 
 #######
 #Filling values	
