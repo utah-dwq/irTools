@@ -19,7 +19,6 @@
 #' @export
 dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow=1){
 
-
 result=list()
 
 
@@ -246,13 +245,120 @@ table(data[data$IR_DataPrep_FLAG=="ACCEPT","IR_UnitConv_FLAG"])
 ###Pull out accepted data
 acc_data=data[data$IR_DataPrep_FLAG=="ACCEPT",]
 
+#Subset columns
+acc_data=acc_data[,c("OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","ActivityStartTime.Time","IR_ActivityType","IR_MLID","R317Descrp","IR_Lat","IR_Long",
+													"ASSESS_ID","AU_NAME","AU_Type","BeneficialUse",
+													"R3172ParameterName","IR_Value","IR_Unit","IR_DetCond","IR_Fraction","CriterionUnits","TargetFraction",
+													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
+													"AssessmentType","CriterionLabel","CriterionType","DailyAggFun","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","NumericCriterion","SSC_StartMon","SSC_EndMon","SSC_MLID"
+													)]
 
-
-
-###Extract lake profiles and remove profiles from acc_data
+######
+###Extract lake profiles
 #head(acc_data[!is.na(acc_data$DataLoggerLine),])
 result$lake_profiles=acc_data[!is.na(acc_data$DataLoggerLine),]
-acc_data=acc_data[is.na(acc_data$DataLoggerLine),]
+
+#Remove profiles from acc_data
+acc_data=acc_data[!acc_data$ActivityIdentifier %in% result$lake_profiles$ActivityIdentifier,]
+sum(table(acc_data$DataLoggerLine))
+
+
+
+
+
+x=toxics_strms
+excl_cols=
+#######
+####Daily aggregation function   
+aggDVbyfun=function(x, excl_cols){
+	IR_Value=x$IR_Value
+	x=x[,!names(x) %in% "IR_Value"]
+	numerics=names(x[unlist(lapply(x, is.numeric))])
+	x=as.data.frame(lapply(x, addNA, ifany=T)) #Add NA as factor level where cols contain NAs
+	x=cbind(IR_Value,x) #Add back in preserved numeric IR_Value (alternatively could allow it to convert to factor then use as.numeric(levels(z))[z])
+	dimcheck=dim(unique(x[,c("ActivityStartDate","IR_MLID","ASSESS_ID","R3172ParameterName")]))[1]
+	x=x[,!names(x) %in% excl_cols]
+	daily=x[0,]
+	funs=unique(x$DailyAggFun)
+	
+	for(n in 1:length(funs)){
+		fun_n=funs[n]
+		x_n=x[x$DailyAggFun==fun_n,]
+		daily_n=aggregate(IR_Value~.,x_n, FUN=get(paste(fun_n)))
+		daily=rbind(daily,daily_n)
+	}
+	
+	if(dim(unique(daily[,c("ActivityStartDate","IR_MLID","ASSESS_ID","R3172ParameterName")]))[1]!=dimcheck){
+		stop("Error aggregating to daily values. Unique sample count does not match expected sample count.")
+	}
+	
+	return(daily)
+}
+
+
+
+#####ALTERNATIVE OPTIONS:
+#1. Aggregate at the finest possible resolution (value~site+date+parameter+units+aggfun), drop those from data, unique data, then merge back together.
+#2. ID all numeric columns at start of function, addNA, convert IR_Value back w/ as.numeric(levels(z))[z], aggregate, & convert other numerics back w/ as.numeric(levels(z))[z]
+
+
+
+
+
+#############
+#######Toxics & correction factors
+######
+toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$BeneficialUse=="CF"),]
+ 
+#split streams & lakes
+toxics_strms=toxics_raw[which(toxics_raw$AU_Type=="River/Stream"),]
+toxics_lakes=toxics_raw[which(toxics_raw$AU_Type=="Reservoir/Lake"),]
+
+###Streams
+#Aggregate to daily values
+dim(toxics_strms)
+toxics_strms_daily=aggDVbyfun(toxics_strms, excl_cols=c("ActivityIdentifier","ActivityStartTime.Time","OrganizationIdentifier"))
+summary(toxics_strms[toxics_strms$R3172ParameterName=="Arsenic" & toxics_strms$IR_Unit=="MG/L","IR_Value"])
+summary(toxics_strms_daily[toxics_strms_daily$R3172ParameterName=="Arsenic"& toxics_strms_daily$IR_Unit=="MG/L","IR_Value"])
+
+summary(toxics_strms[toxics_strms$R3172ParameterName=="pH","IR_Value"])
+summary(toxics_strms_daily[toxics_strms_daily$R3172ParameterName=="pH","IR_Value"])
+
+dim(toxics_strms_daily)
+
+#Assign CFs
+cfs_strms=toxics_strms_daily[toxics_strms_daily$BeneficialUse=="CF",]
+toxics_strms_daily=toxics_strms_daily[toxics_strms_daily$BeneficialUse!="CF",]
+
+
+
+
+
+###Lakes
+#Aggregate to daily values
+#Assign CFs
+
+
+
+#Assign lakes CFs
+
+
+#############
+#######Conventionals
+###### 
+conv_raw=acc_data[which(acc_data$AssessmentType=="Conventional"),]
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
