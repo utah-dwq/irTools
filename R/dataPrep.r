@@ -263,46 +263,35 @@ acc_data=acc_data[!acc_data$ActivityIdentifier %in% result$lake_profiles$Activit
 sum(table(acc_data$DataLoggerLine))
 
 
+facToNum=function(x){return(as.numeric(levels(x))[x])}
 
-
-
-x=toxics_strms
-excl_cols=
-#######
-####Daily aggregation function   
-aggDVbyfun=function(x, excl_cols){
-	IR_Value=x$IR_Value
-	x=x[,!names(x) %in% "IR_Value"]
-	numerics=names(x[unlist(lapply(x, is.numeric))])
-	x=as.data.frame(lapply(x, addNA, ifany=T)) #Add NA as factor level where cols contain NAs
-	x=cbind(IR_Value,x) #Add back in preserved numeric IR_Value (alternatively could allow it to convert to factor then use as.numeric(levels(z))[z])
-	dimcheck=dim(unique(x[,c("ActivityStartDate","IR_MLID","ASSESS_ID","R3172ParameterName")]))[1]
+#x=toxics_strms
+#value_var="IR_Value"
+#drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time")
+#agg_var="DailyAggFun"
+aggDVbyfun=function(x, value_var, drop_vars, agg_var){
+	val=x[,value_var]
+	x=x[,!names(x) %in% value_var & !names(x) %in% drop_vars]
+	num_names=names(x[unlist(lapply(x, is.numeric))])
+	x=as.data.frame(lapply(x, addNA, ifany=T)) #Add NA as factor level where cols contain NAs (converts everything to factor)
+	x=data.frame(val,x) #Add back in preserved numeric val (alternatively could allow it to convert to factor then use as.numeric(levels(z))[z])
 	x=x[,!names(x) %in% excl_cols]
 	daily=x[0,]
-	funs=unique(x$DailyAggFun)
+	funs=unique(x[,agg_var])
 	
 	for(n in 1:length(funs)){
 		fun_n=funs[n]
-		x_n=x[x$DailyAggFun==fun_n,]
-		daily_n=aggregate(IR_Value~.,x_n, FUN=get(paste(fun_n)))
+		x_n=x[x[,agg_var]==fun_n,]
+		daily_n=aggregate(val~.,x_n, FUN=get(paste(fun_n)))
 		daily=rbind(daily,daily_n)
 	}
 	
-	if(dim(unique(daily[,c("ActivityStartDate","IR_MLID","ASSESS_ID","R3172ParameterName")]))[1]!=dimcheck){
-		stop("Error aggregating to daily values. Unique sample count does not match expected sample count.")
-	}
+	daily[num_names]=lapply(daily[num_names], facToNum) #Convert numeric cols back to numeric
+	
+	names(daily)[names(daily)=="val"]=value_var #Rename value_var
 	
 	return(daily)
 }
-
-
-
-#####ALTERNATIVE OPTIONS:
-#1. Aggregate at the finest possible resolution (value~site+date+parameter+units+aggfun), drop those from data, unique data, then merge back together.
-#2. ID all numeric columns at start of function, addNA, convert IR_Value back w/ as.numeric(levels(z))[z], aggregate, & convert other numerics back w/ as.numeric(levels(z))[z]
-
-
-
 
 
 #############
@@ -317,18 +306,50 @@ toxics_lakes=toxics_raw[which(toxics_raw$AU_Type=="Reservoir/Lake"),]
 ###Streams
 #Aggregate to daily values
 dim(toxics_strms)
-toxics_strms_daily=aggDVbyfun(toxics_strms, excl_cols=c("ActivityIdentifier","ActivityStartTime.Time","OrganizationIdentifier"))
+
+
+toxics_strms_daily=aggDVbyfun(toxics_strms,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time"), agg_var="DailyAggFun")
+
 summary(toxics_strms[toxics_strms$R3172ParameterName=="Arsenic" & toxics_strms$IR_Unit=="MG/L","IR_Value"])
 summary(toxics_strms_daily[toxics_strms_daily$R3172ParameterName=="Arsenic"& toxics_strms_daily$IR_Unit=="MG/L","IR_Value"])
 
 summary(toxics_strms[toxics_strms$R3172ParameterName=="pH","IR_Value"])
 summary(toxics_strms_daily[toxics_strms_daily$R3172ParameterName=="pH","IR_Value"])
 
+head(toxics_strms_daily)
 dim(toxics_strms_daily)
+
 
 #Assign CFs
 cfs_strms=toxics_strms_daily[toxics_strms_daily$BeneficialUse=="CF",]
 toxics_strms_daily=toxics_strms_daily[toxics_strms_daily$BeneficialUse!="CF",]
+dim(toxics_strms_daily)
+
+cfs_strms$cf=paste0("cf_",cfs_strms$DailyAggFun,"_",cfs_strms$R3172ParameterName)
+cfs_cast=reshape2::dcast(cfs_strms, ActivityStartDate+IR_MLID~cf, value.var="IR_Value")
+
+dim(toxics_strms_daily)
+toxics_strms_daily=merge(toxics_strms_daily,cfs_cast,all.x=T)
+dim(toxics_strms_daily)
+head(toxics_strms_daily)
+head(toxics_strms_daily[toxics_strms_daily$IR_MLID=="UTAHDWQ_WQX-4939118",])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -363,47 +384,6 @@ conv_raw=acc_data[which(acc_data$AssessmentType=="Conventional"),]
 
 
 
-#Aggregate to daily values
-aggdata=acc_data
-#aggdata=aggdata[!is.na(aggdata$NumericCriteria)]
-aggdata$IR_Depth=with(aggdata, ifelse(!is.na(ResultDepthHeightMeasure.MeasureValue),ResultDepthHeightMeasure.MeasureValue,0))
-result=aggdata[0,]
-#for(n in 1:length(unique(data_agg$DailyAggFun))){
-	n=1
-	fun=unique(aggdata$DailyAggFun)[1]
-	aggdata_n=aggdata[aggdata$DailyAggFun==fun,]
-	agg_n=aggregate(IR_Value~IR_MLID+IR_Depth+ASSESS_ID+AU_NAME+AU_Type+Water_Type+ActivityStartDate+R3172ParameterName+BeneficialUse+FractionGroup+IR_Unit+IR_DetCond#+
-	#TargetFraction+CriterionLabel#+CriterionType+AsmntAggPeriod+AsmntAggPeriodUnit+AsmntAggFun+NumericCriteria+CriterionUnits+SSC_StartMon+SSC_EndMon+SSC_MLID,
-	,aggdata_n, FUN=fun)
-	dim(agg_n)
-
-#}
-
-
-
-###################################
-#Generate & cast correction factors
-
-#Correction factors
-#pH, temp, hardness (Ca+Mg > hardness >100(?), max=400 mg/l)
-
-#-Build correction factor subdataset
-#-Cast correction factor subdataset
-#-Merge correction factors to records needing calculated criteria
-#-Apply formulas to calculate criteria
-#-rbind corrections back to data (keep columns of correction factors, fill w/ NA for other data)
-
-data=data_crit
-cf=data[data$BeneficialUse=="CF",c("R3172ParameterName","BeneficialUse","MonitoringLocationIdentifier","ActivityIdentifier","ActivityStartDate","IR_Value","IR_Unit","IR_DetCond","DailyAggFun","ResultDepthHeightMeasure.MeasureValue")]
-cf_n=cf[cf$DailyAggFun=="max",]
-cf_n=cf_n[!is.na(cf_n$IR_Value),]
-
-fun="max"
-suppressWarnings({cf_n_cast=reshape2::dcast(cf_n, MonitoringLocationIdentifier+ActivityIdentifier+ActivityStartDate+ResultDepthHeightMeasure.MeasureValue~R3172ParameterName, value.var="IR_Value", fun.aggregate=fun)})
-
-
-
-
 
 #Other possible checks - execution TBD
 #Rivers/streams depth check
@@ -417,3 +397,101 @@ data[data$CharacteristicName=="Arsenic",names(data)%in%c("IR_Unit","CriterionUni
 return(result)
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#####OLD/DRAFT ideas
+#
+######ALTERNATIVE OPTIONS:
+##1. Aggregate at the finest possible resolution (value~site+date+parameter+units+aggfun), drop those from data, unique data, then merge back together.
+##2. ID all numeric columns at start of function, addNA, convert IR_Value back w/ as.numeric(levels(z))[z], aggregate, & convert other numerics back w/ as.numeric(levels(z))[z]
+#
+#
+#
+########
+#####Daily aggregation function   
+#aggDVbyfun=function(x, id_cols){
+#	IR_Value=x$IR_Value
+#	x=x[,!names(x) %in% "IR_Value"]
+#	numerics=x[unlist(lapply(x, is.numeric))]
+#	x=as.data.frame(lapply(x, addNA, ifany=T)) #Add NA as factor level where cols contain NAs (converts everything to factor)
+#	x=cbind(IR_Value,x) #Add back in preserved numeric IR_Value (alternatively could allow it to convert to factor then use as.numeric(levels(z))[z])
+#	dimcheck=dim(unique(x[,c("ActivityStartDate","IR_MLID","ASSESS_ID","R3172ParameterName")]))[1]
+#	x=x[,!names(x) %in% excl_cols]
+#	daily=x[0,]
+#	funs=unique(x$DailyAggFun)
+#	
+#	for(n in 1:length(funs)){
+#		fun_n=funs[n]
+#		x_n=x[x$DailyAggFun==fun_n,]
+#		daily_n=aggregate(IR_Value~.,x_n, FUN=get(paste(fun_n)))
+#		daily=rbind(daily,daily_n)
+#	}
+#	
+#	if(dim(unique(daily[,c("ActivityStartDate","IR_MLID","ASSESS_ID","R3172ParameterName")]))[1]!=dimcheck){
+#		stop("Error aggregating to daily values. Unique sample count does not match expected sample count.")
+#	}
+#	
+#	
+#	#Put numerics back in
+#	daily=daily[,!names(daily) %in% names(numerics)]
+#	test=daily
+#	
+#	
+#	
+#	
+#	return(daily)
+#}
+#
+
+
+
+########
+#####Daily aggregation function   
+#aggDVbyfun=function(x, id_vars, val_var, agg_var, drop_vars){
+#	input=x
+#	val=x[,val_var]
+#	x=x[,(names(x) %in% id_vars | names(x) %in% agg_var) & !names(x) %in% val_var]
+#	x=as.data.frame(lapply(x, addNA, ifany=T)) #Add NA as factor level where cols contain NAs (converts everything to factor)
+#	x=cbind(val,x)
+#	daily=x[0,]
+#	funs=unique(x[,agg_var])
+#	
+#	for(n in 1:length(funs)){
+#		fun_n=funs[n]
+#		x_n=x[x[,agg_var]==fun_n,]
+#		daily_n=aggregate(val~.,x_n, FUN=get(paste(fun_n)))
+#		daily=rbind(daily,daily_n)
+#	}
+#	
+#	#Merge back other columns (excluding drop_vars)
+#	input=unique(input[,!names(input) %in% drop_vars & !names(input) %in% names(x)])
+#	daily_input=merge(daily,input,all.x=T)
+#	
+#	#Rename val column
+#	names(daily_input)[names(daily_input)=="val"]=val_var
+#
+#	return(daily_input)
+#
+#}
+
+
