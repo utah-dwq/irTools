@@ -173,7 +173,7 @@ results_dql[is.na(results_dql$ResultMeasureValue)&
 			!is.na(results_dql$IR_LowerLimitType)
 			,"IR_DetCond"] = "ND"
 
-table(results_dql$IR_DetCond, exclude=NULL)	
+table(results_dql$IR_DetCond)	
 
 #is.na(rv) & !is.na(lql) & !is.na(uql) - THIS IS A "FYI" CHECK
 
@@ -187,7 +187,7 @@ results_dql[is.na(results_dql$ResultMeasureValue)&
 			is.na(results_dql$IR_LowerLimitType)&
 			!is.na(results_dql$IR_UpperLimitType)
 			,"IR_DetCond"] = "OD"
-table(results_dql$IR_DetCond, exclude=NULL)			
+table(results_dql$IR_DetCond)			
 
 	
 #is.na(rv) & is.na(lql) & is.na(uql) ->NRV
@@ -195,14 +195,14 @@ results_dql[is.na(results_dql$ResultMeasureValue)&
 			is.na(results_dql$IR_LowerLimitType)&
 			is.na(results_dql$IR_UpperLimitType)
 			,"IR_DetCond"] = "NRV"
-table(results_dql$IR_DetCond, exclude=NULL)			
+table(results_dql$IR_DetCond)			
 
 #!is.na(rv) & !is.na(uql) & rv>=uql ->OD (note that this includes records with !is.na(lql) and is.na(lql))
 results_dql[!is.na(results_dql$ResultMeasureValue)&
               !is.na(results_dql$IR_UpperLimitType)&
               results_dql$ResultMeasureValue>=results_dql$IR_UpperLimitValue
             ,"IR_DetCond"] = "OD"
-table(results_dql$IR_DetCond, exclude=NULL)	
+table(results_dql$IR_DetCond)	
 
 #!is.na(rv) & !is.na(uql) & is.na(lql) rv<uql ->DET
 results_dql[!is.na(results_dql$ResultMeasureValue)&
@@ -210,14 +210,14 @@ results_dql[!is.na(results_dql$ResultMeasureValue)&
 			is.na(results_dql$IR_LowerLimitType)&
 			results_dql$ResultMeasureValue<results_dql$IR_UpperLimitValue
 			,"IR_DetCond"] = "DET"
-table(results_dql$IR_DetCond, exclude=NULL)			
+table(results_dql$IR_DetCond)			
 
 #!is.na(rv) & !is.na(lql) & rv<=lql ->ND (note that this includes records with !is.na(uql) and is.na(uql))
 results_dql[!is.na(results_dql$ResultMeasureValue)&
 			!is.na(results_dql$IR_LowerLimitType)&
 			results_dql$ResultMeasureValue<=results_dql$IR_LowerLimitValue
 			,"IR_DetCond"] = "ND"
-table(results_dql$IR_DetCond, exclude=NULL)			
+table(results_dql$IR_DetCond)			
 
 #!is.na(rv) & !is.na(uql) & !is.na(lql) & rv>lql & rv<uql ->DET
 results_dql[!is.na(results_dql$ResultMeasureValue)&
@@ -226,7 +226,7 @@ results_dql[!is.na(results_dql$ResultMeasureValue)&
 			results_dql$ResultMeasureValue>results_dql$IR_LowerLimitValue&
 			results_dql$ResultMeasureValue<results_dql$IR_UpperLimitValue
 			,"IR_DetCond"] = "DET"
-table(results_dql$IR_DetCond, exclude=NULL)		
+table(results_dql$IR_DetCond)		
 
 #!is.na(rv) & is.na(uql) & !is.na(lql) & rv>lql ->DET
 results_dql[!is.na(results_dql$ResultMeasureValue)&
@@ -234,7 +234,7 @@ results_dql[!is.na(results_dql$ResultMeasureValue)&
 			!is.na(results_dql$IR_LowerLimitType)&
 			results_dql$ResultMeasureValue>results_dql$IR_LowerLimitValue
 			,"IR_DetCond"] = "DET"
-table(results_dql$IR_DetCond, exclude=NULL)			
+table(results_dql$IR_DetCond)			
 
 #!is.na(rv) & is.na(uql) & is.na(lql) & rv<=0 ->NRV
 results_dql[!is.na(results_dql$ResultMeasureValue)&
@@ -242,7 +242,7 @@ results_dql[!is.na(results_dql$ResultMeasureValue)&
 			is.na(results_dql$IR_LowerLimitType)&
 			results_dql$ResultMeasureValue<=0
 			,"IR_DetCond"] = "NRV"
-table(results_dql$IR_DetCond, exclude=NULL)			
+table(results_dql$IR_DetCond)			
 
 #!is.na(rv) & is.na(uql) & is.na(lql) & rv>0 ->DET
 results_dql[!is.na(results_dql$ResultMeasureValue)&
