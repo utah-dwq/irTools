@@ -35,6 +35,7 @@ reasons_flat=reasons_flat[,!names(reasons_flat) %in% "ReasonType"]
 au_poly <- readOGR(dsn = polygon_path, layer = "AU_poly_wgs84")
 ut_poly <- readOGR(dsn = polygon_path, layer = "UT_state_bnd_noTribal_wgs84")
 bu_poly <- readOGR(dsn = polygon_path, layer = "Beneficial_Uses_All_2020IR_wgs84")
+ss_poly <- readOGR(dsn = polygon_path, layer = "SiteSpecific_wgs84")
 au_poly=au_poly[au_poly$Status=="ACTIVE",]
 bu_poly=bu_poly[bu_poly$Status=="ACTIVE",]
 
@@ -191,14 +192,20 @@ server <- function(input, output, session){
 						"<br> Mgmt unit: ", bu_poly$Mgmt_Unit,
 						"<br> Waterbody type: ", bu_poly$Water_Type)
 				)%>%
-				addPolygons(data=ut_poly,group="State of Utah",smoothFactor=4,fillOpacity = 0.1,weight=3,color="green",
-				)%>%
+				addPolygons(data=ss_poly, group="Site-specific standards", smoothFactor=4,fillOpacity = 0.1,weight=3,color="blue",
+					popup = paste0(
+						"<br> Description: ", ss_poly$R317Descrp,
+						"<br> Standard: ", ss_poly$SiteSpecif
+					)
+					)%>%
+				addPolygons(data=ut_poly,group="State of Utah",smoothFactor=4,fillOpacity = 0.1,weight=3,color="green")%>%
 				addLayersControl(
 					position ="topleft",
 					baseGroups = c("Topo","Satellite"),
-					overlayGroups = c("Benficial uses", "Assessment units","State of Utah","Sites","Site labels"),
+					overlayGroups = c("Benficial uses", "Assessment units","Site-specific standards", "State of Utah","Sites","Site labels"),
 					options = layersControlOptions(collapsed = FALSE, autoZIndex=FALSE)) %>%
 				hideGroup("Assessment units")%>%
+				hideGroup("Site-specific standards")%>%
 				hideGroup("Benficial uses")%>%
 				hideGroup("Site labels")%>%
 				hideGroup("State of Utah")%>%
