@@ -5,7 +5,7 @@
 \title{Assign numeric criteria to WQP data}
 \usage{
 assignCriteria(data, crit_wb, crit_sheetname, ss_sheetname,
-  crit_startRow = 1, ss_startRow = 1)
+  crit_startRow = 1, ss_startRow = 1, rm_nocrit = TRUE)
 }
 \arguments{
 \item{data}{A merged, parameter translated, spatially referenced WQP result object. Must be post parameter translation step.}
@@ -19,6 +19,8 @@ assignCriteria(data, crit_wb, crit_sheetname, ss_sheetname,
 \item{crit_startRow}{Row to start reading criteria table excel sheet from (in case headers have been added). Defaults to 1.}
 
 \item{ss_startRow}{Row to start reading site specific criteria table excel sheet from (in case headers have been added). Defaults to 1.}
+
+\item{rm_nocrit}{Logical. If TRUE (default), remove records w/o numeric criteria before returning. If FALSE, function will pass through all records with flattened uses & any matching criteria - useful for passing through non-assessed parameters for other analyses.}
 }
 \value{
 A flattened & expanded sample x use x parameter x criterion data.frame.
