@@ -275,7 +275,7 @@ aggDVbyfun=function(x, value_var, drop_vars, agg_var){
 	num_names=names(x[unlist(lapply(x, is.numeric))])
 	x=as.data.frame(lapply(x, addNA, ifany=T)) #Add NA as factor level where cols contain NAs (converts everything to factor)
 	x=data.frame(val,x) #Add back in preserved numeric val (alternatively could allow it to convert to factor then use as.numeric(levels(z))[z])
-	x=x[,!names(x) %in% excl_cols]
+	x=x[,!names(x) %in% drop_vars]
 	daily=x[0,]
 	funs=unique(x[,agg_var])
 	
@@ -336,26 +336,10 @@ head(toxics_strms_daily[toxics_strms_daily$IR_MLID=="UTAHDWQ_WQX-4939118",])
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ###Lakes
+head(toxics_lakes)
+
+
 #Aggregate to daily values
 #Assign CFs
 
