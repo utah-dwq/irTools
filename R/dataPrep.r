@@ -308,7 +308,7 @@ toxics_lakes=toxics_raw[which(toxics_raw$AU_Type=="Reservoir/Lake"),]
 dim(toxics_strms)
 
 
-toxics_strms_daily=aggDVbyfun(toxics_strms,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time"), agg_var="DailyAggFun")
+toxics_strms_daily=aggDVbyfun(toxics_strms,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
 
 summary(toxics_strms[toxics_strms$R3172ParameterName=="Arsenic" & toxics_strms$IR_Unit=="MG/L","IR_Value"])
 summary(toxics_strms_daily[toxics_strms_daily$R3172ParameterName=="Arsenic"& toxics_strms_daily$IR_Unit=="MG/L","IR_Value"])
@@ -325,27 +325,51 @@ cfs_strms=toxics_strms_daily[toxics_strms_daily$BeneficialUse=="CF",]
 toxics_strms_daily=toxics_strms_daily[toxics_strms_daily$BeneficialUse!="CF",]
 dim(toxics_strms_daily)
 
-cfs_strms$cf=paste0("cf_",cfs_strms$DailyAggFun,"_",cfs_strms$R3172ParameterName)
-cfs_cast=reshape2::dcast(cfs_strms, ActivityStartDate+IR_MLID~cf, value.var="IR_Value")
+cfs_strms$cf=paste0("cf_",cfs_strms$DailyAggFun,"_",cfs_strms$R3172ParameterName,"_",cfs_strms$IR_Unit)
+cfs_strms_cast=reshape2::dcast(cfs_strms, ActivityStartDate+IR_MLID~cf, value.var="IR_Value")
 
 dim(toxics_strms_daily)
-toxics_strms_daily=merge(toxics_strms_daily,cfs_cast,all.x=T)
+toxics_strms_daily=merge(toxics_strms_daily,cfs_strms_cast,all.x=T)
 dim(toxics_strms_daily)
 head(toxics_strms_daily)
 head(toxics_strms_daily[toxics_strms_daily$IR_MLID=="UTAHDWQ_WQX-4939118",])
+toxics_strms_daily=toxics_strms_daily[toxics_strms_daily$BeneficialUse!="CF",] #Remove CF rows
 
 
 
 ###Lakes
 head(toxics_lakes)
 
+#Aggregate to daily values (including depth)
+toxics_lakes_daily=aggDVbyfun(toxics_lakes,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time"), agg_var="DailyAggFun")
 
-#Aggregate to daily values
 #Assign CFs
+cfs_lakes=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse=="CF",]
+cfs_lakes$cf=paste0("cf_",cfs_lakes$DailyAggFun,"_",cfs_lakes$R3172ParameterName,"_",cfs_lakes$IR_Unit)
+cfs_lakes_cast=reshape2::dcast(cfs_lakes, ActivityStartDate+IR_MLID+ActivityRelativeDepthName+ActivityDepthHeightMeasure.MeasureValue+ActivityDepthHeightMeasure.MeasureUnitCode~cf, value.var="IR_Value")
+dim(toxics_lakes_daily)
+toxics_lakes_daily=merge(toxics_lakes_daily,cfs_lakes_cast,all.x=T)
+dim(toxics_lakes_daily)
+head(toxics_lakes_daily)
+toxics_lakes_daily=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse!="CF",] #Remove CF rows
+
+#???Select preferred depths for toxics (shallow for ammonia, deep for all others)
+samps=unique(toxics_lakes_daily[,!names(toxics_lakes_daily) %in% c("IR_Value","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode")])
+samps$Count=NA
+
+for(n in 1:dim(samps)[1]){
+	samps_n=samps[n,]
+	res_n=merge(samps_n, toxics_lakes_daily)
+	samps$Count[n]=dim(res_n)[1]
+	}
 
 
 
-#Assign lakes CFs
+
+
+
+
+
 
 
 #############
