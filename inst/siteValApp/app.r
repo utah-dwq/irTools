@@ -5,12 +5,12 @@
 #library(shiny)
 #shiny::runApp("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\irTools\\inst\\siteValApp")
 
-######SET UP
-#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
-#polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-#edit_log_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\edit_logs"
-#reasons_flat_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\rev_rej_reasons.csv"
-######
+#####SET UP
+master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
+polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
+edit_log_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\edit_logs"
+reasons_flat_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\rev_rej_reasons.csv"
+#####
 
 #library(shiny)
 library(raster)
@@ -291,10 +291,12 @@ server <- function(input, output, session){
 		intersection=intersection[,-c(1,2)]
 		reactive_objects$hot_data<-reactive_objects$review[reactive_objects$review$UID%in%intersection$UID,]
 		MLID_Choices=append(as.vector(reactive_objects$hot_data$MonitoringLocationIdentifier),"REJECT")
-		rhandsontable(data.frame(reactive_objects$hot_data),readOnly=TRUE)%>%
+		rhandsontable(data.frame(reactive_objects$hot_data),readOnly=TRUE, digits=12)%>%
 			hot_col(col="IR_FLAG",type="dropdown",readOnly=FALSE,source=IR_flag_choices)%>%
 			hot_col(col="IR_MLID",type="dropdown",readOnly=FALSE,source=MLID_Choices)%>%
-			hot_col(col="IR_COMMENT",readOnly=FALSE,type="dropdown",source=reactive_objects$reason_choices)#%>%
+			hot_col(col="IR_COMMENT",readOnly=FALSE,type="dropdown",source=reactive_objects$reason_choices)%>%
+			hot_col(col="LatitudeMeasure",readOnly=TRUE,type="numeric", format='0[.]000000')%>%
+			hot_col(col="LongitudeMeasure",readOnly=TRUE,type="numeric", format='0[.]000000')
 	})
 
 	####Potential plotting example
