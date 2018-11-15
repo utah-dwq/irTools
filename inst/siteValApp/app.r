@@ -5,12 +5,12 @@
 #library(shiny)
 #shiny::runApp("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\irTools\\inst\\siteValApp")
 
-#####SET UP
-master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
-polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-edit_log_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\edit_logs"
-reasons_flat_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\rev_rej_reasons.csv"
-#####
+######SET UP
+#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
+#polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
+#edit_log_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\edit_logs"
+#reasons_flat_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\rev_rej_reasons.csv"
+######
 
 #library(shiny)
 library(raster)
