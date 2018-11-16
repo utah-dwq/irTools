@@ -4,14 +4,15 @@
 \alias{dataPrep}
 \title{Final data prep step before assessments}
 \usage{
-dataPrep(data)
+dataPrep(data, translation_wb, unit_sheetname = "unitConvTable",
+  startRow = 1)
 }
 \arguments{
 \item{data}{A merged, translated, and numeric criteria assigned WQP results R-object. Target units for conversions are defined by units associated with assigned numeric critera.}
 
 \item{translation_wb}{Full path and filename for IR translation workbook (.xlsx).}
 
-\item{sheetname}{Name of sheet in workbook holding IR unit conversion table. Defaults to "unitConvTable".}
+\item{unit_sheetname}{Name of sheet in workbook holding IR unit conversion table. Defaults to "unitConvTable".}
 
 \item{startRow}{Row to start reading the unit conversion table excel sheet from (in case headers have been added). Defaults to 1.}
 }
