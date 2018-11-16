@@ -23,14 +23,14 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow
 result=list()
 
 
-#SETUP
-#data_crit <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\data_criteria.csv")
-data=data_crit
-#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
-translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
-
-unit_sheetname="unitConvTable"
-startRow=1
+##SETUP
+##data_crit <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\data_criteria.csv")
+#data=data_crit
+##translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
+#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
+#
+#unit_sheetname="unitConvTable"
+#startRow=1
 
 
 
