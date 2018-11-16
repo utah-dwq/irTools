@@ -212,6 +212,7 @@ flags=unique(flags[,c("ActivityStartDate","ActivityIdentifier", "ActivityStartTi
 dimcheck=dim(data)[1]
 data=merge(data,flags,all.x=T)
 result$data_flags=data
+result$flag_reasons=reasons
 
 if(dimcheck!=dim(data)[1]){
 	stop("ERROR: Error in applying data prep flags. Data dimension[1] has changed.")
