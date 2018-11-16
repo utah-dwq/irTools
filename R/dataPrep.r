@@ -340,6 +340,11 @@ toxics_lakes_daily=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse!="CF",] #
 #	samps$Count[n]=dim(res_n)[1]
 #	}
 
+
+
+#Aggregate by AsmntAggPeriod AsmntAggPeriodUnit AsmntAggFun (need to do)
+
+
 #rbind lakes & streams back together to result (fills depth cols w/ NA for streams)
 result$toxics=plyr::rbind.fill(toxics_strms_daily, toxics_lakes_daily)
 
@@ -364,10 +369,16 @@ conv_strms_daily=aggDVbyfun(conv_strms,	value_var="IR_Value",drop_vars=c("Organi
 #Aggregate to daily values (including depth)
 conv_lakes_daily=aggDVbyfun(conv_lakes,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time"), agg_var="DailyAggFun")
 
+
+#Aggregate by AsmntAggPeriod AsmntAggPeriodUnit AsmntAggFun (need to do)
+
+
 #rbind lakes & streams back together to result (fills depth cols w/ NA for streams)
 result$conventionals=plyr::rbind.fill(conv_strms_daily, conv_lakes_daily)
 
 objects(result)
+
+
 
 
 #Other possible return objects:
