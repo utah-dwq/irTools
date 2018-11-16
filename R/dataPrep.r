@@ -41,7 +41,6 @@ reasons$reason=character(0)
 ####################################
 ######Activity type check###########
 ####################################
-### EH #### Changed my translation workbook IR_ActivityType(s) to match ParamMeasureType values
 data_n=data
 data_n$reason=NA
 data_n=within(data_n,{
