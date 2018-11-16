@@ -11,7 +11,7 @@
 #' @param outfile_path Path for file outputs.
 #' @param site_type_keep Vector of site type names to be considered in assessment process. Non-specified site types will be automatically rejected. Additional site types can be excluded when running assessment tools. However, including extra site types here may necessetitate additional manual site reviews.
 #' @param ownership_assess Vector of property ownership labels to be considered in assessment process. Defaults to c("Federal","Private","State") and exclude "Tribal".
-#' @return Exports a new, undated master site list & a list of review/reject flags & reasons associated with the most recent auto valudation run to the outfile_path. If a master site file already exists in outfile_path, it is moved to the 'edit_logs' folder and renamed with the system date.
+#' @return Exports a new, undated master site list to the outfile_path. If one already exists in outfile_path, it is moved to the 'edit_logs' folder and renamed with the system date.
 
 #' @import sp
 #' @import sf
@@ -35,12 +35,12 @@ autoValidateWQPsites=function(sites_file,master_site_file,polygon_path,outfile_p
 
 ){
 
-###########
-#####TESTING SETUP
+##########
+####TESTING SETUP
 #library(sp)
 #library(sf)
-#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites161001-180930.csv"
-##sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites101001-180930_EHduptest.csv"
+#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\01raw_data\\sites141001-160930.csv"
+#sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites101001-180930_EHduptest.csv"
 #master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
 #polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
 #outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation"
@@ -687,7 +687,6 @@ master_new=within(master_new,{
 master_new=within(master_new,{
 	ValidationType[MonitoringLocationIdentifier %in% reasons_all$MonitoringLocationIdentifier]="AUTO"
 })
-
 
 
 

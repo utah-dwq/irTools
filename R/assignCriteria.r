@@ -17,7 +17,7 @@
 #' @importFrom plyr rbind.fill
 #' @importFrom lubridate month
 #' @export
-assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startRow=1, ss_startRow=1, rm_nocrit=TRUE){ 
+assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startRow=1, ss_startRow=1, rm_nocrit=TRUE){
 
 
 ###Assign numeric criteria to WQP data
@@ -75,7 +75,7 @@ table(is.na(data$BEN_CLASS))
 #Expand comma separated uses (BEN_CLASS)
 max_use_count=max(sapply(strsplit(data$BEN_CLASS,","),FUN="length"))
 use_colnames=paste0(rep("use",max_use_count),seq(1:max_use_count))
-uses_mat=unique(data.frame(data$BEN_CLASS,reshape2::colsplit(data$BEN_CLASS,",",use_colnames)))
+uses_mat=unique(data.frame(data$BEN_CLASS,colsplit(data$BEN_CLASS,",",use_colnames)))
 names(uses_mat)[names(uses_mat)=="data.BEN_CLASS"]="BEN_CLASS"
 
 #Flatten uses
@@ -89,6 +89,9 @@ data_uses_flat=merge(data,uses_flat,all=T)
 #Merge criteria to data w/ flattened uses
 data_uses_flat_crit=merge(data_uses_flat,crit_table,all.x=T)
 dim_check=dim(data_uses_flat_crit)[1]
+
+head(data_uses_flat_crit[which(data_uses_flat_crit$R3172ParameterName=="Magnesium" & is.na(data_uses_flat_crit$NumericCriteria) & data_uses_flat_crit$BeneficialUse=="CF"),])
+
 
 #4. Site specific standards
 #ID records w/ SS criteria (by SSCLocDescription)
@@ -117,7 +120,7 @@ dim(data_uses_flat_ssc)
 data_uses_flat_ssc$month=lubridate::month(data_uses_flat_ssc$ActivityStartDate)
 
 data_uses_flat_ssc$in_ssc_period=
-	((data_uses_flat_ssc$month>=data_uses_flat_ssc$SSC_StartMon & data_uses_flat_ssc$month<=data_uses_flat_ssc$SSC_EndMon) | 
+	((data_uses_flat_ssc$month>=data_uses_flat_ssc$SSC_StartMon & data_uses_flat_ssc$month<=data_uses_flat_ssc$SSC_EndMon) |
 	(data_uses_flat_ssc$SSC_StartMon > data_uses_flat_ssc$SSC_EndMon & (data_uses_flat_ssc$month<=data_uses_flat_ssc$SSC_EndMon | data_uses_flat_ssc$month>=data_uses_flat_ssc$SSC_StartMon)))
 
 table(data_uses_flat_ssc$in_ssc_period)
@@ -127,7 +130,7 @@ table(data_uses_flat_ssc$in_ssc_period)
 #	data_uses_flat_ssc$month,
 #	data_uses_flat_ssc$SSC_StartMon,
 #	data_uses_flat_ssc$SSC_EndMon,
-#	((data_uses_flat_ssc$month>=data_uses_flat_ssc$SSC_StartMon & data_uses_flat_ssc$month<=data_uses_flat_ssc$SSC_EndMon) | 
+#	((data_uses_flat_ssc$month>=data_uses_flat_ssc$SSC_StartMon & data_uses_flat_ssc$month<=data_uses_flat_ssc$SSC_EndMon) |
 #	(data_uses_flat_ssc$SSC_StartMon > data_uses_flat_ssc$SSC_EndMon & (data_uses_flat_ssc$month<=data_uses_flat_ssc$SSC_EndMon | data_uses_flat_ssc$month>=data_uses_flat_ssc$SSC_StartMon)))
 #)
 
