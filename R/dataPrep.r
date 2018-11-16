@@ -23,12 +23,12 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow
 result=list()
 
 
-##SETUP
-##data_crit <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\data_criteria.csv")
+###SETUP
+###data_crit <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\data_criteria.csv")
 #data=data_crit
-##translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
-#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
-#
+###translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
+##translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
+##
 #unit_sheetname="unitConvTable"
 #startRow=1
 
@@ -365,14 +365,16 @@ conv_strms_daily=aggDVbyfun(conv_strms,	value_var="IR_Value",drop_vars=c("Organi
 
 #Lakes
 #Select surface only results for lakes conventionals
-conv_lakes$ActivityDepthHeightMeasure.MeasureValue=facToNum(conv_lakes$ActivityDepthHeightMeasure.MeasureValue)
+suppressWarnings({
+	conv_lakes$ActivityDepthHeightMeasure.MeasureValue=facToNum(conv_lakes$ActivityDepthHeightMeasure.MeasureValue)
+	})
 conv_lakes=within(conv_lakes,{
 	ActivityDepthHeightMeasure.MeasureValue[which(ActivityDepthHeightMeasure.MeasureUnitCode=="ft" | ActivityDepthHeightMeasure.MeasureUnitCode=="feet")]=ActivityDepthHeightMeasure.MeasureValue*0.3048
 	ActivityDepthHeightMeasure.MeasureUnitCode[which(ActivityDepthHeightMeasure.MeasureUnitCode=="ft" | ActivityDepthHeightMeasure.MeasureUnitCode=="feet")]="m"
 	ActivityDepthHeightMeasure.MeasureUnitCode[which(ActivityDepthHeightMeasure.MeasureUnitCode=="meters")]="m"
 	})
 if(any(conv_lakes$ActivityDepthHeightMeasure.MeasureUnitCode!="m", na.rm=T)){stop("Error: lake depth units cannot be converted to meters. Additional conversion may be needed.")}	
-conv_lakes=conv_lakes[which(conv_lakes$ActivityRelativeDepthName=="Surface" | conv_lakes$ActivityDepthHeightMeasure.MeasureValue <=2),]
+conv_lakes=conv_lakes[which(conv_lakes$ActivityRelativeDepthName=="Surface" | (conv_lakes$ActivityDepthHeightMeasure.MeasureValue <=2 & conv_lakes$ActivityDepthHeightMeasure.MeasureValue>=0)),]
 
 #Remove data for ALUs (assessed via profile tools)
 conv_lakes=conv_lakes[!conv_lakes$BeneficialUse %in% c("3A","3B","3C","3D","3E"),]
