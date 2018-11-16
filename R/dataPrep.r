@@ -25,12 +25,14 @@ result=list()
 
 #SETUP
 #data_crit <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\data_criteria.csv")
-data=data_crit
-#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
-translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
+#data=data_crit
+##translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
+#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
+#
+#unit_sheetname="unitConvTable"
+#startRow=1
 
-unit_sheetname="unitConvTable"
-startRow=1
+
 
 reasons=data.frame(data[0,])
 reasons$reason=character(0)
@@ -55,8 +57,8 @@ rm(data_n)
 ######Fraction type check###########
 ####################################
 
-###JV note - interesting check here - I ran into a similar issue w/ a screen table where the IR_FLAG column was fully filled out so it applyScreenTable() didn't trip an error,
-###but another column that further code depends on was not fully filled out. Note sure the best way to deal with this. Also have some params for which there shouldn't be a fraction at all anyway.
+###JV note - interesting check here - I ran into a similar issue w/ a screen table where the IR_FLAG column was fully filled out so applyScreenTable() didn't trip an error,
+###but another column that further code depends on was not fully filled out. Note sure the best way to deal with this yet. Also have some params for which there shouldn't be a fraction at all anyway.
 ###Added conditions !is.na(TargetFraction) and is.na(IR_Fraction) to try to account for this, but may want a more general solution. Also tweaked the warning to note that these records are getting rejected here.
 #if(table(data$Data_Prep_FLAG)[1]+table(data$Data_Prep_FLAG)[2]!=dim(data)[1]){
 #  print("WARNING: NAs coerced in Data_Prep_FLAG due to NA's in IR_Fraction or Target Fraction")
@@ -85,7 +87,6 @@ sheetnames=openxlsx::getSheetNames(translation_wb)
 for(n in 1:length(sheetnames)){
   openxlsx::removeFilter(trans_wb, sheetnames[n])
 }
-
 
 
 ##################################
@@ -168,25 +169,6 @@ dim(diss_tot_units)
 
 reasons=rbind(reasons, diss_tot_units[!is.na(diss_tot_units$reason),])
 print(table(reasons$reason))
-
-
-
-###JV - Don't think we need this with "flat" approach, but a little unclear of intent. EH - thoughts?
-## Determine rows in diss_tot_units 
-#diss_tot_units$Data_Prep_REASON = "ACCEPT" # start them all off as ACCEPT
-#diss_tot_units$Data_Prep_REASON[(diss_tot_units$IR_Value_Tot<diss_tot_units$IR_Value_Diss) & (diss_tot_units$Data_Prep_REASON!="ACCEPT")]<- paste(diss_tot_units$Data_Prep_REASON,"Dissolved fraction greater than total fraction", sep=",") #concatenate multiple reasons
-#diss_tot_units$Data_Prep_REASON[(diss_tot_units$IR_Value_Tot<diss_tot_units$IR_Value_Diss) & (diss_tot_units$Data_Prep_REASON=="ACCEPT")]<- "Dissolved fraction greater than total fraction"
-#
-## # Check to make sure FLAG and REASON reflect same number of changes.
-## length(diss_tot_units$Data_Prep_FLAG[diss_tot_units$Data_Prep_FLAG=="REJECT"])
-## length(diss_tot_units$Data_Prep_REASON[grepl("Dissolved fraction greater than total fraction",diss_tot_units$Data_Prep_REASON)])
-#
-## Merge Dis_Tot_FLAG info back to data.
-#ds_test <- diss_tot_units[,names(diss_tot_units)%in%c("ActivityIdentifier","ActivityStartDate","R3172ParameterName","Data_Prep_FLAG","Data_Prep_REASON")]
-#data <- merge(data,ds_test, all=TRUE)
-#dim(data)
-#unique(data$Data_Prep_FLAG)
-#unique(data$Data_Prep_REASON)
 
 
 ##################################
