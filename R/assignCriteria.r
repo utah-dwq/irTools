@@ -153,6 +153,17 @@ if(rm_nocrit==TRUE){
 	data_uses_flat_crit=data_uses_flat_crit[!is.na(data_uses_flat_crit$NumericCriterion) | data_uses_flat_crit$BeneficialUse=="CF",]
 }
 
+# Show user table of parameters and the number of records with (and without) standards criteria for each use.
+temp <- data_uses_flat_crit[!is.na(data_uses_flat_crit$NumericCriteria) | data_uses_flat_crit$BeneficialUse=="CF",]
+temp1 <- data_uses_flat_crit[is.na(data_uses_flat_crit$NumericCriteria)&!data_uses_flat_crit$BeneficialUse=="CF",]
+print("Data record counts for each parameter with standards criteria and associated beneficial use:")
+print(table(temp$R3172ParameterName, temp$BeneficialUse))
+if(length(temp1[,1])>0){
+  print("Data record counts for each parameter without standard criteria:")
+  print(table(temp1$R3172ParameterName, temp1$BeneficialUse))
+}
+
+
 return(data_uses_flat_crit)
 
 
