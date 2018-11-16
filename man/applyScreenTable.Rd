@@ -5,7 +5,7 @@
 \title{Apply screens to WQP data by selected table}
 \usage{
 applyScreenTable(data, translation_wb, sheetname, flag_col_name,
-  com_col_name, startRow = 1, na_err = TRUE)
+  com_col_name, startRow = 1, na_dup_err = TRUE)
 }
 \arguments{
 \item{data}{A merged WQP result object. Must include both narrowresult & activity files. May also be a post-fillMaskedValues() results object.}
@@ -20,7 +20,7 @@ applyScreenTable(data, translation_wb, sheetname, flag_col_name,
 
 \item{startRow}{Row to start reading excel sheet from (in case additional headers have been added). Defaults to 1.}
 
-\item{na_err}{Logical. If TRUE (default), exit function with error if any IR_FLAG values are NA. Set to FALSE to apply a screen table without checking for NA values in IR_FLAG.}
+\item{na_dup_err}{Logical. If TRUE (default), exit function with error if IR_FLAG values are NA or if duplicates detected in combinations in the domain table for which InData=="Y". Set to FALSE to apply a screen table without checking for NA values in IR_FLAG.}
 }
 \value{
 A data.frame object of WQP data with merged columns from input screening tables.
