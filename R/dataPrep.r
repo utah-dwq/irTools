@@ -343,7 +343,7 @@ toxics_lakes_daily=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse!="CF",] #
 
 
 #Aggregate by AsmntAggPeriod AsmntAggPeriodUnit AsmntAggFun (need to do)
-
+#Calculate CF dependent criterion values (need to do)
 
 #rbind lakes & streams back together to result (fills depth cols w/ NA for streams)
 result$toxics=plyr::rbind.fill(toxics_strms_daily, toxics_lakes_daily)
