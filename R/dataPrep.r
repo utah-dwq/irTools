@@ -354,7 +354,7 @@ result$toxics=plyr::rbind.fill(toxics_strms_daily, toxics_lakes_daily)
 #############
 #######Conventionals
 ###### 
-conv_raw=acc_data[which(acc_data$AssessmentType=="Conventional"),]
+conv_raw=acc_data[which(acc_data$AssessmentType=="Conventional" & acc_data$BeneficialUse!="CF"),]
  
 #split streams & lakes
 conv_strms=conv_raw[which(conv_raw$AU_Type=="River/Stream"),]
