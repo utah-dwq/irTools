@@ -27,13 +27,13 @@ fillMaskedValues = function(results, detquantlim, translation_wb, sheetname="det
 ####TESTING SETUP
 ####
 #
-#results=merged_results
-#detquantlim=detquantlim
+# results=merged_results
+# detquantlim=detquantlim
 #translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\jake\\translationWorkbook\\ir_translation_workbook.xlsx"
-#sheetname="detLimitTypeTable"
-#lql_fac=0.5
-#uql_fac=1
-#startRow=3
+# sheetname="detLimitTypeTable"
+# lql_fac=0.5
+# uql_fac=1
+# startRow=3
 #######
 #######
 
@@ -55,6 +55,11 @@ detLimitTypeTable=data.frame(readWorkbook(trans_wb, sheet=sheetname, startRow=st
 detLimitTypeTable=detLimitTypeTable[,c("DetectionQuantitationLimitTypeName","IRLimitPriorityRanking_lower","IRLimitPriorityRanking_upper")]
 
 dql=merge(detquantlim,detLimitTypeTable,all.x=T)
+
+# Dimension check following merge.
+if(dim(detquantlim)[1]!=dim(dql)[1]){
+  stop("Merge between detquantlim and detLimitTypeTable resulted in extra rows. Check for duplicates in detLimitTypeTable.")
+}
 dim(dql)
 head(dql)
 length(unique(dql$ResultIdentifier))
@@ -109,6 +114,7 @@ names(dql_up)[names(dql_up)=="DetectionQuantitationLimitMeasure.MeasureUnitCode"
 
 sel_dql=merge(dql_lo, dql_up)
 
+#Check to ensure merge does not result in orphans.
 if(length(unique(dql$ResultIdentifier))!=dim(sel_dql)[1]){stop("Error: selected limits not unique to each RID...")}
 
 #Convert unranked (99999) lims back to NA
@@ -120,14 +126,15 @@ sel_dql[sel_dql$IR_UpperLimitRank==99999,c("IR_UpperLimitType","IR_UpperLimitVal
 results_dql=merge(results, sel_dql, all.x=T)
 
 head(results_dql)
-table(results_dql$IR_LowerLimitType)
-table(results_dql$IR_UpperLimitType)
-
+print("Lower Detection Limit Types:")
+print(table(droplevels(results_dql$IR_LowerLimitType), exclude=NULL))
+print("Upper Detection Limit Types:")
+print(table(droplevels(results_dql$IR_UpperLimitType), exclude=NULL))
 
 #######
 #Filling values	
 results_dql$ResultMeasureValue[results_dql$ResultMeasureValue==""]=NA #Convert blanks result values to NA
-
+results_dql$ResultMeasure.MeasureUnitCode[results_dql$ResultMeasure.MeasureUnitCode==""]=NA
 #Coercing values to numeric if not already numeric (need to double check w/ Emilie re: special characters in these columns)
 suppressWarnings({
 	if(class(results_dql$ResultMeasureValue)!="numeric"){
@@ -138,6 +145,21 @@ suppressWarnings({
 		results_dql$IR_UpperLimitValue=as.numeric(levels(results_dql$IR_UpperLimitValue))[results_dql$IR_UpperLimitValue]}
 	})
 
+#Check and make sure result units (if present), match limit units (if present).
+ll_check <- na.omit(unique(results_dql[,c("ResultMeasure.MeasureUnitCode","IR_LowerLimitUnit")]))
+ll_check$Where_To_Find <- "dql_lo"
+colnames(ll_check) <- c("ResultMeasure.MeasureUnitCode","LimitUnit","Where_To_Find")
+ul_check <- na.omit(unique(results_dql[,c("ResultMeasure.MeasureUnitCode","IR_UpperLimitUnit")]))
+ul_check$Where_To_Find <- "dql_up"
+colnames(ul_check) <- c("ResultMeasure.MeasureUnitCode","LimitUnit","Where_To_Find")
+all_check <- merge(ll_check, ul_check, all=T)
+all_check$ResultMeasure.MeasureUnitCode <- as.character(all_check$ResultMeasure.MeasureUnitCode)
+all_check$LimitUnit <- as.character(all_check$LimitUnit)
+
+if(any(!all_check$LimitUnit==all_check$ResultMeasure.MeasureUnitCode)){
+  print(all_check[!all_check$LimitUnit==all_check$ResultMeasure.MeasureUnitCode,])
+  stop("Result units and limit units differ for one or more records. Records with disparate units should be located in dql_lo or dql_up, have their ResultIdentifier(s) noted, and be corrected or rejected.")
+}
 
 #Generate columns to be filled (fill w/ NA up front)
 results_dql[,c("IR_Value","IR_Unit","IR_DetCond")]=NA
@@ -151,7 +173,14 @@ results_dql[is.na(results_dql$ResultMeasureValue)&
 			!is.na(results_dql$IR_LowerLimitType)
 			,"IR_DetCond"] = "ND"
 
-table(results_dql$IR_DetCond)			
+table(results_dql$IR_DetCond)	
+
+#is.na(rv) & !is.na(lql) & !is.na(uql) - THIS IS A "FYI" CHECK
+
+twolim <- length(results_dql[is.na(results_dql$ResultMeasureValue)&
+            !is.na(results_dql$IR_LowerLimitType)&
+            !is.na(results_dql$IR_UpperLimitType),1])
+print(paste("FYI: There are",twolim,"records with both upper and lower quantitation limits and is.na(result values). These records have been assigned as 'ND's"))
 
 #is.na(rv) & is.na(lql) & !is.na(uql) ->OD
 results_dql[is.na(results_dql$ResultMeasureValue)&
@@ -168,14 +197,12 @@ results_dql[is.na(results_dql$ResultMeasureValue)&
 			,"IR_DetCond"] = "NRV"
 table(results_dql$IR_DetCond)			
 
-					
-#!is.na(rv) & !is.na(uql) & is.na(lql) & rv>=uql ->OD
+#!is.na(rv) & !is.na(uql) & rv>=uql ->OD (note that this includes records with !is.na(lql) and is.na(lql))
 results_dql[!is.na(results_dql$ResultMeasureValue)&
-			!is.na(results_dql$IR_UpperLimitType)&
-			is.na(results_dql$IR_LowerLimitType)&
-			results_dql$ResultMeasureValue>=results_dql$IR_UpperLimitValue
-			,"IR_DetCond"] = "OD"
-table(results_dql$IR_DetCond)			
+              !is.na(results_dql$IR_UpperLimitType)&
+              results_dql$ResultMeasureValue>=results_dql$IR_UpperLimitValue
+            ,"IR_DetCond"] = "OD"
+table(results_dql$IR_DetCond)	
 
 #!is.na(rv) & !is.na(uql) & is.na(lql) rv<uql ->DET
 results_dql[!is.na(results_dql$ResultMeasureValue)&
@@ -185,21 +212,11 @@ results_dql[!is.na(results_dql$ResultMeasureValue)&
 			,"IR_DetCond"] = "DET"
 table(results_dql$IR_DetCond)			
 
-#!is.na(rv) & !is.na(uql) & !is.na(lql) & rv<=lql ->ND
+#!is.na(rv) & !is.na(lql) & rv<=lql ->ND (note that this includes records with !is.na(uql) and is.na(uql))
 results_dql[!is.na(results_dql$ResultMeasureValue)&
-			!is.na(results_dql$IR_UpperLimitType)&
 			!is.na(results_dql$IR_LowerLimitType)&
 			results_dql$ResultMeasureValue<=results_dql$IR_LowerLimitValue
 			,"IR_DetCond"] = "ND"
-table(results_dql$IR_DetCond)			
-
-#!is.na(rv) & !is.na(uql) & !is.na(lql) & rv>lql & rv>=uql ->OD
-results_dql[!is.na(results_dql$ResultMeasureValue)&
-			!is.na(results_dql$IR_UpperLimitType)&
-			!is.na(results_dql$IR_LowerLimitType)&
-			results_dql$ResultMeasureValue>results_dql$IR_LowerLimitValue&
-			results_dql$ResultMeasureValue>=results_dql$IR_UpperLimitValue
-			,"IR_DetCond"] = "OD"
 table(results_dql$IR_DetCond)			
 
 #!is.na(rv) & !is.na(uql) & !is.na(lql) & rv>lql & rv<uql ->DET
@@ -209,15 +226,7 @@ results_dql[!is.na(results_dql$ResultMeasureValue)&
 			results_dql$ResultMeasureValue>results_dql$IR_LowerLimitValue&
 			results_dql$ResultMeasureValue<results_dql$IR_UpperLimitValue
 			,"IR_DetCond"] = "DET"
-table(results_dql$IR_DetCond)			
-
-#!is.na(rv) & is.na(uql) & !is.na(lql) & rv<=lql ->ND
-results_dql[!is.na(results_dql$ResultMeasureValue)&
-			is.na(results_dql$IR_UpperLimitType)&
-			!is.na(results_dql$IR_LowerLimitType)&
-			results_dql$ResultMeasureValue<=results_dql$IR_LowerLimitValue
-			,"IR_DetCond"] = "ND"
-table(results_dql$IR_DetCond)			
+table(results_dql$IR_DetCond)		
 
 #!is.na(rv) & is.na(uql) & !is.na(lql) & rv>lql ->DET
 results_dql[!is.na(results_dql$ResultMeasureValue)&
@@ -241,10 +250,13 @@ results_dql[!is.na(results_dql$ResultMeasureValue)&
 			is.na(results_dql$IR_LowerLimitType)&
 			results_dql$ResultMeasureValue>0
 			,"IR_DetCond"] = "DET"
-table(results_dql$IR_DetCond)			
 
-if(any(is.na(results_dql$IR_DetCond))){stop("ERROR - one or more detection conditions cannot be determined based on existing logic...")}
+print("Detection condition counts:")
+print(table(results_dql$IR_DetCond, exclude=NULL))			
 
+if(any(is.na(results_dql$IR_DetCond))){stop("ERROR - one or more detection conditions cannot be determined based on existing logic. NA's present in IR_DetCond.")}
+
+#check1 <- unique(results_dql[results_dql$IR_DetCond=="DET",c("ResultMeasure.MeasureUnitCode","IR_LowerLimitUnit")])
 
 #Fill values & units based on IR_DetCond
 results_dql[results_dql$IR_DetCond=="DET","IR_Value"]=results_dql[results_dql$IR_DetCond=="DET","ResultMeasureValue"]
