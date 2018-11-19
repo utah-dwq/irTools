@@ -14,76 +14,70 @@
 
 
 #' @export
-countExceedances=function(data, min_n, max_exc_count=NA, max_exc_pct=NA, max_exc_count_id=NA, max_exc_pct_id=NA, id_cols=c()){
+assessExcCounts=function(data, min_n, max_exc_count=NA, max_exc_pct=NA, max_exc_count_id=NA, max_exc_pct_id=NA, id_cols=c()){
 
-#Set up
-data=conv_exc
-min_n=10
+##Set up####
+#data=conv_exc
+#min_n=10
+#
+#max_exc_count=2
+#max_exc_pct=NA
+#
+#max_exc_count_id=NA
+#max_exc_pct_id=10
+#########
 
-max_exc_count=NA
-max_exc_pct=10
+	#Check args
+	if(is.na(max_exc_count) & is.na(max_exc_pct)){stop("Error: one of max_exc_count or max_exc_pct must be supplied.")}
+	if(!is.na(max_exc_count) & !is.na(max_exc_pct)){stop("Error: Only one of max_exc_count or max_exc_pct may be supplied.")}
+	if(is.na(max_exc_count_id) & is.na(max_exc_pct_id)){stop("Error: one of max_exc_count_id or max_exc_pct_id must be supplied.")}
+	if(!is.na(max_exc_count_id) & !is.na(max_exc_pct_id)){stop("Error: Only one of max_exc_count_id or max_exc_pct_id may be supplied.")}
+	
+	data$IR_Cat=NA
+	
+	
+	data=within(data,{
+		max_allow_exc=ceiling(data$SampleCount*max_exc_pct/100) #Note, will produce all NAs if is.na(max_exc_pct)
+		max_allow_exc_id=ceiling(SampleCount*max_exc_pct_id/100) #Note, will produce all NAs if is.na(max_exc_pct_id)
+	})
+	
+	if(!is.na(max_exc_pct)){ #Exceedance pct based sufficient data assessments
+	
+		if(!is.na(max_exc_count_id)){ #Exceedance count based insufficient data assessments
+			data=within(data,{
+				IR_Cat[SampleCount>=min_n & ExcCount>max_allow_exc]="NS"
+				IR_Cat[SampleCount>=min_n & ExcCount<=max_allow_exc]="FS"
+				IR_Cat[SampleCount<min_n & ExcCount>max_exc_count_id]="idE"
+				IR_Cat[SampleCount<min_n & ExcCount<=max_exc_count_id]="idNE"
+			})
+		}else{  #Exceedance pct based insufficient data assessments
+			data=within(data,{
+				IR_Cat[SampleCount>=min_n & ExcCount>max_allow_exc]="NS"
+				IR_Cat[SampleCount>=min_n & ExcCount<=max_allow_exc]="FS"
+				IR_Cat[SampleCount<min_n & ExcCount>max_allow_exc_id]="idE"
+				IR_Cat[SampleCount<min_n & ExcCount<=max_allow_exc_id]="idNE"
+			})
+		}
 
-max_exc_count_id=NA
-max_exc_pct_id=10
-
-
-#Check args
-if(is.na(max_exc_count) & is.na(max_exc_pct)){stop("Error: one of max_exc_count or max_exc_pct must be supplied.")}
-if(!is.na(max_exc_count) & !is.na(max_exc_pct)){stop("Error: Only one of max_exc_count or max_exc_pct may be supplied.")}
-if(is.na(max_exc_count_id) & is.na(max_exc_pct_id)){stop("Error: one of max_exc_count_id or max_exc_pct_id must be supplied.")}
-if(!is.na(max_exc_count_id) & !is.na(max_exc_pct_id)){stop("Error: Only one of max_exc_count_id or max_exc_pct_id may be supplied.")}
-
-data$IR_Cat=NA
-
-if(is.na(max_exc_count)){ #Exceedance pct based sufficient data assessments
-	data$max_allow_exc=ceiling(data$SampleCount*max_exc_pct/100)
-
-	if(!is.na(max_exc_count_id)){ #Exceedance count based insufficient data assessments
-		data=within(data,{
-			max_allow_exc=ceiling(SampleCount*max_exc_pct/100)
-			IR_Cat[SampleCount>=min_n & ExcCount>max_allow_exc]="NS"
-			IR_Cat[SampleCount>=min_n & ExcCount<=max_allow_exc]="FS"
-			IR_Cat[SampleCount<min_n & ExcCount>max_exc_count_id]="idE"
-			IR_Cat[SampleCount<min_n & ExcCount<=max_exc_count_id]="idNE"
-		})
-	}else{  #Exceedance pct based insufficient data assessments
-		data=within(data,{
-			max_allow_exc_id=ceiling(SampleCount*max_exc_pct_id/100)
-			IR_Cat[SampleCount>=min_n & ExcCount>max_allow_exc]="NS"
-			IR_Cat[SampleCount>=min_n & ExcCount<=max_allow_exc]="FS"
-			IR_Cat[SampleCount<min_n & ExcCount>max_allow_exc_id]="idE"
-			IR_Cat[SampleCount<min_n & ExcCount<=max_allow_exc_id]="idNE"
-		})
+	}else{ #Exceedance count based assessments
+		if(!is.na(max_exc_count_id)){ #Exceedance count based insufficient data assessments
+			data=within(data,{
+				IR_Cat[SampleCount>=min_n & ExcCount>max_exc_count]="NS"
+				IR_Cat[SampleCount>=min_n & ExcCount<=max_exc_count]="FS"
+				IR_Cat[SampleCount<min_n & ExcCount>max_exc_count_id]="idE"
+				IR_Cat[SampleCount<min_n & ExcCount<=max_exc_count_id]="idNE"
+			})
+		}else{  #Exceedance pct based insufficient data assessments
+			data=within(data,{
+				IR_Cat[SampleCount>=min_n & ExcCount>max_exc_count]="NS"
+				IR_Cat[SampleCount>=min_n & ExcCount<=max_exc_count]="FS"
+				IR_Cat[SampleCount<min_n & ExcCount>max_allow_exc_id]="idE"
+				IR_Cat[SampleCount<min_n & ExcCount<=max_allow_exc_id]="idNE"
+			})
+		}
 	}
 
-} 
-
-
-#else{ #Exceedance pct based assessments
-	
-
-
-
-
-
-
-
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+data=data[,!names(data) %in% c("max_allow_exc_id","max_allow_exc")]
+return(data)
 
 }
