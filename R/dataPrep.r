@@ -20,19 +20,20 @@
 #' @export
 dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow=1){
 
-result=list()
 
 
-###SETUP
-###data_crit <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\data_criteria.csv")
+##SETUP#####
+#rm(list=ls(all=TRUE))
+#load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
 #data=data_crit
-###translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
-##translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
-##
+##translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
+#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
+#
 #unit_sheetname="unitConvTable"
 #startRow=1
+########
 
-
+result=list()
 
 reasons=data.frame(data[0,])
 reasons$reason=character(0)
