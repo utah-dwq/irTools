@@ -245,7 +245,11 @@ acc_data=acc_data[!acc_data$ActivityIdentifier %in% result$lake_profiles$Activit
 sum(table(acc_data$DataLoggerLine))
 
 
-facToNum=function(x){return(as.numeric(levels(x))[x])}
+facToNum=function(x){
+	if(class(x)=="factor"){result=as.numeric(levels(x))[x])
+	}else{result=x}
+	return(result)
+	}
 
 #x=toxics_strms
 #value_var="IR_Value"
