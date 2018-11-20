@@ -20,11 +20,13 @@ group_vars=c("IR_MLID","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","BeneficialUs
 if(any(is.na(data$CriterionType))){stop("Error: NA values in criterion type. Standards table update required")}
 
 #Make sure NumericCriterion is numeric class
+
 facToNum=function(x){
-	if(class(x)=="factor"){result=as.numeric(levels(x))[x])
+	if(class(x)=="factor"){result=as.numeric(levels(x))[x]
 	}else{result=x}
 	return(result)
 	}
+
 if(class(data$NumericCriterion)=="factor"){data$NumericCriterion=facToNum(data$NumericCriterion)}
 
 #Mark exceedances w/ 1, non-exceedances w/0
