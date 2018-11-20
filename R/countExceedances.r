@@ -1,9 +1,9 @@
-#' Calculate sample and exceedance counts
+#' Calculate sample and exceedance counts (conventional & toxic assessments)
 #'
-#' Compares water quality result values to standards to calculates sample and exceedance counts
+#' Compares water quality result values to standards to calculates sample and exceedance counts. This is geared towards conventional and toxic assessments.
 #' 
 #' @param data A prepped water quality portal data object (i.e. output from dataPrep() )
-#' @param group_vars Vector of column names on which to group data when calculating sample counts and exceedances. This should not include any factors that prevent aggregation to site-scale assessments (e.g. date, time, etc.)
+#' @param group_vars Vector of column names on which to group data when calculating sample counts and exceedances. This should not include any factors that prevent aggregation to site-scale assessments (e.g. date, time, etc.). See default for recommended.
 
 #' @return Returns sample and exceedance counts aggregated by grouping variables.
 

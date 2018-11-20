@@ -1,4 +1,4 @@
-#' Perform assessments based on sample & exceedance counts
+#' Perform assessments based on sample & exceedance counts (conventional & toxic assessments)
 #'
 #' Performs site level (site-parameter-use-criterion specific) water quality assessments based on sample & exceedance counts by applying IR method flowcharts with user specified inputs.
 #' 
