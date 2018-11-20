@@ -339,7 +339,7 @@ server <- function(input, output, session){
 			edits=merge(edits,lat_long,by.x="IR_MLID",by.y="MonitoringLocationIdentifier",all.x=T)
 			edits$IR_MLNAME=edits$MonitoringLocationName2
 			edits=edits[,!names(edits) %in% "MonitoringLocationName2"]
-
+			
 			#save running csv of all edits
 				if(!file.exists(paste0(edit_log_path,"//edit_log.csv"))){
 					write.csv(edits,file=paste0(edit_log_path,"//edit_log.csv"),row.names=FALSE)
