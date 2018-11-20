@@ -97,9 +97,11 @@ server <- function(input, output, session){
 		sites=read.csv(master_site_file, stringsAsFactors=F)
 		sites=merge(sites, reasons_flat, all=T)
 		sites$ReasonsFlat=ifelse(is.na(sites$ReasonsFlat), sites$IR_COMMENT, sites$ReasonsFlat)
+		table(sites$ReasonsFlat)
 		sites$FlagFlat=ifelse(is.na(sites$FlagFlat), sites$IR_FLAG, sites$FlagFlat)
 		sites$ReasonsFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_COMMENT, sites$ReasonsFlat)
 		sites$FlagFlat=ifelse(sites$ValidationType=="MANUAL", sites$IR_FLAG, sites$FlagFlat)
+		table(sites$ReasonsFlat)
 		reactive_objects$sites=sites
 	})
 
