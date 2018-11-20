@@ -334,6 +334,13 @@ server <- function(input, output, session){
 			edits$IR_Lat=edits$LatitudeMeasure2
 			edits$IR_Long=edits$LongitudeMeasure2
 			edits=edits[,!names(edits) %in% c("LatitudeMeasure2","LongitudeMeasure2")]
+			
+			#Auto-fill IR_MLNAME
+			mlname=reactive_objects$sites[,c("MonitoringLocationIdentifier","MonitoringLocationName")]
+			names(mlname)=c("MonitoringLocationIdentifier","MonitoringLocationName2")
+			edits=merge(edits,lat_long,by.x="IR_MLID",by.y="MonitoringLocationIdentifier",all.x=T)
+			edits$IR_MLNAME=edits$MonitoringLocationName2
+			edits=edits[,!names(edits) %in% "MonitoringLocationName2"]
 
 			#save running csv of all edits
 				if(!file.exists(paste0(edit_log_path,"//edit_log.csv"))){
