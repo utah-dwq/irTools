@@ -246,7 +246,7 @@ sum(table(acc_data$DataLoggerLine))
 
 
 facToNum=function(x){
-	if(class(x)=="factor"){result=as.numeric(levels(x))[x])
+	if(class(x)=="factor"){result=as.numeric(levels(x))[x]
 	}else{result=x}
 	return(result)
 	}
