@@ -20,19 +20,20 @@
 #' @export
 dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow=1){
 
-result=list()
 
 
-#SETUP
-#data_crit <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\data_criteria.csv")
+##SETUP#####
+#rm(list=ls(all=TRUE))
+#load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
 #data=data_crit
 ##translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
 #translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
 #
 #unit_sheetname="unitConvTable"
 #startRow=1
+########
 
-
+result=list()
 
 reasons=data.frame(data[0,])
 reasons$reason=character(0)
@@ -237,14 +238,18 @@ acc_data=acc_data[,c("OrganizationIdentifier","ActivityIdentifier","ActivityStar
 
 ######
 ###Extract lake profiles
-result$lake_profiles=acc_data[!is.na(acc_data$DataLoggerLine),]
+result$lake_profiles=acc_data[!is.na(acc_data$DataLoggerLine) & acc_data$BeneficialUse %in% c("3A","3B","3C","3D","3E"),]
 
 #Remove profiles from acc_data
 acc_data=acc_data[!acc_data$ActivityIdentifier %in% result$lake_profiles$ActivityIdentifier,]
 sum(table(acc_data$DataLoggerLine))
 
 
-facToNum=function(x){return(as.numeric(levels(x))[x])}
+facToNum=function(x){
+	if(class(x)=="factor"){result=as.numeric(levels(x))[x]
+	}else{result=x}
+	return(result)
+	}
 
 #x=toxics_strms
 #value_var="IR_Value"
@@ -340,16 +345,19 @@ toxics_lakes_daily=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse!="CF",] #
 #	samps$Count[n]=dim(res_n)[1]
 #	}
 
+
+
+#Aggregate by AsmntAggPeriod AsmntAggPeriodUnit AsmntAggFun (need to do)
+#Calculate CF dependent criterion values (need to do)
+
 #rbind lakes & streams back together to result (fills depth cols w/ NA for streams)
 result$toxics=plyr::rbind.fill(toxics_strms_daily, toxics_lakes_daily)
 
 
-	
-
 #############
 #######Conventionals
 ###### 
-conv_raw=acc_data[which(acc_data$AssessmentType=="Conventional"),]
+conv_raw=acc_data[which(acc_data$AssessmentType=="Conventional" & acc_data$BeneficialUse!="CF"),]
  
 #split streams & lakes
 conv_strms=conv_raw[which(conv_raw$AU_Type=="River/Stream"),]
@@ -361,13 +369,35 @@ conv_lakes=conv_raw[which(conv_raw$AU_Type=="Reservoir/Lake"),]
 conv_strms_daily=aggDVbyfun(conv_strms,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
 
 #Lakes
-#Aggregate to daily values (including depth)
-conv_lakes_daily=aggDVbyfun(conv_lakes,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time"), agg_var="DailyAggFun")
+#Select surface only results for lakes conventionals
+suppressWarnings({
+	conv_lakes$ActivityDepthHeightMeasure.MeasureValue=facToNum(conv_lakes$ActivityDepthHeightMeasure.MeasureValue)
+	})
+conv_lakes=within(conv_lakes,{
+	ActivityDepthHeightMeasure.MeasureValue[which(ActivityDepthHeightMeasure.MeasureUnitCode=="ft" | ActivityDepthHeightMeasure.MeasureUnitCode=="feet")]=ActivityDepthHeightMeasure.MeasureValue*0.3048
+	ActivityDepthHeightMeasure.MeasureUnitCode[which(ActivityDepthHeightMeasure.MeasureUnitCode=="ft" | ActivityDepthHeightMeasure.MeasureUnitCode=="feet")]="m"
+	ActivityDepthHeightMeasure.MeasureUnitCode[which(ActivityDepthHeightMeasure.MeasureUnitCode=="meters")]="m"
+	})
+if(any(conv_lakes$ActivityDepthHeightMeasure.MeasureUnitCode!="m", na.rm=T)){stop("Error: lake depth units cannot be converted to meters. Additional conversion may be needed.")}	
+conv_lakes=conv_lakes[which(conv_lakes$ActivityRelativeDepthName=="Surface" | (conv_lakes$ActivityDepthHeightMeasure.MeasureValue <=2 & conv_lakes$ActivityDepthHeightMeasure.MeasureValue>=0)),]
+
+#Remove data for ALUs (assessed via profile tools)
+conv_lakes=conv_lakes[!conv_lakes$BeneficialUse %in% c("3A","3B","3C","3D","3E"),]
+
+#Aggregate to daily values (excluding depths this time - all surface samples)
+conv_lakes_daily=aggDVbyfun(conv_lakes,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
+
+
+#Aggregate by AsmntAggPeriod AsmntAggPeriodUnit AsmntAggFun (need to do)
+
+#Separate lakes TDS (need to do)
 
 #rbind lakes & streams back together to result (fills depth cols w/ NA for streams)
 result$conventionals=plyr::rbind.fill(conv_strms_daily, conv_lakes_daily)
 
 objects(result)
+
+
 
 
 #Other possible return objects:
