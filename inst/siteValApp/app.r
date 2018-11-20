@@ -163,11 +163,16 @@ server <- function(input, output, session){
 		reason_choices=reason_choices[order(reason_choices)]
 		reactive_objects$reason_choices=unique(as.factor(append(as.vector(reason_choices),c("Manually accepted", "Non-jurisdictional","Merged","Inaccurate location", "Unclear location", "Other"))))
 		pal <- colorFactor('Set1', reactive_objects$sites$IR_FLAG)
-		reactive_objects$review<-reactive_objects$sites[reactive_objects$sites$IR_FLAG%in%input$flag_checkbox & reactive_objects$sites$IR_COMMENT%in%input$reason_checkbox & reactive_objects$sites$MonitoringLocationTypeName%in%input$sitetype_checkbox & reactive_objects$sites$AU_Type %in% input$autype_checkbox,]
-		reactive_objects$other_sites<-reactive_objects$sites[!(reactive_objects$sites$UID%in%reactive_objects$review$UID),]
-		reactive_objects$review_points<-st_as_sf(reactive_objects$review, coords = c("LongitudeMeasure", "LatitudeMeasure"), crs = 4326, remove=FALSE) # crs 4326 is WGS84
-		if(dim(reactive_objects$review_points)[1]>0){
-			review_map<-leaflet(reactive_objects$review) %>%
+		review=reactive_objects$sites[reactive_objects$sites$IR_FLAG%in%input$flag_checkbox & reactive_objects$sites$ReasonsFlat%in%input$reason_checkbox & reactive_objects$sites$MonitoringLocationTypeName%in%input$sitetype_checkbox & reactive_objects$sites$AU_Type %in% input$autype_checkbox,]
+		review=unique(review[,!names(review) %in% c("ReasonsFlat","FlagFlat")])
+		reactive_objects$review<-review
+		
+		other_sites<-reactive_objects$sites[!(reactive_objects$sites$UID%in%reactive_objects$review$UID),]	
+		other_sites=unique(other_sites[,!names(other_sites) %in% c("ReasonsFlat","FlagFlat")])
+		reactive_objects$other_sites=other_sites
+
+		if(dim(reactive_objects$review)[1]>0){
+			reactive_objects$review_points<-st_as_sf(reactive_objects$review, coords = c("LongitudeMeasure", "LatitudeMeasure"), crs = 4326, remove=FALSE) # crs 4326 is WGS84
 				addTiles() %>%
 				addProviderTiles("Esri.WorldTopoMap", group = "Topo") %>%
 				addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
