@@ -2,8 +2,10 @@
 
 export(WQPdataqaqc)
 export(applyScreenTable)
+export(assessExcCounts)
 export(assignCriteria)
 export(autoValidateWQPsites)
+export(countExceedances)
 export(dataPrep)
 export(downloadWQP)
 export(fillMaskedValues)
