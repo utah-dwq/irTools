@@ -20,11 +20,11 @@ assessExcCounts=function(data, min_n, max_exc_count=NA, max_exc_pct=NA, max_exc_
 #data=conv_exc
 #min_n=10
 #
-#max_exc_count=2
-#max_exc_pct=NA
+#max_exc_count=NA
+#max_exc_pct=10
 #
-#max_exc_count_id=NA
-#max_exc_pct_id=10
+#max_exc_count_id=1
+#max_exc_pct_id=NA
 #########
 
 	#Check args
