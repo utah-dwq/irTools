@@ -6,10 +6,10 @@
 #shiny::runApp("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\irTools\\inst\\siteValApp")
 
 ######SET UP
-#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\wqp_master_site_file.csv"
+#master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\wqp_master_site_file.csv"
 #polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-#edit_log_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\edit_logs"
-#reasons_flat_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\rev_rej_reasons.csv"
+#edit_log_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\edit_logs"
+#reasons_flat_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\rev_rej_reasons.csv"
 ######
 
 #library(shiny)
@@ -325,21 +325,15 @@ server <- function(input, output, session){
 			#Set validation type to MANUAL
 			edits$ValidationType="MANUAL"
 			
-			#Auto-fill IR_Lat & IR_Long
-			lat_long=reactive_objects$sites[,c("MonitoringLocationIdentifier","LatitudeMeasure","LongitudeMeasure")]
-			names(lat_long)=c("MonitoringLocationIdentifier","LatitudeMeasure2","LongitudeMeasure2")
+			#Auto-fill IR_Lat, IR_Long, IR_MLNAME
+			lat_long=reactive_objects$sites[,c("MonitoringLocationIdentifier","LatitudeMeasure","LongitudeMeasure","MonitoringLocationName")]
+			names(lat_long)=c("MonitoringLocationIdentifier","LatitudeMeasure2","LongitudeMeasure2","MonitoringLocationName2")
 			edits=unique(merge(edits,lat_long,by.x="IR_MLID",by.y="MonitoringLocationIdentifier",all.x=T))
 			edits$IR_Lat=edits$LatitudeMeasure2
 			edits$IR_Long=edits$LongitudeMeasure2
-			edits=edits[,!names(edits) %in% c("LatitudeMeasure2","LongitudeMeasure2")]
-			
-			#Auto-fill IR_MLNAME
-			mlname=reactive_objects$sites[,c("MonitoringLocationIdentifier","MonitoringLocationName")]
-			names(mlname)=c("MonitoringLocationIdentifier","MonitoringLocationName2")
-			edits=merge(edits,lat_long,by.x="IR_MLID",by.y="MonitoringLocationIdentifier",all.x=T)
 			edits$IR_MLNAME=edits$MonitoringLocationName2
-			edits=edits[,!names(edits) %in% "MonitoringLocationName2"]
-			
+			edits=edits[,!names(edits) %in% c("LatitudeMeasure2","LongitudeMeasure2","MonitoringLocationName2")]
+	
 			#save running csv of all edits
 				if(!file.exists(paste0(edit_log_path,"//edit_log.csv"))){
 					write.csv(edits,file=paste0(edit_log_path,"//edit_log.csv"),row.names=FALSE)
