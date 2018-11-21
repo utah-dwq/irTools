@@ -297,7 +297,7 @@ if(correct_longitude==TRUE){
 }
 
 # Create IR specific columns, all values filled w/ "REVIEW"
-stn_new[,c("IR_MLID","IR_FLAG","IR_REASON")] = "REVIEW"
+stn_new[,c("IR_MLID","ML_NAME","IR_FLAG","IR_REASON")] = "REVIEW"
 stn_new[,c("IR_Lat","IR_Long")] = NA
 
 
@@ -560,11 +560,13 @@ stn_new$ValidationType="AUTO"
 #Spatial review flags & reasons (Apply to stn_new only)
 #Populate stn_new$MLID & lat/long for new sites w/ no duplicate MLIDS, lats, longs, and 0 other sites w/in 100m (IR_FLAG=="REVIEW" for all non-rejected new sites at this point)
 stn_new$IR_MLID = ifelse(stn_new$IR_FLAG=="REVIEW"&stn_new$MLID_Count==1&stn_new$Lat_Count==1&stn_new$Long_Count==1&stn_new$sites100m_count==0,as.vector(stn_new$MonitoringLocationIdentifier),"REVIEW")
+stn_new$IR_MLNAME = ifelse(stn_new$IR_FLAG=="REVIEW"&stn_new$MLID_Count==1&stn_new$Lat_Count==1&stn_new$Long_Count==1&stn_new$sites100m_count==0,as.vector(stn_new$MonitoringLocationName),NA)
 stn_new$IR_Lat = ifelse(stn_new$IR_FLAG=="REVIEW"&stn_new$MLID_Count==1&stn_new$Lat_Count==1&stn_new$Long_Count==1&stn_new$sites100m_count==0,stn_new$LatitudeMeasure,NA)
 stn_new$IR_Long = ifelse(stn_new$IR_FLAG=="REVIEW"&stn_new$MLID_Count==1&stn_new$Lat_Count==1&stn_new$Long_Count==1&stn_new$sites100m_count==0,stn_new$LongitudeMeasure,NA)
 
 #Populate rejected MLID, lat, and long w/ REJECT
 stn_new$IR_MLID = ifelse(stn_new$IR_FLAG=="REJECT","REJECT",as.vector(stn_new$IR_MLID))
+stn_new$IR_MLNAME = ifelse(stn_new$IR_FLAG=="REJECT","REJECT",as.vector(stn_new$IR_MLNAME))
 stn_new$IR_Lat = ifelse(stn_new$IR_FLAG=="REJECT",NA,stn_new$IR_Lat)
 stn_new$IR_Long = ifelse(stn_new$IR_FLAG=="REJECT",NA,stn_new$IR_Long)
 
@@ -693,7 +695,7 @@ master_new=within(master_new,{
 ####Sort by UID and re-order columns before writing
 master_new=master_new[order(master_new$UID),]
 master_new=master_new[,c("UID","OrganizationIdentifier","OrganizationFormalName","ProviderName","MonitoringLocationIdentifier","MonitoringLocationName","MonitoringLocationTypeName","MonitoringLocationDescriptionText",
-		   "IR_FLAG","IR_REASON","IR_MLID","ASSESS_ID","AU_NAME", "AU_Type","Water_Type", "R317Descrp", "ss_R317Descrp", "BEN_CLASS", "MLID_Count","Lat_Count","Long_Count","sites100m_count","LatitudeMeasure","LongitudeMeasure","IR_Lat","IR_Long","HUCEightDigitCode",
+		   "IR_FLAG","IR_REASON","IR_MLID","IR_MLNAME","ASSESS_ID","AU_NAME", "AU_Type","Water_Type", "R317Descrp", "ss_R317Descrp", "BEN_CLASS", "MLID_Count","Lat_Count","Long_Count","sites100m_count","LatitudeMeasure","LongitudeMeasure","IR_Lat","IR_Long","HUCEightDigitCode",
 		   "DrainageAreaMeasure.MeasureValue","DrainageAreaMeasure.MeasureUnitCode","ContributingDrainageAreaMeasure.MeasureValue","ContributingDrainageAreaMeasure.MeasureUnitCode",
 		   "SourceMapScaleNumeric","HorizontalAccuracyMeasure.MeasureValue","HorizontalAccuracyMeasure.MeasureUnitCode","HorizontalCollectionMethodName","HorizontalCoordinateReferenceSystemDatumName",
 		   "VerticalMeasure.MeasureValue","VerticalMeasure.MeasureUnitCode","VerticalAccuracyMeasure.MeasureValue","VerticalAccuracyMeasure.MeasureUnitCode","VerticalCollectionMethodName",
