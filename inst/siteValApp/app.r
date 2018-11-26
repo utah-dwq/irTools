@@ -5,12 +5,12 @@
 #library(shiny)
 #shiny::runApp("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\irTools\\inst\\siteValApp")
 
-######SET UP
+#######SET UP
 #master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\wqp_master_site_file.csv"
 #polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
 #edit_log_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\edit_logs"
 #reasons_flat_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\rev_rej_reasons.csv"
-######
+#######
 
 #library(shiny)
 library(raster)
@@ -35,6 +35,7 @@ reasons_flat=reasons_flat[,!names(reasons_flat) %in% "ReasonType"]
 au_poly <- readOGR(dsn = polygon_path, layer = "AU_poly_wgs84")
 ut_poly <- readOGR(dsn = polygon_path, layer = "UT_state_bnd_noTribal_wgs84")
 bu_poly <- readOGR(dsn = polygon_path, layer = "Beneficial_Uses_All_2020IR_wgs84")
+ss_poly <- readOGR(dsn = polygon_path, layer = "SiteSpecific_wgs84")
 au_poly=au_poly[au_poly$Status=="ACTIVE",]
 bu_poly=bu_poly[bu_poly$Status=="ACTIVE",]
 
@@ -193,11 +194,22 @@ server <- function(input, output, session){
 				)%>%
 				addPolygons(data=ut_poly,group="State of Utah",smoothFactor=4,fillOpacity = 0.1,weight=3,color="green",
 				)%>%
+				addPolygons(data=ss_poly, group="Site-specific standards", smoothFactor=4,fillOpacity = 0.1,weight=3,color="blue",
+					popup = paste0(
+						"<br> Description: ", ss_poly$R317Descrp,
+						"<br> Standard: ", ss_poly$SiteSpecif
+					)
+					)%>%
 				addLayersControl(
 					position ="topleft",
 					baseGroups = c("Topo","Satellite"),
-					overlayGroups = c("Benficial uses", "Assessment units","State of Utah","Sites","Site labels"),
+					overlayGroups = c("Benficial uses", "Assessment units","Site-specific standards", "State of Utah","Sites","Site labels"),
 					options = layersControlOptions(collapsed = FALSE, autoZIndex=FALSE)) %>%
+				hideGroup("Assessment units")%>%
+				hideGroup("Site-specific standards")%>%
+				hideGroup("Benficial uses")%>%
+				hideGroup("Site labels")%>%
+				hideGroup("State of Utah")%>%
 				hideGroup("Assessment units")%>%
 				hideGroup("Benficial uses")%>%
 				hideGroup("Site labels")%>%
@@ -284,10 +296,12 @@ server <- function(input, output, session){
 		intersection=intersection[,-c(1,2)]
 		reactive_objects$hot_data<-reactive_objects$review[reactive_objects$review$UID%in%intersection$UID,]
 		MLID_Choices=append(as.vector(reactive_objects$hot_data$MonitoringLocationIdentifier),"REJECT")
-		rhandsontable(data.frame(reactive_objects$hot_data),readOnly=TRUE)%>%
+		rhandsontable(data.frame(reactive_objects$hot_data),readOnly=TRUE, digits=12)%>%
 			hot_col(col="IR_FLAG",type="dropdown",readOnly=FALSE,source=IR_flag_choices)%>%
 			hot_col(col="IR_MLID",type="dropdown",readOnly=FALSE,source=MLID_Choices)%>%
-			hot_col(col="IR_COMMENT",readOnly=FALSE,type="dropdown",source=reactive_objects$reason_choices)#%>%
+			hot_col(col="IR_COMMENT",readOnly=FALSE,type="dropdown",source=reactive_objects$reason_choices)%>%
+			hot_col(col="LatitudeMeasure",readOnly=TRUE,type="numeric", format='0[.]000000')%>%
+			hot_col(col="LongitudeMeasure",readOnly=TRUE,type="numeric", format='0[.]000000')
 	})
 
 	####Potential plotting example
