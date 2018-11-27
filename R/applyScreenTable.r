@@ -16,7 +16,7 @@ applyScreenTable=function(data, translation_wb, sheetname, flag_col_name, com_co
 
 ##Testing setup
 # data=merged_results_filled
-# #translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
+# translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
 # sheetname="paramTransTable"
 # flag_col_name="IR_Parameter_FLAG"
 # com_col_name="IR_Parameter_COMMENT"
