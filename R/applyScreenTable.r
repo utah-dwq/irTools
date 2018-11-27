@@ -1,7 +1,7 @@
 #' Apply screens to WQP data by selected table
 #'
-#' Joins activity review inputs (labNameActivityTable, activityMediaNameTable, & activityCommentTable) to WQP data to apply decisions from input files to data.
-#' @param data A merged WQP result object. Must include both narrowresult & activity files. May also be a post-fillMaskedValues() results object.
+#' Joins activity review inputs (detConditionTable, labNameActivityTable, activityMediaNameTable, masterSiteTable, paramTransTable, & activityCommentTable) to WQP data to apply decisions from input files to data.
+#' @param data A merged WQP result object. Must include both narrowresult & activity files. May also be a post-fillMaskedValues() results object. Note: re-application of edited domain tables to an already screened dataset is not advised, and changes to the domain table likely will not be reflected in a re-screened dataset due to merging conventions.
 #' @param translation_wb Full path and filename for IR translation workbook
 #' @param sheetname Name of sheet in workbook holding desired screening decisions
 #' @param flag_col_name Name to rename IR_FLAG column to.
@@ -49,6 +49,12 @@ names(screen_table)[names(screen_table)=="IR_COMMENT"]=com_col_name
 
 #Set blanks in data to NA for merge
 data[data==""]=NA 
+
+#Check that dataset does not contain flag column from domain table (indicates re-screening data, which leads to errors)
+
+if(flag_col_name%in%colnames(data)){
+  stop("Screen table already applied to data. If you have made changes to the domain table(s) between screening functions, either re-run with an unscreened dataset or provide new flag_col_name and com_col_name before proceeding.")
+}
 
 #Merge data and screen_table
 data_screen=merge(data, screen_table, all.x=T)
