@@ -26,8 +26,7 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow
 #rm(list=ls(all=TRUE))
 #load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
 #data=data_crit
-##translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
-#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
+#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
 #
 #unit_sheetname="unitConvTable"
 #startRow=1
@@ -199,11 +198,31 @@ if(any(na.omit(data[data$IR_Unit==data$CriterionUnits,"UnitConversionFactor"]!=1
 	warning("WARNING: Potential error in unit conversion table. Conversion factor !=1 for record where IR_Unit==CriterionUnits.")
 	}
 
-#Convert IR_Value using Unit Conversion Value
-data$IR_Value <- data$IR_Value*data$UnitConversionFactor
-data$IR_Unit = data$CriterionUnits
+if(any(data$IR_Unit!=data$IR_LowerLimitUnit, na.rm=T) | any(data$IR_Unit!=data$IR_UpperLimitUnit, na.rm=T)){
+	stop("Error: Result and detection limit units do not match. Cannot convert or compare units to criterion units.")
+}
+	
+#Convert IR_Value and upper and lower limit values using Unit Conversion Value
+data=within(data,{
+	IR_Value = IR_Value*UnitConversionFactor
+	IR_Unit = CriterionUnits
+	IR_LowerLimitValue = IR_LowerLimitValue*UnitConversionFactor
+	IR_LowerLimitUnit = CriterionUnits
+	IR_UpperLimitValue = IR_UpperLimitValue*UnitConversionFactor
+	IR_UpperLimitUnit = CriterionUnits
+})
 
-head(data[is.na(data$IR_Value) & data$IR_DetCond!="NRV" & data$IR_UnitConv_FLAG!="REJECT",])
+
+#Reject non-detect records where IR_LowerLimitValue > NumericCriterion
+data_n=data
+data_n$reason=NA
+data_n=within(data_n,{
+	reason[IR_DetCond=="ND" & IR_LowerLimitValue>NumericCriterion]="Non-detect result with detection limit > criterion."
+	})
+data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
+reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+print(table(reasons$reason))
+rm(data_n)
 
 
 ####Apply rejections to flag column in data
@@ -334,7 +353,6 @@ toxics_lakes_daily=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse!="CF",] #
 
 #Aggregate by AsmntAggPeriod AsmntAggPeriodUnit AsmntAggFun (need to do)
 #Calculate CF dependent criterion values (need to do)
-#Reject non-detect records where IR_Value > NumericCriterion (need to do, also append these rejections to data_flags before returning)
 
 
 #rbind lakes & streams back together to result (fills depth cols w/ NA for streams)
