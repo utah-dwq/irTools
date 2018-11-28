@@ -11,6 +11,7 @@
 #' @param unitsheetname Name of sheet in workbook holding unit conversion table. Defaults to "unitConvTable".
 #' @param detstartRow Row to start reading the detLimitTypeTable excel sheet from (in case headers have been added). Defaults to 3.
 #' @param unitstartRow Row to start reading the unitConvTable excel sheet from (in case headers have been added). Defaults to 1.
+#' @param unitstartCol Column to start reading the unitConvTable excel sheet from (in case headers have been added). Defaults to 1.
 #' @param lql_fac Numeric - factor by which to multiply lower quantitation limit type values when filling masked data or other non-detects (e.g. below lql values). Default = 0.5.
 #' @param uql_fac Numeric - factor by which to multiply upper quantitation limit type values when filling masked data or other over limit values. Default = 1.
 
@@ -23,12 +24,12 @@
 
 
 #' @export
-fillMaskedValues = function(results, detquantlim, translation_wb, detsheetname="detLimitTypeTable", unitsheetname="unitConvTable", detstartRow=3, unitstartRow=1, lql_fac=0.5, uql_fac=1){
+fillMaskedValues = function(results, detquantlim, translation_wb, detsheetname="detLimitTypeTable", unitsheetname="unitConvTable", detstartRow=3, unitstartRow=1, unitstartCol=1, lql_fac=0.5, uql_fac=1){
 
 
 ####TESTING SETUP
 ####
-
+# 
 # results=merged_results
 # detquantlim=detquantlim
 # translation_wb="C:\\Users\\ehinman\\Documents\\GitHub\\lookup_tables\\ir_translation_workbook.xlsx"
@@ -38,6 +39,7 @@ fillMaskedValues = function(results, detquantlim, translation_wb, detsheetname="
 # uql_fac=1
 # detstartRow=3
 # unitstartRow=1
+# unitstartCol=1
 #######
 #######
 
@@ -45,17 +47,17 @@ fillMaskedValues = function(results, detquantlim, translation_wb, detsheetname="
 ###Selecting upper and lower limit types by translation wb rankings
 
 #Load translation workbook
-trans_wb=loadWorkbook(translation_wb)
+trans_wb=openxlsx::loadWorkbook(translation_wb)
 
 #Remove filters from all sheets in trans_wb (filtering seems to cause file corruption occassionally...)
-sheetnames=getSheetNames(translation_wb)
+sheetnames=openxlsx::getSheetNames(translation_wb)
 for(n in 1:length(sheetnames)){
-	removeFilter(trans_wb, sheetnames[n])
+  openxlsx::removeFilter(trans_wb, sheetnames[n])
 	}
 
 
 #Join rankings from detLimitTypeTable to dql
-detLimitTypeTable=data.frame(readWorkbook(trans_wb, sheet=sheetname, startRow=startRow, detectDates=TRUE))
+detLimitTypeTable=data.frame(openxlsx::readWorkbook(trans_wb, sheet=detsheetname, startRow=detstartRow, detectDates=TRUE))
 detLimitTypeTable=detLimitTypeTable[,c("DetectionQuantitationLimitTypeName","IRLimitPriorityRanking_lower","IRLimitPriorityRanking_upper")]
 
 dql=merge(detquantlim,detLimitTypeTable,all.x=T)
@@ -133,6 +135,9 @@ results_dql=merge(results, sel_dql, all.x=T)
 #Filling values
 results_dql$ResultMeasureValue[results_dql$ResultMeasureValue==""]=NA #Convert blanks result values to NA
 results_dql$ResultMeasure.MeasureUnitCode[results_dql$ResultMeasure.MeasureUnitCode==""]=NA
+results_dql$IR_UpperLimitUnit[results_dql$IR_UpperLimitUnit==""]=NA
+results_dql$IR_LowerLimitUnit[results_dql$IR_LowerLimitUnit==""]=NA
+
 #Coercing values to numeric if not already numeric (need to double check w/ Emilie re: special characters in these columns)
 suppressWarnings({
 	if(class(results_dql$ResultMeasureValue)!="numeric"){
@@ -143,8 +148,69 @@ suppressWarnings({
 		results_dql$IR_UpperLimitValue=as.numeric(levels(results_dql$IR_UpperLimitValue))[results_dql$IR_UpperLimitValue]}
 	})
 
+###Unit checks between result values and limit values###
+print("Checking for disparities in result units and limit units...")
+##Pull out unique pairs of units##
+#result unit : lower limit unit
+r_l_units <- data.frame(unique(results_dql[,c("IR_LowerLimitUnit", "ResultMeasure.MeasureUnitCode")]))
+names(r_l_units)<- c("IR_Unit","CriterionUnits")
+#result unit :upper limit unit
+r_u_units <- data.frame(unique(results_dql[,c("IR_UpperLimitUnit", "ResultMeasure.MeasureUnitCode")]))
+names(r_u_units)<- c("IR_Unit","CriterionUnits")
+#merge unique unit combos together and remove lines with NA's
+r_lu_units <- merge(r_l_units,r_u_units, all=TRUE)
+r_lu_units <- na.omit(r_lu_units)
+r_lu_units$IR_Unit=as.character(r_lu_units$IR_Unit) # does as.factor or as.character matter?
+r_lu_units$CriterionUnits=as.character(r_lu_units$CriterionUnits)
+same <- mapply(identical,r_lu_units$IR_Unit,r_lu_units$CriterionUnits)
+r_lu_units <- r_lu_units[!same,]
+r_lu_units$InData = "Y"
 
+##Merge to unitConvTable##
+unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=unitsheetname, startRow=unitstartRow, detectDates=TRUE))
+unitconv_table=unitconv_table[,!names(unitconv_table)%in%"InData"] # Refresh InData column 
+unitmerge <- merge(r_lu_units,unitconv_table, all=TRUE)
 
+##Close out of function if new unit conversions added##
+if(!dim(unitmerge)[1]==dim(unitconv_table)[1]){
+  unitmerge$DateAdded[is.na(unitmerge$DateAdded)]=Sys.Date() # this does not work with an empty dataframe
+  openxlsx::writeData(trans_wb, "unitConvTable", unitmerge, startRow=unitstartRow, startCol=unitstartCol)
+  #Save translation workbook
+  openxlsx::saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
+  newunit <- dim(unitmerge)[1]-dim(unitconv_table)[1]
+  stop(paste(newunit,"new unit combination(s) detected. Populate conversion factor(s) in translation workbook before re-running function."))
+}else{print("No new unit combinations detected. Proceeding to unit conversion...")}
+
+##Attach unit conversion factors##
+unitconv <- subset(unitmerge, unitmerge$InData=="Y")
+unitconv <- unitconv[,names(unitconv)%in%c("IR_Unit","CriterionUnits","UnitConversionFactor")]
+#Rename columns to merge CvFs with results - upper
+names(unitconv)<- c("IR_UpperLimitUnit","ResultMeasure.MeasureUnitCode","IR_Unit_CvF_Upper")
+#Merge upper conversion factors to results
+dimcheck <- dim(results_dql)
+results_dql <- merge(results_dql,unitconv, all.x=TRUE)
+if(!dimcheck[1]==dim(results_dql)[1]){
+  stop("Merge between result data and unit conversion table resulted in new rows. Check conversion table for missing or erroneous values.")
+}
+#Rename columns to merge CvFs with results - lower
+names(unitconv)<- c("IR_LowerLimitUnit","ResultMeasure.MeasureUnitCode","IR_Unit_CvF_Lower")
+#Merge lower conversion factors to results
+dimcheck <- dim(results_dql)
+results_dql <- merge(results_dql,unitconv, all.x=TRUE)
+if(!dimcheck[1]==dim(results_dql)[1]){
+  stop("Merge between result data and unit conversion table resulted in new rows. Check conversion table for missing or erroneous values.")
+}
+##Make unit conversions##
+#Make conversions between result and limit units IFF unit conversion factor is not NA. 
+results_dql$IR_UpperLimitValue <- ifelse(is.na(results_dql$IR_Unit_CvF_Upper), results_dql$IR_UpperLimitValue, results_dql$IR_UpperLimitValue*results_dql$IR_Unit_CvF_Upper)
+results_dql$IR_LowerLimitValue <- ifelse(is.na(results_dql$IR_Unit_CvF_Lower), results_dql$IR_LowerLimitValue, results_dql$IR_LowerLimitValue*results_dql$IR_Unit_CvF_Lower)
+results_dql$IR_UpperLimitUnit <- ifelse(is.na(results_dql$IR_Unit_CvF_Upper), results_dql$IR_UpperLimitUnit, results_dql$ResultMeasure.MeasureUnitCode)
+results_dql$IR_LowerLimitUnit <- ifelse(is.na(results_dql$IR_Unit_CvF_Lower), results_dql$IR_LowerLimitUnit, results_dql$ResultMeasure.MeasureUnitCode)
+
+#### ADD IN CHECK ####
+
+##Remove conversion columns##
+results_dql <- results_dql[,!names(results_dql)%in%c("IR_Unit_CvF_Upper","IR_Unit_CvF_Lower")]
 
 ####Unit conversion fix outline (treating result units as target units, convert & fill limit units in place, maintain raw value and units in original columns):
 #1. Set all values to NA where is.na(associated unit) - this will prevent us from comparing values where one or more unit is an NA
@@ -160,31 +226,6 @@ suppressWarnings({
 	#d. convert limit value & update units only where data[!is.na(data$conversion_factor)] - this will keep values & units that were already NA as NA
 	#e. remove limit conversion factor(s)
 #I think this will fit seamlessly with the rest of the function code...
-
-
-
-
-#Check and make sure result units (if present), match limit units (if present).
-ll_check <- na.omit(unique(results_dql[,c("ResultMeasure.MeasureUnitCode","IR_LowerLimitUnit")]))
-ll_check$Where_To_Find <- "dql_lo"
-colnames(ll_check) <- c("ResultMeasure.MeasureUnitCode","LimitUnit","Where_To_Find")
-ul_check <- na.omit(unique(results_dql[,c("ResultMeasure.MeasureUnitCode","IR_UpperLimitUnit")]))
-ul_check$Where_To_Find <- "dql_up"
-colnames(ul_check) <- c("ResultMeasure.MeasureUnitCode","LimitUnit","Where_To_Find")
-all_check <- merge(ll_check, ul_check, all=T)
-all_check$ResultMeasure.MeasureUnitCode <- as.character(all_check$ResultMeasure.MeasureUnitCode)
-all_check$LimitUnit <- as.character(all_check$LimitUnit)
-
-if(any(!all_check$LimitUnit==all_check$ResultMeasure.MeasureUnitCode)){
-  print(all_check[!all_check$LimitUnit==all_check$ResultMeasure.MeasureUnitCode,])
-  stop("Result units and limit units differ for one or more records. Records with disparate units should be located in dql_lo or dql_up, have their ResultIdentifier(s) noted, and be corrected or rejected.")
-}
-
-
-
-
-
-
 
 #Generate columns to be filled (fill w/ NA up front)
 results_dql[,c("IR_Value","IR_Unit","IR_DetCond")]=NA
