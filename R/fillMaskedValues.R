@@ -202,10 +202,16 @@ if(!dimcheck[1]==dim(results_dql)[1]){
 }
 ##Make unit conversions##
 #Make conversions between result and limit units IFF unit conversion factor is not NA. 
-results_dql$IR_UpperLimitValue <- ifelse(is.na(results_dql$IR_Unit_CvF_Upper), results_dql$IR_UpperLimitValue, results_dql$IR_UpperLimitValue*results_dql$IR_Unit_CvF_Upper)
-results_dql$IR_LowerLimitValue <- ifelse(is.na(results_dql$IR_Unit_CvF_Lower), results_dql$IR_LowerLimitValue, results_dql$IR_LowerLimitValue*results_dql$IR_Unit_CvF_Lower)
-results_dql$IR_UpperLimitUnit <- ifelse(is.na(results_dql$IR_Unit_CvF_Upper), results_dql$IR_UpperLimitUnit, results_dql$ResultMeasure.MeasureUnitCode)
-results_dql$IR_LowerLimitUnit <- ifelse(is.na(results_dql$IR_Unit_CvF_Lower), results_dql$IR_LowerLimitUnit, results_dql$ResultMeasure.MeasureUnitCode)
+results_dql=within(results_dql,{
+  IR_UpperLimitValue[!is.na(IR_Unit_CvF_Upper)]=IR_UpperLimitValue*IR_CvF_Unit_Upper
+  IR_LowerLimitValue[!is.na(IR_Unit_CvF_Lower)]=IR_LowerLimitValue*IR_CvF_Unit_Lower
+  IR_UpperLimitUnit[!is.na(IR_Unit_CvF_Upper)]=ResultMeasure.MeasureUnitCode
+  IR_LowerLimitUnit[!is.na(IR_Unit_CvF_Lower)]=ResultMeasure.MeasureUnitCode
+  })
+# results_dql$IR_UpperLimitValue <- ifelse(is.na(results_dql$IR_Unit_CvF_Upper), results_dql$IR_UpperLimitValue, results_dql$IR_UpperLimitValue*results_dql$IR_Unit_CvF_Upper)
+# results_dql$IR_LowerLimitValue <- ifelse(is.na(results_dql$IR_Unit_CvF_Lower), results_dql$IR_LowerLimitValue, results_dql$IR_LowerLimitValue*results_dql$IR_Unit_CvF_Lower)
+# results_dql$IR_UpperLimitUnit <- ifelse(is.na(results_dql$IR_Unit_CvF_Upper), results_dql$IR_UpperLimitUnit, results_dql$ResultMeasure.MeasureUnitCode)
+# results_dql$IR_LowerLimitUnit <- ifelse(is.na(results_dql$IR_Unit_CvF_Lower), results_dql$IR_LowerLimitUnit, results_dql$ResultMeasure.MeasureUnitCode)
 
 #### ADD IN CHECK ####
 
