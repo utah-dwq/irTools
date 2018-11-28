@@ -7,8 +7,10 @@
 #' @param detquantlim A WQP detection/quantitation limit file R-object. Should be matching complement to WQP results input.
 #' @param translation_wb Full path and filename for IR translation workbook (.xlsx). 
 
-#' @param sheetname  Name of sheet in workbook holding detection limit type names and ranked prioritizations table. Defaults to "detLimitTypeTable".
-#' @param startRow Row to start reading the detLimitTypeTable excel sheet from (in case headers have been added). Defaults to 3.
+#' @param detsheetname  Name of sheet in workbook holding detection limit type names and ranked prioritizations table. Defaults to "detLimitTypeTable".
+#' @param unitsheetname Name of sheet in workbook holding unit conversion table. Defaults to "unitConvTable".
+#' @param detstartRow Row to start reading the detLimitTypeTable excel sheet from (in case headers have been added). Defaults to 3.
+#' @param unitstartRow Row to start reading the unitConvTable excel sheet from (in case headers have been added). Defaults to 1.
 #' @param lql_fac Numeric - factor by which to multiply lower quantitation limit type values when filling masked data or other non-detects (e.g. below lql values). Default = 0.5.
 #' @param uql_fac Numeric - factor by which to multiply upper quantitation limit type values when filling masked data or other over limit values. Default = 1.
 
@@ -21,19 +23,21 @@
 
 
 #' @export
-fillMaskedValues = function(results, detquantlim, translation_wb, sheetname="detLimitTypeTable", startRow=3, lql_fac=0.5, uql_fac=1){
+fillMaskedValues = function(results, detquantlim, translation_wb, detsheetname="detLimitTypeTable", unitsheetname="unitConvTable", detstartRow=3, unitstartRow=1, lql_fac=0.5, uql_fac=1){
 
 
 ####TESTING SETUP
 ####
-#
+
 # results=merged_results
 # detquantlim=detquantlim
-#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\jake\\translationWorkbook\\ir_translation_workbook.xlsx"
-# sheetname="detLimitTypeTable"
+# translation_wb="C:\\Users\\ehinman\\Documents\\GitHub\\lookup_tables\\ir_translation_workbook.xlsx"
+# detsheetname="detLimitTypeTable"
+# unitsheetname="unitConvTable"
 # lql_fac=0.5
 # uql_fac=1
-# startRow=3
+# detstartRow=3
+# unitstartRow=1
 #######
 #######
 
@@ -124,12 +128,6 @@ sel_dql[sel_dql$IR_UpperLimitRank==99999,c("IR_UpperLimitType","IR_UpperLimitVal
 
 #Merge limits to results
 results_dql=merge(results, sel_dql, all.x=T)
-
-head(results_dql)
-print("Lower Detection Limit Types:")
-print(table(droplevels(results_dql$IR_LowerLimitType), exclude=NULL))
-print("Upper Detection Limit Types:")
-print(table(droplevels(results_dql$IR_UpperLimitType), exclude=NULL))
 
 #######
 #Filling values	
