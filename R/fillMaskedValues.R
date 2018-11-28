@@ -24,16 +24,16 @@
 fillMaskedValues = function(results, detquantlim, translation_wb, sheetname="detLimitTypeTable", startRow=3, lql_fac=0.5, uql_fac=1){
 
 
-####TESTING SETUP
-####
-#
-# results=merged_results
-# detquantlim=detquantlim
-#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\jake\\translationWorkbook\\ir_translation_workbook.xlsx"
-# sheetname="detLimitTypeTable"
-# lql_fac=0.5
-# uql_fac=1
-# startRow=3
+###TESTING SETUP
+###
+
+results=merged_results
+detquantlim=detquantlim
+translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
+sheetname="detLimitTypeTable"
+lql_fac=0.5
+uql_fac=1
+startRow=3
 #######
 #######
 
@@ -131,6 +131,13 @@ print(table(droplevels(results_dql$IR_LowerLimitType), exclude=NULL))
 print("Upper Detection Limit Types:")
 print(table(droplevels(results_dql$IR_UpperLimitType), exclude=NULL))
 
+
+
+
+
+
+
+
 #######
 #Filling values	
 results_dql$ResultMeasureValue[results_dql$ResultMeasureValue==""]=NA #Convert blanks result values to NA
@@ -144,6 +151,27 @@ suppressWarnings({
 	if(class(results_dql$IR_UpperLimitValue)!="numeric"){
 		results_dql$IR_UpperLimitValue=as.numeric(levels(results_dql$IR_UpperLimitValue))[results_dql$IR_UpperLimitValue]}
 	})
+
+	
+	
+	
+####Unit conversion fix outline (treating result units as target units, convert & fill limit units in place, maintain raw value and units in original columns):
+#1. Set all values to NA where is.na(associated unit) - this will prevent us from comparing values where one or more unit is an NA
+#2. Pull out all unique pairs of units:
+	#a. result unit : lower limit unit
+	#b. result unit : upper limit unit
+	#c. rbind together & na.omit (as separate object to check if any additional conversions are needed)
+	#d. If additional conversions are required, append to conversion table and update workbook, exit with message directing user to update the conversion table as appropriate
+#3. For both sets of units:
+	#a. merge conversion factor from unit conv table to result unit : limit unit (renaming columns as appropriate)
+	#b. na.omit() to remove any records where one or both units are NA (this will result in NA conversion factor when merged)
+	#c. merge result unit : limit unit object +conversion factor to data (one at a time or two cols w/ different names e.g lolim_conv_fact & uplim_conv_fact)
+	#d. convert limit value & update units only where data[!is.na(data$conversion_factor)] - this will keep values & units that were already NA as NA
+	#e. remove limit conversion factor(s)
+#I think this will fit seamlessly with the rest of the function code...
+
+
+	
 
 #Check and make sure result units (if present), match limit units (if present).
 ll_check <- na.omit(unique(results_dql[,c("ResultMeasure.MeasureUnitCode","IR_LowerLimitUnit")]))
@@ -160,6 +188,12 @@ if(any(!all_check$LimitUnit==all_check$ResultMeasure.MeasureUnitCode)){
   print(all_check[!all_check$LimitUnit==all_check$ResultMeasure.MeasureUnitCode,])
   stop("Result units and limit units differ for one or more records. Records with disparate units should be located in dql_lo or dql_up, have their ResultIdentifier(s) noted, and be corrected or rejected.")
 }
+
+
+
+
+
+
 
 #Generate columns to be filled (fill w/ NA up front)
 results_dql[,c("IR_Value","IR_Unit","IR_DetCond")]=NA
