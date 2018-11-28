@@ -395,7 +395,10 @@ conv_lakes_daily=aggDVbyfun(conv_lakes,	value_var="IR_Value",drop_vars=c("Organi
 
 #Aggregate by AsmntAggPeriod AsmntAggPeriodUnit AsmntAggFun (need to do)
 
-#Separate lakes TDS (need to do)
+
+#Separate lakes TDS (different assessment methods)
+result$lakes_tds=conv_lakes[conv_lakes$R3172ParameterName=="Total Dissolved Solids",]
+conv_lakes=conv_lakes[conv_lakes$R3172ParameterName!="Total Dissolved Solids",]
 
 #rbind lakes & streams back together to result (fills depth cols w/ NA for streams)
 result$conventionals=plyr::rbind.fill(conv_strms_daily, conv_lakes_daily)
