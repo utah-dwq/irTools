@@ -166,7 +166,7 @@ same <- mapply(identical,r_lu_units$IR_Unit,r_lu_units$CriterionUnits)
 r_lu_units <- r_lu_units[!same,]
 
 if(dim(r_lu_units)[1]>0){
-  print("Unit conversion needed between detection limit unit and result unit. Checking for new unit conversions...")
+  print("Unit conversion(s) needed between detection limit unit(s) and result unit(s). Checking for new unit conversions...")
   r_lu_units$InData = "Y"
   ##Merge to unitConvTable##
   unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=unitsheetname, startRow=unitstartRow, detectDates=TRUE))
