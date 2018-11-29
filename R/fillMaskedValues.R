@@ -209,8 +209,6 @@ results_dql=within(results_dql,{
   IR_LowerLimitUnit[!is.na(IR_Unit_CvF_Lower)]=ResultMeasure.MeasureUnitCode[!is.na(IR_Unit_CvF_Lower)]
   })
 
-#### ADD IN CHECK ####
-
 ##Remove conversion columns##
 results_dql <- results_dql[,!names(results_dql)%in%c("IR_Unit_CvF_Upper","IR_Unit_CvF_Lower")]
 
@@ -248,7 +246,9 @@ table(results_dql$IR_DetCond)
 twolim <- length(results_dql[is.na(results_dql$ResultMeasureValue)&
             !is.na(results_dql$IR_LowerLimitType)&
             !is.na(results_dql$IR_UpperLimitType),1])
-print(paste("FYI: There are",twolim,"records with both upper and lower quantitation limits and is.na(result values). These records have been assigned as 'ND's"))
+if(twolim>0){
+  warning(paste("FYI: There are",twolim,"records with both upper and lower quantitation limits and is.na(result values). These records have been assigned as 'ND's"))
+}
 
 #is.na(rv) & is.na(lql) & !is.na(uql) ->OD
 results_dql[is.na(results_dql$ResultMeasureValue)&
