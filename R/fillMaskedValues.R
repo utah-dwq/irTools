@@ -179,7 +179,7 @@ if(!dim(unitmerge)[1]==dim(unitconv_table)[1]){
   openxlsx::saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
   newunit <- dim(unitmerge)[1]-dim(unitconv_table)[1]
   stop(paste(newunit,"new unit combination(s) detected. Populate conversion factor(s) in translation workbook before re-running function."))
-}else{print("No new unit combinations detected. Proceeding to unit conversion...")}
+}else{print("No new unit combinations detected. Proceeding to unit conversion and detection condition assignments...")}
 
 ##Attach unit conversion factors##
 unitconv <- subset(unitmerge, unitmerge$InData=="Y")
