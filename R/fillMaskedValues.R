@@ -197,16 +197,9 @@ if(dim(r_lu_units)[1]>0){
   unitconv <- unitconv[,names(unitconv)%in%c("IR_Unit","CriterionUnits","UnitConversionFactor")]
   
   #Check that UnitConversionFactor if filled in for all in unitconv
-  if(any(is.na(unitconv$UnitConversionFactor))){stop("Error: Needed unique conversion factor is NA in unit conversion table.")}
+  if(any(is.na(unitconv$UnitConversionFactor))){stop("Error: Needed unit conversion factor is NA in unit conversion table.")}
   
   #Rename columns to merge CvFs with results - upper
-  #JV - careful w/ renaming syntax here. It's working out here because the merge and column selections above are ordering the columns in a predictable fashion, but the renaming below is dependent on the order in which those columns occur which could be a problem in other cases
-  #names(unitconv)<- c("IR_UpperLimitUnit","ResultMeasure.MeasureUnitCode","IR_Unit_CvF_Upper")
-  #It's a little tedious, but here's a base approach
-  #names(unitconv)[names(unitconv)=="IR_Unit"]="IR_UpperLimitUnit"
-  #names(unitconv)[names(unitconv)=="CriterionUnits"]="ResultMeasure.MeasureUnitCode"
-  #names(unitconv)[names(unitconv)=="UnitConversionFactor"]="IR_Unit_CvF_Upper"
-  #A pretty slick way to rename multiple columns by name is w/ dplyr::rename
   unitconv=dplyr::rename(unitconv, IR_UpperLimitUnit=IR_Unit, ResultMeasure.MeasureUnitCode=CriterionUnits, IR_Unit_CvF_Upper=UnitConversionFactor)
   
   #Merge upper conversion factors to results
@@ -216,7 +209,6 @@ if(dim(r_lu_units)[1]>0){
     stop("Merge between result data and unit conversion table resulted in new rows. Check conversion table for missing or erroneous values.")
   }
   #Rename columns to merge CvFs with results - lower
-  #names(unitconv)<- c("IR_LowerLimitUnit","ResultMeasure.MeasureUnitCode","IR_Unit_CvF_Lower") #JV same comment as above
   unitconv=dplyr::rename(unitconv, IR_LowerLimitUnit=IR_UpperLimitUnit, IR_Unit_CvF_Lower=IR_Unit_CvF_Upper)
 
   #Merge lower conversion factors to results
