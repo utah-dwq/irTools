@@ -311,7 +311,7 @@ toxics_lakes=toxics_raw[which(toxics_raw$AU_Type=="Reservoir/Lake"),]
 ###Streams
 #Aggregate to daily values
 dim(toxics_strms)
-toxics_strms_daily=aggDVbyfun(toxics_strms,	value_var="IR_Value",drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
+toxics_strms_daily=aggDVbyfun(toxics_strms,	value_var="IR_Value",drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode","IR_Fraction"), agg_var="DailyAggFun")
 dim(toxics_strms_daily)
 
 
@@ -334,7 +334,7 @@ toxics_strms_daily=toxics_strms_daily[toxics_strms_daily$BeneficialUse!="CF",] #
 
 #Aggregate to daily values
 dim(toxics_lakes)
-toxics_lakes_daily=aggDVbyfun(toxics_lakes,	value_var="IR_Value",drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
+toxics_lakes_daily=aggDVbyfun(toxics_lakes,	value_var="IR_Value",drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode","IR_Fraction"), agg_var="DailyAggFun")
 dim(toxics_lakes_daily)
 
 #Assign CFs
