@@ -54,7 +54,7 @@ data[data==""]=NA
 
 if(flag_col_name%in%colnames(data)){
   print("WARNING: Shared flag columns between result data and domain table may indicate that the screen table was already applied. If you have made changes to the domain table(s) between screening functions, either re-run with an unscreened dataset or provide new flag_col_name and com_col_name before proceeding.")
-  readline(prompt=" Press [enter] to continue or [esc] to exit the function.")
+  readline(prompt="Press [enter] to continue or [esc] to exit the function.")
   }
 
 #Merge data and screen_table
