@@ -21,6 +21,7 @@
 #' @importFrom openxlsx readWorkbook
 #' @importFrom openxlsx removeFilter
 #' @importFrom openxlsx getSheetNames
+#' @importFrom dplyr rename
 
 
 #' @export
@@ -32,7 +33,7 @@ fillMaskedValues = function(results, detquantlim, translation_wb, detsheetname="
 # 
 # results=merged_results
 # detquantlim=detquantlim
-# translation_wb="C:\\Users\\ehinman\\Documents\\GitHub\\lookup_tables\\ir_translation_workbook.xlsx"
+# translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
 # detsheetname="detLimitTypeTable"
 # unitsheetname="unitConvTable"
 # lql_fac=0.5
@@ -157,13 +158,20 @@ names(r_l_units)<- c("IR_Unit","CriterionUnits")
 #result unit :upper limit unit
 r_u_units <- data.frame(unique(results_dql[,c("IR_UpperLimitUnit", "ResultMeasure.MeasureUnitCode")]))
 names(r_u_units)<- c("IR_Unit","CriterionUnits")
+
+
+
 #merge unique unit combos together and remove lines with NA's
 r_lu_units <- merge(r_l_units,r_u_units, all=TRUE)
 r_lu_units <- na.omit(r_lu_units)
 r_lu_units$IR_Unit=as.character(r_lu_units$IR_Unit) # does as.factor or as.character matter?
+#-JV: Yeah, this is due to different factor levels (try r_lu_units$IR_Unit==r_lu_units$CriterionUnits w/ converting to character, the other option is to merge/drop levels from both, but converting to character is good)
+#identical() includes comparing factor levels
+
 r_lu_units$CriterionUnits=as.character(r_lu_units$CriterionUnits)
 same <- mapply(identical,r_lu_units$IR_Unit,r_lu_units$CriterionUnits)
 r_lu_units <- r_lu_units[!same,]
+
 
 if(dim(r_lu_units)[1]>0){
   print("Unit conversion(s) needed between detection limit unit(s) and result unit(s). Checking for new unit conversions...")
@@ -183,11 +191,24 @@ if(dim(r_lu_units)[1]>0){
     stop(paste(newunit,"new unit combination(s) detected. Populate conversion factor(s) in unit conversion table in translation workbook before re-running function."))
   }else{print("No new unit combinations detected. Proceeding to unit conversion...")}
   
+  
   ##Attach unit conversion factors##
   unitconv <- subset(unitmerge, unitmerge$InData=="Y")
   unitconv <- unitconv[,names(unitconv)%in%c("IR_Unit","CriterionUnits","UnitConversionFactor")]
+  
+  #Check that UnitConversionFactor if filled in for all in unitconv
+  if(any(is.na(unitconv$UnitConversionFactor))){stop("Error: Needed unique conversion factor is NA in unit conversion table.")}
+  
   #Rename columns to merge CvFs with results - upper
-  names(unitconv)<- c("IR_UpperLimitUnit","ResultMeasure.MeasureUnitCode","IR_Unit_CvF_Upper")
+  #JV - careful w/ renaming syntax here. It's working out here because the merge and column selections above are ordering the columns in a predictable fashion, but the renaming below is dependent on the order in which those columns occur which could be a problem in other cases
+  #names(unitconv)<- c("IR_UpperLimitUnit","ResultMeasure.MeasureUnitCode","IR_Unit_CvF_Upper")
+  #It's a little tedious, but here's a base approach
+  #names(unitconv)[names(unitconv)=="IR_Unit"]="IR_UpperLimitUnit"
+  #names(unitconv)[names(unitconv)=="CriterionUnits"]="ResultMeasure.MeasureUnitCode"
+  #names(unitconv)[names(unitconv)=="UnitConversionFactor"]="IR_Unit_CvF_Upper"
+  #A pretty slick way to rename multiple columns by name is w/ dplyr::rename
+  unitconv=dplyr::rename(unitconv, IR_UpperLimitUnit=IR_Unit, ResultMeasure.MeasureUnitCode=CriterionUnits, IR_Unit_CvF_Upper=UnitConversionFactor)
+  
   #Merge upper conversion factors to results
   dimcheck <- dim(results_dql)
   results_dql <- merge(results_dql,unitconv, all.x=TRUE)
@@ -195,7 +216,9 @@ if(dim(r_lu_units)[1]>0){
     stop("Merge between result data and unit conversion table resulted in new rows. Check conversion table for missing or erroneous values.")
   }
   #Rename columns to merge CvFs with results - lower
-  names(unitconv)<- c("IR_LowerLimitUnit","ResultMeasure.MeasureUnitCode","IR_Unit_CvF_Lower")
+  #names(unitconv)<- c("IR_LowerLimitUnit","ResultMeasure.MeasureUnitCode","IR_Unit_CvF_Lower") #JV same comment as above
+  unitconv=dplyr::rename(unitconv, IR_LowerLimitUnit=IR_UpperLimitUnit, IR_Unit_CvF_Lower=IR_Unit_CvF_Upper)
+
   #Merge lower conversion factors to results
   dimcheck <- dim(results_dql)
   results_dql <- merge(results_dql,unitconv, all.x=TRUE)
@@ -205,32 +228,20 @@ if(dim(r_lu_units)[1]>0){
   ##Make unit conversions##
   #Make conversions between result and limit units IFF unit conversion factor is not NA. 
   #Update limit units for limit values requiring a conversion factor to match result value/units.
+head(results_dql[!is.na(results_dql$IR_Unit_CvF_Lower),])
   results_dql=within(results_dql,{
     IR_UpperLimitValue[!is.na(IR_Unit_CvF_Upper)]=IR_UpperLimitValue[!is.na(IR_Unit_CvF_Upper)]*IR_Unit_CvF_Upper[!is.na(IR_Unit_CvF_Upper)]
     IR_LowerLimitValue[!is.na(IR_Unit_CvF_Lower)]=IR_LowerLimitValue[!is.na(IR_Unit_CvF_Lower)]*IR_Unit_CvF_Lower[!is.na(IR_Unit_CvF_Lower)]
     IR_UpperLimitUnit[!is.na(IR_Unit_CvF_Upper)]=ResultMeasure.MeasureUnitCode[!is.na(IR_Unit_CvF_Upper)]
     IR_LowerLimitUnit[!is.na(IR_Unit_CvF_Lower)]=ResultMeasure.MeasureUnitCode[!is.na(IR_Unit_CvF_Lower)]
   })
+head(results_dql[!is.na(results_dql$IR_Unit_CvF_Lower),])
   
   ##Remove conversion columns##
   results_dql <- results_dql[,!names(results_dql)%in%c("IR_Unit_CvF_Upper","IR_Unit_CvF_Lower")]
   
 }else{print("No unit conversions needed. Proceeding to detection condition assignment...")}
 
-####Unit conversion fix outline (treating result units as target units, convert & fill limit units in place, maintain raw value and units in original columns):
-#1. Set all values to NA where is.na(associated unit) - this will prevent us from comparing values where one or more unit is an NA
-#2. Pull out all unique pairs of units:
-	#a. result unit : lower limit unit
-	#b. result unit : upper limit unit
-	#c. rbind together & na.omit (as separate object to check if any additional conversions are needed)
-	#d. If additional conversions are required, append to conversion table and update workbook, exit with message directing user to update the conversion table as appropriate
-#3. For both sets of units:
-	#a. merge conversion factor from unit conv table to result unit : limit unit (renaming columns as appropriate)
-	#b. na.omit() to remove any records where one or both units are NA (this will result in NA conversion factor when merged)
-	#c. merge result unit : limit unit object +conversion factor to data (one at a time or two cols w/ different names e.g lolim_conv_fact & uplim_conv_fact)
-	#d. convert limit value & update units only where data[!is.na(data$conversion_factor)] - this will keep values & units that were already NA as NA
-	#e. remove limit conversion factor(s)
-#I think this will fit seamlessly with the rest of the function code...
 
 #Generate columns to be filled (fill w/ NA up front)
 results_dql[,c("IR_Value","IR_Unit","IR_DetCond")]=NA
