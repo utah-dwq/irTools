@@ -204,6 +204,7 @@ if(dim(r_lu_units)[1]>0){
   }
   ##Make unit conversions##
   #Make conversions between result and limit units IFF unit conversion factor is not NA. 
+  #Update limit units for limit values requiring a conversion factor to match result value/units.
   results_dql=within(results_dql,{
     IR_UpperLimitValue[!is.na(IR_Unit_CvF_Upper)]=IR_UpperLimitValue[!is.na(IR_Unit_CvF_Upper)]*IR_Unit_CvF_Upper[!is.na(IR_Unit_CvF_Upper)]
     IR_LowerLimitValue[!is.na(IR_Unit_CvF_Lower)]=IR_LowerLimitValue[!is.na(IR_Unit_CvF_Lower)]*IR_Unit_CvF_Lower[!is.na(IR_Unit_CvF_Lower)]
