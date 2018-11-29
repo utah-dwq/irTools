@@ -164,53 +164,57 @@ r_lu_units$IR_Unit=as.character(r_lu_units$IR_Unit) # does as.factor or as.chara
 r_lu_units$CriterionUnits=as.character(r_lu_units$CriterionUnits)
 same <- mapply(identical,r_lu_units$IR_Unit,r_lu_units$CriterionUnits)
 r_lu_units <- r_lu_units[!same,]
-r_lu_units$InData = "Y"
 
-##Merge to unitConvTable##
-unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=unitsheetname, startRow=unitstartRow, detectDates=TRUE))
-unitconv_table=unitconv_table[,!names(unitconv_table)%in%"InData"] # Refresh InData column 
-unitmerge <- merge(r_lu_units,unitconv_table, all=TRUE)
-
-##Close out of function if new unit conversions added##
-if(!dim(unitmerge)[1]==dim(unitconv_table)[1]){
-  unitmerge$DateAdded[is.na(unitmerge$DateAdded)]=Sys.Date() # this does not work with an empty dataframe
-  openxlsx::writeData(trans_wb, "unitConvTable", unitmerge, startRow=unitstartRow, startCol=unitstartCol)
-  #Save translation workbook
-  openxlsx::saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
-  newunit <- dim(unitmerge)[1]-dim(unitconv_table)[1]
-  stop(paste(newunit,"new unit combination(s) detected. Populate conversion factor(s) in translation workbook before re-running function."))
-}else{print("No new unit combinations detected. Proceeding to unit conversion and detection condition assignments...")}
-
-##Attach unit conversion factors##
-unitconv <- subset(unitmerge, unitmerge$InData=="Y")
-unitconv <- unitconv[,names(unitconv)%in%c("IR_Unit","CriterionUnits","UnitConversionFactor")]
-#Rename columns to merge CvFs with results - upper
-names(unitconv)<- c("IR_UpperLimitUnit","ResultMeasure.MeasureUnitCode","IR_Unit_CvF_Upper")
-#Merge upper conversion factors to results
-dimcheck <- dim(results_dql)
-results_dql <- merge(results_dql,unitconv, all.x=TRUE)
-if(!dimcheck[1]==dim(results_dql)[1]){
-  stop("Merge between result data and unit conversion table resulted in new rows. Check conversion table for missing or erroneous values.")
-}
-#Rename columns to merge CvFs with results - lower
-names(unitconv)<- c("IR_LowerLimitUnit","ResultMeasure.MeasureUnitCode","IR_Unit_CvF_Lower")
-#Merge lower conversion factors to results
-dimcheck <- dim(results_dql)
-results_dql <- merge(results_dql,unitconv, all.x=TRUE)
-if(!dimcheck[1]==dim(results_dql)[1]){
-  stop("Merge between result data and unit conversion table resulted in new rows. Check conversion table for missing or erroneous values.")
-}
-##Make unit conversions##
-#Make conversions between result and limit units IFF unit conversion factor is not NA. 
-results_dql=within(results_dql,{
-  IR_UpperLimitValue[!is.na(IR_Unit_CvF_Upper)]=IR_UpperLimitValue[!is.na(IR_Unit_CvF_Upper)]*IR_Unit_CvF_Upper[!is.na(IR_Unit_CvF_Upper)]
-  IR_LowerLimitValue[!is.na(IR_Unit_CvF_Lower)]=IR_LowerLimitValue[!is.na(IR_Unit_CvF_Lower)]*IR_Unit_CvF_Lower[!is.na(IR_Unit_CvF_Lower)]
-  IR_UpperLimitUnit[!is.na(IR_Unit_CvF_Upper)]=ResultMeasure.MeasureUnitCode[!is.na(IR_Unit_CvF_Upper)]
-  IR_LowerLimitUnit[!is.na(IR_Unit_CvF_Lower)]=ResultMeasure.MeasureUnitCode[!is.na(IR_Unit_CvF_Lower)]
+if(dim(r_lu_units)[1]>0){
+  print("Unit conversion needed between detection limit unit and result unit. Checking for new unit conversions...")
+  r_lu_units$InData = "Y"
+  ##Merge to unitConvTable##
+  unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=unitsheetname, startRow=unitstartRow, detectDates=TRUE))
+  unitconv_table=unitconv_table[,!names(unitconv_table)%in%"InData"] # Refresh InData column 
+  unitmerge <- merge(r_lu_units,unitconv_table, all=TRUE)
+  
+  ##Close out of function if new unit conversions added##
+  if(!dim(unitmerge)[1]==dim(unitconv_table)[1]){
+    unitmerge$DateAdded[is.na(unitmerge$DateAdded)]=Sys.Date() # this does not work with an empty dataframe
+    openxlsx::writeData(trans_wb, "unitConvTable", unitmerge, startRow=unitstartRow, startCol=unitstartCol)
+    #Save translation workbook
+    openxlsx::saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
+    newunit <- dim(unitmerge)[1]-dim(unitconv_table)[1]
+    stop(paste(newunit,"new unit combination(s) detected. Populate conversion factor(s) in unit conversion table in translation workbook before re-running function."))
+  }else{print("No new unit combinations detected. Proceeding to unit conversion...")}
+  
+  ##Attach unit conversion factors##
+  unitconv <- subset(unitmerge, unitmerge$InData=="Y")
+  unitconv <- unitconv[,names(unitconv)%in%c("IR_Unit","CriterionUnits","UnitConversionFactor")]
+  #Rename columns to merge CvFs with results - upper
+  names(unitconv)<- c("IR_UpperLimitUnit","ResultMeasure.MeasureUnitCode","IR_Unit_CvF_Upper")
+  #Merge upper conversion factors to results
+  dimcheck <- dim(results_dql)
+  results_dql <- merge(results_dql,unitconv, all.x=TRUE)
+  if(!dimcheck[1]==dim(results_dql)[1]){
+    stop("Merge between result data and unit conversion table resulted in new rows. Check conversion table for missing or erroneous values.")
+  }
+  #Rename columns to merge CvFs with results - lower
+  names(unitconv)<- c("IR_LowerLimitUnit","ResultMeasure.MeasureUnitCode","IR_Unit_CvF_Lower")
+  #Merge lower conversion factors to results
+  dimcheck <- dim(results_dql)
+  results_dql <- merge(results_dql,unitconv, all.x=TRUE)
+  if(!dimcheck[1]==dim(results_dql)[1]){
+    stop("Merge between result data and unit conversion table resulted in new rows. Check conversion table for missing or erroneous values.")
+  }
+  ##Make unit conversions##
+  #Make conversions between result and limit units IFF unit conversion factor is not NA. 
+  results_dql=within(results_dql,{
+    IR_UpperLimitValue[!is.na(IR_Unit_CvF_Upper)]=IR_UpperLimitValue[!is.na(IR_Unit_CvF_Upper)]*IR_Unit_CvF_Upper[!is.na(IR_Unit_CvF_Upper)]
+    IR_LowerLimitValue[!is.na(IR_Unit_CvF_Lower)]=IR_LowerLimitValue[!is.na(IR_Unit_CvF_Lower)]*IR_Unit_CvF_Lower[!is.na(IR_Unit_CvF_Lower)]
+    IR_UpperLimitUnit[!is.na(IR_Unit_CvF_Upper)]=ResultMeasure.MeasureUnitCode[!is.na(IR_Unit_CvF_Upper)]
+    IR_LowerLimitUnit[!is.na(IR_Unit_CvF_Lower)]=ResultMeasure.MeasureUnitCode[!is.na(IR_Unit_CvF_Lower)]
   })
-
-##Remove conversion columns##
-results_dql <- results_dql[,!names(results_dql)%in%c("IR_Unit_CvF_Upper","IR_Unit_CvF_Lower")]
+  
+  ##Remove conversion columns##
+  results_dql <- results_dql[,!names(results_dql)%in%c("IR_Unit_CvF_Upper","IR_Unit_CvF_Lower")]
+  
+}else{print("No unit conversions needed. Proceeding to detection condition assignment...")}
 
 ####Unit conversion fix outline (treating result units as target units, convert & fill limit units in place, maintain raw value and units in original columns):
 #1. Set all values to NA where is.na(associated unit) - this will prevent us from comparing values where one or more unit is an NA
