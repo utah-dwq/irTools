@@ -53,7 +53,7 @@ data[data==""]=NA
 #Check that dataset does not contain flag column from domain table (indicates re-screening data, which leads to errors)
 
 if(flag_col_name%in%colnames(data)){
-  print("WARNING: Shared flag columns between result data and domain table may indicate that the screen table was already applied. If you have made changes to the domain table(s) between screening functions, either re-run with an unscreened dataset or provide new flag_col_name and com_col_name before proceeding.")
+  print("WARNING: Shared flag columns between result data and domain table may indicate that the screen table was already applied. If you have made changes to the domain table(s) between screening functions, either re-run with an unscreened dataset (post-fillMaskedValues object) or provide new flag_col_name and com_col_name before proceeding.")
   readline(prompt="Press [enter] to continue or [esc] to exit the function.")
   }
 
@@ -62,7 +62,7 @@ data_screen=merge(data, screen_table, all.x=T)
 
 #Check that merged_result data frame does not contain combinations not present in domain tables
 if(any(is.na(data_screen[,names(data_screen)%in%c(flag_col_name)]))){
-  print(paste0("WARNING: NA's generated in ",flag_col_name,". This can occur for two reasons: (1) Combinations exist in merged_results that do not exist in ",sheetname,", or (2) if na_dup_err=FALSE, NA's are likely present in domain table IR_FLAG. Update domain table and re-apply screen before proceeding."))
+  warning(paste0("NA's generated in ",flag_col_name,". This can occur for two reasons: (1) Combinations exist in merged_results that do not exist in ",sheetname,", or (2) if na_dup_err=FALSE, NA's are likely present in domain table IR_FLAG. After making changes in domain table, re-run all applyScreenTables on a post-fillMaskedValues object to ensure changes are correctly merged."))
 }
 
 #Check that deimension[1] has stayed consistent
