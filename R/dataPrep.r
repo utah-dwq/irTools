@@ -6,9 +6,9 @@
 #' @param translation_wb Full path and filename for IR translation workbook (.xlsx).
 #' @param unit_sheetname Name of sheet in workbook holding IR unit conversion table. Defaults to "unitConvTable".
 #' @param startRow Row to start reading the unit conversion table excel sheet from (in case headers have been added). Defaults to 1.
+#' @param split_agg_tds Logical. If TRUE (default) split off TDS records w/ function assigned in AsmntAggFun into separate output. If FALSE, these records are passed through to conventionals output.
 
-
-#' @return WQP data input with .
+#' @return A list of objects ready for assessments.
 
 #' @importFrom openxlsx loadWorkbook
 #' @importFrom openxlsx readWorkbook
@@ -18,7 +18,7 @@
 #' @importFrom plyr rbind.fill
 
 #' @export
-dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow=1){
+dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow=1, split_agg_tds=TRUE){
 
 
 
@@ -27,7 +27,7 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow
 #load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
 #data=data_crit
 #translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
-#
+#split_agg_tds=TRUE
 #unit_sheetname="unitConvTable"
 #startRow=1
 ########
@@ -62,7 +62,6 @@ rm(data_n)
 #if(table(data$Data_Prep_FLAG)[1]+table(data$Data_Prep_FLAG)[2]!=dim(data)[1]){
 #  print("WARNING: NAs coerced in Data_Prep_FLAG due to NA's in IR_Fraction or Target Fraction")
 #}
-
 
 if(any(is.na(data$IR_Fraction) & !is.na(data$TargetFraction))){
   print("WARNING: Records rejected due to incomplete IR_Fraction in translation table.")
@@ -266,6 +265,9 @@ sum(table(acc_data$DataLoggerLine))
 #Extract lakes trophic data
 result$lakes_trophic=acc_data[acc_data$AU_Type=="Reservoir/Lake" & acc_data$R3172ParameterName %in% c("Chlorophyll a", "Total Phosphorus as P","Depth, Secchi disk depth"),]
 
+#Extract e coli
+result$ecoli=acc_data[acc_data$R3172ParameterName=="E. Coli",] #Note, need to name parameter in param translation table and update here.
+
 facToNum=function(x){
 	if(class(x)=="factor"){result=as.numeric(levels(x))[x]
 	}else{result=x}
@@ -395,15 +397,23 @@ conv_lakes=conv_lakes[!conv_lakes$BeneficialUse %in% c("3A","3B","3C","3D","3E")
 conv_lakes_daily=aggDVbyfun(conv_lakes,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
 
 
-#Aggregate by AsmntAggPeriod AsmntAggPeriodUnit AsmntAggFun (need to do)
-
 
 #Separate lakes TDS (different assessment methods)
 result$lakes_tds=conv_lakes[conv_lakes$R3172ParameterName=="Total Dissolved Solids",]
 conv_lakes=conv_lakes[conv_lakes$R3172ParameterName!="Total Dissolved Solids",]
 
 #rbind lakes & streams back together to result (fills depth cols w/ NA for streams)
-result$conventionals=plyr::rbind.fill(conv_strms_daily, conv_lakes_daily)
+conventionals=plyr::rbind.fill(conv_strms_daily, conv_lakes_daily)
+dim(conventionals)
+if(split_agg_tds){
+	agg_tds=conventionals[conventionals$R3172ParameterName=="Total Dissolved Solids" & !is.na(as.character(conventionals$AsmntAggFun)),]
+	conventionals=conventionals[conventionals$R3172ParameterName!="Total Dissolved Solids" | (conventionals$R3172ParameterName=="Total Dissolved Solids" & is.na(as.character(conventionals$AsmntAggFun))),]
+}
+dim(conventionals)
+dim(agg_tds)
+result$conventionals=conventionals
+result$agg_tds=agg_tds
+
 
 objects(result)
 
