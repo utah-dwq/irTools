@@ -375,7 +375,7 @@ conv_lakes=conv_raw[which(conv_raw$AU_Type=="Reservoir/Lake"),]
 
 #Streams
 #Aggregate to daily values (including depth)
-conv_strms_daily=aggDVbyfun(conv_strms,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
+conv_strms_daily=aggDVbyfun(conv_strms,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","IR_Fraction","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
 
 #Lakes
 #Select surface only results for lakes conventionals
@@ -394,7 +394,7 @@ conv_lakes=conv_lakes[which(conv_lakes$ActivityRelativeDepthName=="Surface" | (c
 conv_lakes=conv_lakes[!conv_lakes$BeneficialUse %in% c("3A","3B","3C","3D","3E"),]
 
 #Aggregate to daily values (excluding depths this time - all surface samples)
-conv_lakes_daily=aggDVbyfun(conv_lakes,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
+conv_lakes_daily=aggDVbyfun(conv_lakes,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","IR_Fraction","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
 
 
 
