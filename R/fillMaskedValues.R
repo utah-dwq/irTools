@@ -152,26 +152,19 @@ suppressWarnings({
 ###Unit checks between result values and limit values###
 print("Checking for disparities in result units and limit units...")
 ##Pull out unique pairs of units##
-#result unit : lower limit unit
+#Result unit : lower limit unit
 r_l_units <- data.frame(unique(results_dql[,c("IR_LowerLimitUnit", "ResultMeasure.MeasureUnitCode")]))
 names(r_l_units)<- c("IR_Unit","CriterionUnits")
-#result unit :upper limit unit
+#Result unit :upper limit unit
 r_u_units <- data.frame(unique(results_dql[,c("IR_UpperLimitUnit", "ResultMeasure.MeasureUnitCode")]))
 names(r_u_units)<- c("IR_Unit","CriterionUnits")
 
-
-
-#merge unique unit combos together and remove lines with NA's
+#Merge unique unit combos together, remove lines with NA's, and retain only rows in which IR_Unit and CriterionUnits are different and need conversion.
 r_lu_units <- merge(r_l_units,r_u_units, all=TRUE)
 r_lu_units <- na.omit(r_lu_units)
-r_lu_units$IR_Unit=as.character(r_lu_units$IR_Unit) # does as.factor or as.character matter?
-#-JV: Yeah, this is due to different factor levels (try r_lu_units$IR_Unit==r_lu_units$CriterionUnits w/ converting to character, the other option is to merge/drop levels from both, but converting to character is good)
-#identical() includes comparing factor levels
-
+r_lu_units$IR_Unit=as.character(r_lu_units$IR_Unit)
 r_lu_units$CriterionUnits=as.character(r_lu_units$CriterionUnits)
-same <- mapply(identical,r_lu_units$IR_Unit,r_lu_units$CriterionUnits)
-r_lu_units <- r_lu_units[!same,]
-
+r_lu_units <- r_lu_units[!r_lu_units$IR_Unit==r_lu_units$CriterionUnits,]
 
 if(dim(r_lu_units)[1]>0){
   print("Unit conversion(s) needed between detection limit unit(s) and result unit(s). Checking for new unit conversions...")
