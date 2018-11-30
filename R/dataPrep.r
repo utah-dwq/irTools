@@ -6,9 +6,9 @@
 #' @param translation_wb Full path and filename for IR translation workbook (.xlsx).
 #' @param unit_sheetname Name of sheet in workbook holding IR unit conversion table. Defaults to "unitConvTable".
 #' @param startRow Row to start reading the unit conversion table excel sheet from (in case headers have been added). Defaults to 1.
+#' @param split_agg_tds Logical. If TRUE (default) split off TDS records w/ function assigned in AsmntAggFun into separate output. If FALSE, these records are passed through to conventionals output.
 
-
-#' @return WQP data input with .
+#' @return A list of objects ready for assessments.
 
 #' @importFrom openxlsx loadWorkbook
 #' @importFrom openxlsx readWorkbook
@@ -18,7 +18,7 @@
 #' @importFrom plyr rbind.fill
 
 #' @export
-dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow=1){
+dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow=1, split_agg_tds=TRUE){
 
 
 
@@ -26,9 +26,8 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow
 #rm(list=ls(all=TRUE))
 #load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
 #data=data_crit
-##translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\03translation\\ir_translation_workbook.xlsx"
-#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\ir_translation_workbook.xlsx"
-#
+#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
+#split_agg_tds=TRUE
 #unit_sheetname="unitConvTable"
 #startRow=1
 ########
@@ -63,7 +62,6 @@ rm(data_n)
 #if(table(data$Data_Prep_FLAG)[1]+table(data$Data_Prep_FLAG)[2]!=dim(data)[1]){
 #  print("WARNING: NAs coerced in Data_Prep_FLAG due to NA's in IR_Fraction or Target Fraction")
 #}
-
 
 if(any(is.na(data$IR_Fraction) & !is.na(data$TargetFraction))){
   print("WARNING: Records rejected due to incomplete IR_Fraction in translation table.")
@@ -199,11 +197,31 @@ if(any(na.omit(data[data$IR_Unit==data$CriterionUnits,"UnitConversionFactor"]!=1
 	warning("WARNING: Potential error in unit conversion table. Conversion factor !=1 for record where IR_Unit==CriterionUnits.")
 	}
 
-#Convert IR_Value using Unit Conversion Value
-data$IR_Value <- data$IR_Value*data$UnitConversionFactor
-data$IR_Unit = data$CriterionUnits
+if(any(data$IR_Unit!=data$IR_LowerLimitUnit, na.rm=T) | any(data$IR_Unit!=data$IR_UpperLimitUnit, na.rm=T)){
+	stop("Error: Result and detection limit units do not match. Cannot convert or compare units to criterion units.")
+}
+	
+#Convert IR_Value and upper and lower limit values using Unit Conversion Value
+data=within(data,{
+	IR_Value = IR_Value*UnitConversionFactor
+	IR_Unit = CriterionUnits
+	IR_LowerLimitValue = IR_LowerLimitValue*UnitConversionFactor
+	IR_LowerLimitUnit = CriterionUnits
+	IR_UpperLimitValue = IR_UpperLimitValue*UnitConversionFactor
+	IR_UpperLimitUnit = CriterionUnits
+})
 
-head(data[is.na(data$IR_Value) & data$IR_DetCond!="NRV" & data$IR_UnitConv_FLAG!="REJECT",])
+
+#Reject non-detect records where IR_LowerLimitValue > NumericCriterion
+data_n=data
+data_n$reason=NA
+data_n=within(data_n,{
+	reason[IR_DetCond=="ND" & IR_LowerLimitValue>NumericCriterion]="Non-detect result with detection limit > criterion."
+	})
+data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
+reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+print(table(reasons$reason))
+rm(data_n)
 
 
 ####Apply rejections to flag column in data
@@ -244,6 +262,11 @@ result$lake_profiles=acc_data[!is.na(acc_data$DataLoggerLine) & acc_data$Benefic
 acc_data=acc_data[!acc_data$ActivityIdentifier %in% result$lake_profiles$ActivityIdentifier,]
 sum(table(acc_data$DataLoggerLine))
 
+#Extract lakes trophic data
+result$lakes_trophic=acc_data[acc_data$AU_Type=="Reservoir/Lake" & acc_data$R3172ParameterName %in% c("Chlorophyll a", "Total Phosphorus as P","Depth, Secchi disk depth"),]
+
+#Extract e coli
+result$ecoli=acc_data[acc_data$R3172ParameterName=="E. Coli",] #Note, need to name parameter in param translation table and update here.
 
 facToNum=function(x){
 	if(class(x)=="factor"){result=as.numeric(levels(x))[x]
@@ -292,7 +315,7 @@ toxics_lakes=toxics_raw[which(toxics_raw$AU_Type=="Reservoir/Lake"),]
 ###Streams
 #Aggregate to daily values
 dim(toxics_strms)
-toxics_strms_daily=aggDVbyfun(toxics_strms,	value_var="IR_Value",drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
+toxics_strms_daily=aggDVbyfun(toxics_strms,	value_var="IR_Value",drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode","IR_Fraction"), agg_var="DailyAggFun")
 dim(toxics_strms_daily)
 
 
@@ -315,7 +338,7 @@ toxics_strms_daily=toxics_strms_daily[toxics_strms_daily$BeneficialUse!="CF",] #
 
 #Aggregate to daily values
 dim(toxics_lakes)
-toxics_lakes_daily=aggDVbyfun(toxics_lakes,	value_var="IR_Value",drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
+toxics_lakes_daily=aggDVbyfun(toxics_lakes,	value_var="IR_Value",drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode","IR_Fraction"), agg_var="DailyAggFun")
 dim(toxics_lakes_daily)
 
 #Assign CFs
@@ -334,7 +357,6 @@ toxics_lakes_daily=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse!="CF",] #
 
 #Aggregate by AsmntAggPeriod AsmntAggPeriodUnit AsmntAggFun (need to do)
 #Calculate CF dependent criterion values (need to do)
-#Reject non-detect records where IR_Value > NumericCriterion (need to do, also append these rejections to data_flags before returning)
 
 
 #rbind lakes & streams back together to result (fills depth cols w/ NA for streams)
@@ -375,12 +397,23 @@ conv_lakes=conv_lakes[!conv_lakes$BeneficialUse %in% c("3A","3B","3C","3D","3E")
 conv_lakes_daily=aggDVbyfun(conv_lakes,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
 
 
-#Aggregate by AsmntAggPeriod AsmntAggPeriodUnit AsmntAggFun (need to do)
 
-#Separate lakes TDS (need to do)
+#Separate lakes TDS (different assessment methods)
+result$lakes_tds=conv_lakes[conv_lakes$R3172ParameterName=="Total Dissolved Solids",]
+conv_lakes=conv_lakes[conv_lakes$R3172ParameterName!="Total Dissolved Solids",]
 
 #rbind lakes & streams back together to result (fills depth cols w/ NA for streams)
-result$conventionals=plyr::rbind.fill(conv_strms_daily, conv_lakes_daily)
+conventionals=plyr::rbind.fill(conv_strms_daily, conv_lakes_daily)
+dim(conventionals)
+if(split_agg_tds){
+	agg_tds=conventionals[conventionals$R3172ParameterName=="Total Dissolved Solids" & !is.na(as.character(conventionals$AsmntAggFun)),]
+	conventionals=conventionals[conventionals$R3172ParameterName!="Total Dissolved Solids" | (conventionals$R3172ParameterName=="Total Dissolved Solids" & is.na(as.character(conventionals$AsmntAggFun))),]
+}
+dim(conventionals)
+dim(agg_tds)
+result$conventionals=conventionals
+result$agg_tds=agg_tds
+
 
 objects(result)
 
