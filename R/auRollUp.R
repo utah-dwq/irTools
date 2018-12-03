@@ -2,7 +2,7 @@
 #'
 #' Compares water quality result values to standards to calculates sample and exceedance counts. This is geared towards conventional and toxic assessments.
 #' 
-#' @param data A prepped list of water quality portal data objects with exceedances counted and assessed for each site, use, and R3172 parameter.
+#' @param data A prepped list of water quality portal data objects with exceedances counted and assessed for each site, use, and R3172 parameter. Will likely contain toxics assessed, conventionals assessed, lakes assessed, etc.
 #' @param subs Vector of column names on which to subset data to determine AU assessment category. Defaults to subset by ASSESS_ID, BeneficialUse, and R3172ParameterName.
 #' @return Returns dataframe with assessment categories for each AU/BenUse/R3172ParameterName.
 #' @importFrom plyr rbind.fill
