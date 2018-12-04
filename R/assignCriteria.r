@@ -147,10 +147,6 @@ data_uses_flat_crit=plyr::rbind.fill(data_uses_flat_crit, data_uses_flat_ssc)
 dim(data_uses_flat_crit)
 
 
-#5. Calculated criteria
-#JV note I think this will be better done separately (prob stand-alone function), following unit conversions.
-
-
 #Remove records w/o criteria or not conversion factor if rm_nocrit==TRUE
 if(rm_nocrit==TRUE){
 	data_uses_flat_crit=data_uses_flat_crit[!is.na(data_uses_flat_crit$NumericCriterion) | data_uses_flat_crit$BeneficialUse=="CF",]

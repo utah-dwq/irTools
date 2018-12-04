@@ -1,11 +1,13 @@
 #' Final data prep step before assessments
 #'
-#' Performs unit conversions & daily data aggregations. Also checks native vs. target activities and fractions, dissolved vs. total value checks, river/stream depth & flow checks, and generates value based data flags. 
+#' Performs unit conversions & daily data aggregations. Also checks native vs. target activities and fractions, dissolved vs. total value checks, river/stream depth & flow checks, and generates value based data flags.
 #'
 #' @param data A merged, translated, and numeric criteria assigned WQP results R-object. Target units for conversions are defined by units associated with assigned numeric critera.
 #' @param translation_wb Full path and filename for IR translation workbook (.xlsx).
 #' @param unit_sheetname Name of sheet in workbook holding IR unit conversion table. Defaults to "unitConvTable".
-#' @param startRow Row to start reading the unit conversion table excel sheet from (in case headers have been added). Defaults to 1.
+#' @param startRow_unit Row to start reading the unit conversion table excel sheet from (in case headers have been added). Defaults to 1.
+#' @param crit_wb Full path and filename for workbook containing criteria.
+#' @param cf_formulas_sheetname
 #' @param split_agg_tds Logical. If TRUE (default) split off TDS records w/ function assigned in AsmntAggFun into separate output. If FALSE, these records are passed through to conventionals output.
 
 #' @return A list of objects ready for assessments.
@@ -18,10 +20,10 @@
 #' @importFrom plyr rbind.fill
 
 #' @export
-dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow=1, split_agg_tds=TRUE){
+dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb, cf_formulas_sheetname, startRow_unit=1, split_agg_tds=TRUE){
 
 
-
+#
 ##SETUP#####
 #rm(list=ls(all=TRUE))
 #load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
@@ -29,13 +31,21 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", startRow
 #translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
 #split_agg_tds=TRUE
 #unit_sheetname="unitConvTable"
-#startRow=1
+#startRow_unit=1
+#crit_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\IR_uses_standards.xlsx"
+#cf_formulas_sheetname="cf_formulas"
+#startRow_formulas=1
 ########
 
 result=list()
 
 reasons=data.frame(data[0,])
 reasons$reason=character(0)
+
+
+
+#Remove records w/o criteria (in case they have been optionally passed through assignCriteria - these cause errors in aggregation steps as they do not have aggregation functions specified)
+data=data[!is.na(data$NumericCriterion) | data$BeneficialUse=="CF",]
 
 
 ####################################
@@ -92,7 +102,7 @@ for(n in 1:length(sheetnames)){
 ##################################
 
 #Read unit conversion table from translation workbook (loaded above)
-unit_convs=data.frame(openxlsx::readWorkbook(translation_wb, sheet=unit_sheetname, startRow=startRow, detectDates=TRUE))
+unit_convs=data.frame(openxlsx::readWorkbook(translation_wb, sheet=unit_sheetname, startRow=startRow_unit, detectDates=TRUE))
 
 # UNIT CONV TABLE CHECKS: make sure all IR_UnitConv_FLAG and UnitConversionFactor (for ACCEPT combinations) are populated
 if(any(is.na(unit_convs$IR_FLAG))){
@@ -200,7 +210,7 @@ if(any(na.omit(data[data$IR_Unit==data$CriterionUnits,"UnitConversionFactor"]!=1
 if(any(data$IR_Unit!=data$IR_LowerLimitUnit, na.rm=T) | any(data$IR_Unit!=data$IR_UpperLimitUnit, na.rm=T)){
 	stop("Error: Result and detection limit units do not match. Cannot convert or compare units to criterion units.")
 }
-	
+
 #Convert IR_Value and upper and lower limit values using Unit Conversion Value
 data=within(data,{
 	IR_Value = IR_Value*UnitConversionFactor
@@ -287,27 +297,33 @@ aggDVbyfun=function(x, value_var, drop_vars, agg_var){
 	x=x[,!names(x) %in% drop_vars]
 	daily=x[0,]
 	funs=unique(x[,agg_var])
-	
+
 	for(n in 1:length(funs)){
 		fun_n=funs[n]
 		x_n=x[x[,agg_var]==fun_n,]
 		daily_n=aggregate(val~.,x_n, FUN=get(paste(fun_n)))
 		daily=rbind(daily,daily_n)
 	}
-	
+
 	daily[num_names]=lapply(daily[num_names], facToNum) #Convert numeric cols back to numeric
-	
+
 	names(daily)[names(daily)=="val"]=value_var #Rename value_var
-	
+
 	return(daily)
 }
+
+
+
+
+
+drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode","IR_Fraction","IR_DetCond")
 
 
 #############
 #######Toxics & correction factors
 ######
 toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$BeneficialUse=="CF"),]
- 
+
 #split streams & lakes
 toxics_strms=toxics_raw[which(toxics_raw$AU_Type=="River/Stream"),]
 toxics_lakes=toxics_raw[which(toxics_raw$AU_Type=="Reservoir/Lake"),]
@@ -315,7 +331,7 @@ toxics_lakes=toxics_raw[which(toxics_raw$AU_Type=="Reservoir/Lake"),]
 ###Streams
 #Aggregate to daily values
 dim(toxics_strms)
-toxics_strms_daily=aggDVbyfun(toxics_strms,	value_var="IR_Value",drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode","IR_Fraction"), agg_var="DailyAggFun")
+toxics_strms_daily=aggDVbyfun(toxics_strms,	drop_vars=drop_vars,	value_var="IR_Value", agg_var="DailyAggFun")
 dim(toxics_strms_daily)
 
 
@@ -338,7 +354,7 @@ toxics_strms_daily=toxics_strms_daily[toxics_strms_daily$BeneficialUse!="CF",] #
 
 #Aggregate to daily values
 dim(toxics_lakes)
-toxics_lakes_daily=aggDVbyfun(toxics_lakes,	value_var="IR_Value",drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode","IR_Fraction"), agg_var="DailyAggFun")
+toxics_lakes_daily=aggDVbyfun(toxics_lakes,	drop_vars=drop_vars, value_var="IR_Value", agg_var="DailyAggFun")
 dim(toxics_lakes_daily)
 
 #Assign CFs
@@ -354,20 +370,65 @@ toxics_lakes_daily=merge(toxics_lakes_daily,cfs_lakes_cast,all.x=T)
 dim(toxics_lakes_daily)
 toxics_lakes_daily=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse!="CF",] #Remove CF rows
 
+#Merge lakes & streams toxics
+toxics=plyr::rbind.fill(toxics_strms_daily, toxics_lakes_daily)
 
-#Aggregate by AsmntAggPeriod AsmntAggPeriodUnit AsmntAggFun (need to do)
+
+
+#Calculate hardness (will need to update for different hardness parameters):
+toxics=within(toxics,{
+		hardness=100*(`cf_min_Calcium_mg/l`/40.08 + `cf_min_Magnesium_mg/l`/24.3)
+		#hardness[is.na(hardness)]=OTHER HARDNESS COLUMNS HERE...
+	})
+
+
+
 #Calculate CF dependent criterion values (need to do)
+test=toxics[toxics$R3172ParameterName=="Cadmium" | toxics$R3172ParameterName=="Arsenic" | toxics$R3172ParameterName=="Aluminum",]
+head(test)
 
 
-#rbind lakes & streams back together to result (fills depth cols w/ NA for streams)
-result$toxics=plyr::rbind.fill(toxics_strms_daily, toxics_lakes_daily)
+#Load criterion workbook
+criterion_wb=openxlsx::loadWorkbook(crit_wb)
 
+#Remove filters from all sheets in crit_wb
+sheetnames=openxlsx::getSheetNames(crit_wb)
+for(n in 1:length(sheetnames)){
+  openxlsx::removeFilter(criterion_wb, sheetnames[n])
+}
+
+#Read formula table
+cf_formulas=data.frame(openxlsx::readWorkbook(criterion_wb, sheet=cf_formulas_sheetname, startRow=startRow_formulas, detectDates=TRUE))
+
+toxics=merge(toxics, cf_formulas, all.x=T)
+
+calc=toxics$NumericCriterion
+toxics=within(toxics, {
+	CF[!is.na(CF)]=paste0("(",CF[!is.na(CF)],")")
+	CriterionFormula=gsub("CF * ","",CriterionFormula, fixed=TRUE)
+	CriterionFormula[!is.na(CF)]=paste0("(",CriterionFormula[!is.na(CF)],")")
+	CriterionFormula[!is.na(CF)]=paste(CF[!is.na(CF)], "*", CriterionFormula[!is.na(CF)])
+	CriterionFormula=gsub("ln", "log", CriterionFormula, fixed=TRUE)
+	CriterionFormula=gsub(") (", ")*(", CriterionFormula, fixed=TRUE)
+	CriterionFormula=gsub(")(",  ")*(", CriterionFormula, fixed=TRUE)
+	CriterionFormula=gsub("(e(",  "(exp(", CriterionFormula, fixed=TRUE)
+	CriterionFormula=stringr::str_replace_all(CriterionFormula, "hardness", as.character(hardness))
+	CriterionFormula=stringr::str_replace_all(CriterionFormula, "min_pH", as.character(cf_min_pH_NA))
+	CalculatedCrit=sapply(CriterionFormula, function(x) eval(parse(text=x)))
+	suppressWarnings({
+		NumericCriterion=facToNum(NumericCriterion)
+	})
+	NumericCriterion[calc=="calc"]=CalculatedCrit[calc=="calc"]
+})
+
+#Generate toxics result
+result$toxics=toxics
 
 #############
 #######Conventionals
-###### 
+######
 conv_raw=acc_data[which(acc_data$AssessmentType=="Conventional" & acc_data$BeneficialUse!="CF"),]
- 
+
 #split streams & lakes
 conv_strms=conv_raw[which(conv_raw$AU_Type=="River/Stream"),]
 conv_lakes=conv_raw[which(conv_raw$AU_Type=="Reservoir/Lake"),]
@@ -375,7 +436,7 @@ conv_lakes=conv_raw[which(conv_raw$AU_Type=="Reservoir/Lake"),]
 
 #Streams
 #Aggregate to daily values (including depth)
-conv_strms_daily=aggDVbyfun(conv_strms,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
+conv_strms_daily=aggDVbyfun(conv_strms,	drop_vars=drop_vars,	value_var="IR_Value", agg_var="DailyAggFun")
 
 #Lakes
 #Select surface only results for lakes conventionals
@@ -387,14 +448,14 @@ conv_lakes=within(conv_lakes,{
 	ActivityDepthHeightMeasure.MeasureUnitCode[which(ActivityDepthHeightMeasure.MeasureUnitCode=="ft" | ActivityDepthHeightMeasure.MeasureUnitCode=="feet")]="m"
 	ActivityDepthHeightMeasure.MeasureUnitCode[which(ActivityDepthHeightMeasure.MeasureUnitCode=="meters")]="m"
 	})
-if(any(conv_lakes$ActivityDepthHeightMeasure.MeasureUnitCode!="m", na.rm=T)){stop("Error: lake depth units cannot be converted to meters. Additional conversion may be needed.")}	
+if(any(conv_lakes$ActivityDepthHeightMeasure.MeasureUnitCode!="m", na.rm=T)){stop("Error: lake depth units cannot be converted to meters. Additional conversion may be needed.")}
 conv_lakes=conv_lakes[which(conv_lakes$ActivityRelativeDepthName=="Surface" | (conv_lakes$ActivityDepthHeightMeasure.MeasureValue <=2 & conv_lakes$ActivityDepthHeightMeasure.MeasureValue>=0)),]
 
 #Remove data for ALUs (assessed via profile tools)
 conv_lakes=conv_lakes[!conv_lakes$BeneficialUse %in% c("3A","3B","3C","3D","3E"),]
 
 #Aggregate to daily values (excluding depths this time - all surface samples)
-conv_lakes_daily=aggDVbyfun(conv_lakes,	value_var="IR_Value",drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode"), agg_var="DailyAggFun")
+conv_lakes_daily=aggDVbyfun(conv_lakes,	drop_vars=drop_vars,	value_var="IR_Value", agg_var="DailyAggFun")
 
 
 
@@ -436,5 +497,3 @@ objects(result)
 return(result)
 
 }
-
-
