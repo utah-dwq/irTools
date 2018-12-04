@@ -43,6 +43,11 @@ reasons=data.frame(data[0,])
 reasons$reason=character(0)
 
 
+
+#Remove records w/o criteria (in case they have been optionally passed through assignCriteria - these cause errors in aggregation steps as they do not have aggregation functions specified)
+data=data[!is.na(data$NumericCriterion) | data$BeneficialUse=="CF",]
+
+
 ####################################
 ######Activity type check###########
 ####################################
