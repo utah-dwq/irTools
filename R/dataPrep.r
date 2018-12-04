@@ -23,19 +23,19 @@
 dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb, cf_formulas_sheetname, startRow_unit=1, split_agg_tds=TRUE){
 
 
-
-#SETUP#####
-rm(list=ls(all=TRUE))
-load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
-data=data_crit
-translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
-split_agg_tds=TRUE
-unit_sheetname="unitConvTable"
-startRow_unit=1
-crit_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\IR_uses_standards.xlsx"
-cf_formulas_sheetname="cf_formulas"
-startRow_formulas=1
-#######
+#
+##SETUP#####
+#rm(list=ls(all=TRUE))
+#load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
+#data=data_crit
+#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
+#split_agg_tds=TRUE
+#unit_sheetname="unitConvTable"
+#startRow_unit=1
+#crit_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\IR_uses_standards.xlsx"
+#cf_formulas_sheetname="cf_formulas"
+#startRow_formulas=1
+########
 
 result=list()
 
@@ -368,9 +368,19 @@ toxics_lakes_daily=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse!="CF",] #
 #Merge lakes & streams toxics
 toxics=plyr::rbind.fill(toxics_strms_daily, toxics_lakes_daily)
 
+
+
+#Calculate hardness (will need to update for different hardness parameters):
+toxics=within(toxics,{
+		hardness=100*(`cf_min_Calcium_mg/l`/40.08 + `cf_min_Magnesium_mg/l`/24.3)
+		#hardness[is.na(hardness)]=OTHER HARDNESS COLUMNS HERE...
+	})
+
+
+
 #Calculate CF dependent criterion values (need to do)
-cadmium=toxics[toxics$R3172ParameterName=="Cadmium",]
-head(cadmium)
+test=toxics[toxics$R3172ParameterName=="Cadmium" | toxics$R3172ParameterName=="Arsenic" | toxics$R3172ParameterName=="Aluminum",]
+head(test)
 
 
 #Load criterion workbook
@@ -385,14 +395,29 @@ for(n in 1:length(sheetnames)){
 #Read formula table
 cf_formulas=data.frame(openxlsx::readWorkbook(criterion_wb, sheet=cf_formulas_sheetname, startRow=startRow_formulas, detectDates=TRUE))
 
+toxics=merge(toxics, cf_formulas, all.x=T)
 
+calc=toxics$NumericCriterion
+toxics=within(toxics, {
+	CF[!is.na(CF)]=paste0("(",CF[!is.na(CF)],")")
+	CriterionFormula=gsub("CF * ","",CriterionFormula, fixed=TRUE)
+	CriterionFormula[!is.na(CF)]=paste0("(",CriterionFormula[!is.na(CF)],")")
+	CriterionFormula[!is.na(CF)]=paste(CF[!is.na(CF)], "*", CriterionFormula[!is.na(CF)])
+	CriterionFormula=gsub("ln", "log", CriterionFormula, fixed=TRUE)
+	CriterionFormula=gsub(") (", ")*(", CriterionFormula, fixed=TRUE)
+	CriterionFormula=gsub(")(",  ")*(", CriterionFormula, fixed=TRUE)
+	CriterionFormula=gsub("(e(",  "(exp(", CriterionFormula, fixed=TRUE)
+	CriterionFormula=stringr::str_replace_all(CriterionFormula, "hardness", as.character(hardness))
+	CriterionFormula=stringr::str_replace_all(CriterionFormula, "min_pH", as.character(cf_min_pH_NA))
+	CalculatedCrit=sapply(CriterionFormula, function(x) eval(parse(text=x)))
+	suppressWarnings({
+		NumericCriterion=facToNum(NumericCriterion)
+	})
+	NumericCriterion[calc=="calc"]=CalculatedCrit[calc=="calc"]
+})
 
-
-
-
-#rbind lakes & streams back together to result (fills depth cols w/ NA for streams)
+#Generate toxics result
 result$toxics=toxics
-
 
 #############
 #######Conventionals
