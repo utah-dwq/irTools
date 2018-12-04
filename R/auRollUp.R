@@ -38,6 +38,9 @@ eq <- as.formula(paste("AU_Cat", subs_eq, sep="~"))
 # Aggregate to AU by subs 
 rollup <- aggregate(eq,dat_all,max)
 rollup <- merge(rollup, unique(dat_all[,c("AU_NAME","ASSESS_ID","AU_Cat","IR_Cat")]), all.x=TRUE)
+rollup <- rollup[,!names(rollup)%in%c("AU_Cat")]
+names(rollup)[names(rollup)=="IR_Cat"] <- "AU_Category"
+
 return(rollup)
 
 }
