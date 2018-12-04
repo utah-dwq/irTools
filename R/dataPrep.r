@@ -7,7 +7,8 @@
 #' @param unit_sheetname Name of sheet in workbook holding IR unit conversion table. Defaults to "unitConvTable".
 #' @param startRow_unit Row to start reading the unit conversion table excel sheet from (in case headers have been added). Defaults to 1.
 #' @param crit_wb Full path and filename for workbook containing criteria.
-#' @param cf_formulas_sheetname
+#' @param cf_formulas_sheetname Name of sheet in criterion workbook holding conversion factors and criterion formulas for criteria dependent on CFs.
+#' @param startRow_formulas Row to start reading the formulas table from (in case headers have been added). Defaults to 1.
 #' @param split_agg_tds Logical. If TRUE (default) split off TDS records w/ function assigned in AsmntAggFun into separate output. If FALSE, these records are passed through to conventionals output.
 
 #' @return A list of objects ready for assessments.
@@ -20,7 +21,7 @@
 #' @importFrom plyr rbind.fill
 
 #' @export
-dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb, cf_formulas_sheetname, startRow_unit=1, split_agg_tds=TRUE){
+dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb, cf_formulas_sheetname, startRow_unit=1, startRow_formulas=1, split_agg_tds=TRUE){
 
 
 #
@@ -258,7 +259,7 @@ acc_data=data[data$IR_DataPrep_FLAG=="ACCEPT",]
 
 #Subset columns (note - col names may change w/ standards table, may want a cleaner way around this)
 acc_data=acc_data[,c("OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","ActivityStartTime.Time","IR_ActivityType","IR_MLID","R317Descrp","IR_Lat","IR_Long",
-													"ASSESS_ID","AU_NAME","AU_Type","BeneficialUse",
+													"ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS",
 													"R3172ParameterName","IR_Value","IR_Unit","IR_DetCond","IR_Fraction","CriterionUnits","TargetFraction",
 													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
 													"AssessmentType","CriterionLabel","CriterionType","DailyAggFun","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","NumericCriterion","SSC_StartMon","SSC_EndMon","SSC_MLID"
