@@ -5,8 +5,9 @@
 \title{Select quantitation limits, determine detection condition, and fill masked values as appropriate.}
 \usage{
 fillMaskedValues(results, detquantlim, translation_wb,
-  sheetname = "detLimitTypeTable", startRow = 3, lql_fac = 0.5,
-  uql_fac = 1)
+  detsheetname = "detLimitTypeTable", unitsheetname = "unitConvTable",
+  detstartRow = 3, unitstartRow = 1, unitstartCol = 1,
+  lql_fac = 0.5, uql_fac = 1)
 }
 \arguments{
 \item{results}{A WQP results (must include narrow result, merged, wide objects OK) R-object name.}
@@ -15,9 +16,15 @@ fillMaskedValues(results, detquantlim, translation_wb,
 
 \item{translation_wb}{Full path and filename for IR translation workbook (.xlsx).}
 
-\item{sheetname}{Name of sheet in workbook holding detection limit type names and ranked prioritizations table. Defaults to "detLimitTypeTable".}
+\item{detsheetname}{Name of sheet in workbook holding detection limit type names and ranked prioritizations table. Defaults to "detLimitTypeTable".}
 
-\item{startRow}{Row to start reading the detLimitTypeTable excel sheet from (in case headers have been added). Defaults to 3.}
+\item{unitsheetname}{Name of sheet in workbook holding unit conversion table. Defaults to "unitConvTable".}
+
+\item{detstartRow}{Row to start reading the detLimitTypeTable excel sheet from (in case headers have been added). Defaults to 3.}
+
+\item{unitstartRow}{Row to start reading the unitConvTable excel sheet from (in case headers have been added). Defaults to 1.}
+
+\item{unitstartCol}{Column to start reading the unitConvTable excel sheet from (in case headers have been added). Defaults to 1.}
 
 \item{lql_fac}{Numeric - factor by which to multiply lower quantitation limit type values when filling masked data or other non-detects (e.g. below lql values). Default = 0.5.}
 

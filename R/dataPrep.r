@@ -1,6 +1,6 @@
 #' Final data prep step before assessments
 #'
-#' Performs unit conversions & daily data aggregations. Also checks native vs. target activities and fractions, dissolved vs. total value checks, river/stream depth & flow checks, and generates value based data flags. 
+#' Performs unit conversions & daily data aggregations. Also checks native vs. target activities and fractions, dissolved vs. total value checks, river/stream depth & flow checks, and generates value based data flags.
 #'
 #' @param data A merged, translated, and numeric criteria assigned WQP results R-object. Target units for conversions are defined by units associated with assigned numeric critera.
 #' @param translation_wb Full path and filename for IR translation workbook (.xlsx).
@@ -210,7 +210,7 @@ if(any(na.omit(data[data$IR_Unit==data$CriterionUnits,"UnitConversionFactor"]!=1
 if(any(data$IR_Unit!=data$IR_LowerLimitUnit, na.rm=T) | any(data$IR_Unit!=data$IR_UpperLimitUnit, na.rm=T)){
 	stop("Error: Result and detection limit units do not match. Cannot convert or compare units to criterion units.")
 }
-	
+
 #Convert IR_Value and upper and lower limit values using Unit Conversion Value
 data=within(data,{
 	IR_Value = IR_Value*UnitConversionFactor
@@ -297,18 +297,18 @@ aggDVbyfun=function(x, value_var, drop_vars, agg_var){
 	x=x[,!names(x) %in% drop_vars]
 	daily=x[0,]
 	funs=unique(x[,agg_var])
-	
+
 	for(n in 1:length(funs)){
 		fun_n=funs[n]
 		x_n=x[x[,agg_var]==fun_n,]
 		daily_n=aggregate(val~.,x_n, FUN=get(paste(fun_n)))
 		daily=rbind(daily,daily_n)
 	}
-	
+
 	daily[num_names]=lapply(daily[num_names], facToNum) #Convert numeric cols back to numeric
-	
+
 	names(daily)[names(daily)=="val"]=value_var #Rename value_var
-	
+
 	return(daily)
 }
 
@@ -323,7 +323,7 @@ drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "Act
 #######Toxics & correction factors
 ######
 toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$BeneficialUse=="CF"),]
- 
+
 #split streams & lakes
 toxics_strms=toxics_raw[which(toxics_raw$AU_Type=="River/Stream"),]
 toxics_lakes=toxics_raw[which(toxics_raw$AU_Type=="Reservoir/Lake"),]
@@ -426,9 +426,9 @@ result$toxics=toxics
 
 #############
 #######Conventionals
-###### 
+######
 conv_raw=acc_data[which(acc_data$AssessmentType=="Conventional" & acc_data$BeneficialUse!="CF"),]
- 
+
 #split streams & lakes
 conv_strms=conv_raw[which(conv_raw$AU_Type=="River/Stream"),]
 conv_lakes=conv_raw[which(conv_raw$AU_Type=="Reservoir/Lake"),]
@@ -448,7 +448,7 @@ conv_lakes=within(conv_lakes,{
 	ActivityDepthHeightMeasure.MeasureUnitCode[which(ActivityDepthHeightMeasure.MeasureUnitCode=="ft" | ActivityDepthHeightMeasure.MeasureUnitCode=="feet")]="m"
 	ActivityDepthHeightMeasure.MeasureUnitCode[which(ActivityDepthHeightMeasure.MeasureUnitCode=="meters")]="m"
 	})
-if(any(conv_lakes$ActivityDepthHeightMeasure.MeasureUnitCode!="m", na.rm=T)){stop("Error: lake depth units cannot be converted to meters. Additional conversion may be needed.")}	
+if(any(conv_lakes$ActivityDepthHeightMeasure.MeasureUnitCode!="m", na.rm=T)){stop("Error: lake depth units cannot be converted to meters. Additional conversion may be needed.")}
 conv_lakes=conv_lakes[which(conv_lakes$ActivityRelativeDepthName=="Surface" | (conv_lakes$ActivityDepthHeightMeasure.MeasureValue <=2 & conv_lakes$ActivityDepthHeightMeasure.MeasureValue>=0)),]
 
 #Remove data for ALUs (assessed via profile tools)
@@ -497,5 +497,3 @@ objects(result)
 return(result)
 
 }
-
-

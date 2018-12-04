@@ -5,7 +5,7 @@
 \title{Final data prep step before assessments}
 \usage{
 dataPrep(data, translation_wb, unit_sheetname = "unitConvTable",
-  startRow = 1)
+  startRow = 1, split_agg_tds = TRUE)
 }
 \arguments{
 \item{data}{A merged, translated, and numeric criteria assigned WQP results R-object. Target units for conversions are defined by units associated with assigned numeric critera.}
@@ -15,9 +15,11 @@ dataPrep(data, translation_wb, unit_sheetname = "unitConvTable",
 \item{unit_sheetname}{Name of sheet in workbook holding IR unit conversion table. Defaults to "unitConvTable".}
 
 \item{startRow}{Row to start reading the unit conversion table excel sheet from (in case headers have been added). Defaults to 1.}
+
+\item{split_agg_tds}{Logical. If TRUE (default) split off TDS records w/ function assigned in AsmntAggFun into separate output. If FALSE, these records are passed through to conventionals output.}
 }
 \value{
-WQP data input with .
+A list of objects ready for assessments.
 }
 \description{
 Performs unit conversions & daily data aggregations. Also checks native vs. target activities and fractions, dissolved vs. total value checks, river/stream depth & flow checks, and generates value based data flags.
