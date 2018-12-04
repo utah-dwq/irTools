@@ -1,7 +1,7 @@
 #' Scale up toxics and conventionals assessments to Assessment Units
 #'
 #' Compares water quality result values to standards to calculates sample and exceedance counts. This is geared towards conventional and toxic assessments.
-#' 
+#'
 #' @param data A prepped list of water quality portal data objects with exceedances counted and assessed for each site, use, and R3172 parameter. Will likely contain toxics assessed, conventionals assessed, lakes assessed, etc.
 #' @param group_vars Vector of column names on which to group data for assessment rollups. Defaults to subset by ASSESS_ID, BeneficialUse, and R3172ParameterName.
 #' @return Returns dataframe with assessment categories for each AU/BenUse/R3172ParameterName.
@@ -39,7 +39,7 @@ subs_eq <- paste(group_vars, collapse="+") #(JV) Nice! I never thought to do it 
 # Convert subsetting convention to formula for input to aggregate function
 eq <- as.formula(paste("AssessCat", subs_eq, sep="~"))
 
-# Aggregate to AU by group_vars 
+# Aggregate to AU by group_vars
 rollup <- aggregate(eq,dat_all,max)
 
 #rollup <- merge(rollup, unique(dat_all[,c("AU_NAME","ASSESS_ID","AssessCat","IR_Cat")]), all.x=TRUE)
