@@ -55,7 +55,6 @@ rollup=within(rollup,{
 	AssessCat[AssessCat=="2"]="idNE"
 	AssessCat[AssessCat=="1"]="FS"
 })
-head(rollup)
 
 
 if("BeneficialUse" %in% group_vars){
