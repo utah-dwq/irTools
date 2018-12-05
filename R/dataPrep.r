@@ -59,7 +59,6 @@ data_n=within(data_n,{
 	})
 data_n=data_n[!is.na(data_n$reason),]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
-print(table(reasons$reason))
 rm(data_n)
 
 
@@ -75,7 +74,7 @@ rm(data_n)
 #}
 
 if(any(is.na(data$IR_Fraction) & !is.na(data$TargetFraction))){
-  print("WARNING: Records rejected due to incomplete IR_Fraction in translation table.")
+  warning("Records rejected due to incomplete IR_Fraction in translation table.")
 }
 
 data_n=data
@@ -84,7 +83,6 @@ data_n=within(data_n,{
 	reason[(IR_Fraction!=TargetFraction | is.na(IR_Fraction)) & !is.na(TargetFraction)]="Non-assessed fraction or fraction not defined, & fraction specified by criterion"
 	})
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
-print(table(reasons$reason))
 rm(data_n)
 
 
@@ -177,7 +175,6 @@ diss_tot_units=merge(diss_tot_units,data,all.x=T)
 dim(diss_tot_units)
 
 reasons=rbind(reasons, diss_tot_units[!is.na(diss_tot_units$reason),])
-print(table(reasons$reason))
 
 
 ##################################
