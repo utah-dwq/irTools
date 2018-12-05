@@ -292,7 +292,6 @@ aggDVbyfun=function(x, value_var, drop_vars, agg_var){
 	num_names=names(x[unlist(lapply(x, is.numeric))])
 	x=as.data.frame(lapply(x, addNA, ifany=T)) #Add NA as factor level where cols contain NAs (converts everything to factor)
 	x=data.frame(val,x) #Add back in preserved numeric val (alternatively could allow it to convert to factor then use as.numeric(levels(z))[z])
-	x=x[,!names(x) %in% drop_vars]
 	daily=x[0,]
 	funs=unique(x[,agg_var])
 
@@ -344,7 +343,8 @@ cfs_strms_cast=reshape2::dcast(cfs_strms, ActivityStartDate+IR_MLID~cf, value.va
 dim(toxics_strms_daily)
 toxics_strms_daily=merge(toxics_strms_daily,cfs_strms_cast,all.x=T)
 dim(toxics_strms_daily)
-toxics_strms_daily=toxics_strms_daily[toxics_strms_daily$BeneficialUse!="CF",] #Remove CF rows
+#EH: don't think we need this line below-we do it above already.
+#toxics_strms_daily=toxics_strms_daily[toxics_strms_daily$BeneficialUse!="CF",] #Remove CF rows
 
 
 
@@ -366,7 +366,7 @@ cfs_lakes_cast=reshape2::dcast(cfs_lakes, ActivityStartDate+IR_MLID~cf, value.va
 dim(toxics_lakes_daily)
 toxics_lakes_daily=merge(toxics_lakes_daily,cfs_lakes_cast,all.x=T)
 dim(toxics_lakes_daily)
-toxics_lakes_daily=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse!="CF",] #Remove CF rows
+#toxics_lakes_daily=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse!="CF",] #Remove CF rows
 
 #Merge lakes & streams toxics
 toxics=plyr::rbind.fill(toxics_strms_daily, toxics_lakes_daily)
