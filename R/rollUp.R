@@ -8,9 +8,8 @@
 #' @return Returns dataframe with assessment categories for each AU/BenUse/R3172ParameterName.
 #' @importFrom plyr rbind.fill
 #' @importFrom reshape2 colsplit
+
 #' @export
-
-
 rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172ParameterName"), expand_uses=TRUE){
 
 #### Testing setup
