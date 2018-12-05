@@ -92,6 +92,8 @@ dim_check=dim(data_uses_flat_crit)[1]
 
 head(data_uses_flat_crit[which(data_uses_flat_crit$R3172ParameterName=="Magnesium" & is.na(data_uses_flat_crit$NumericCriteria) & data_uses_flat_crit$BeneficialUse=="CF"),])
 
+#Remove "CF" from comma-separated BEN_CLASS column (for future use in rollUp)
+data_uses_flat_crit$BEN_CLASS=gsub(",CF","",data_uses_flat_crit$BEN_CLASS)
 
 #4. Site specific standards
 #ID records w/ SS criteria (by SSCLocDescription)
