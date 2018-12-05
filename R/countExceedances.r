@@ -12,7 +12,7 @@
 
 
 #' @export
-countExceedances=function(data, group_vars=c("IR_MLID","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","BeneficialUse","R3172ParameterName","CriterionLabel","SSC_MLID","SSC_StartMon","SSC_EndMon","AsmntAggFun"), agg_exc=FALSE, agg_exc_as_n=TRUE){
+countExceedances=function(data, group_vars=c("IR_MLID","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS","R3172ParameterName","CriterionLabel","SSC_MLID","SSC_StartMon","SSC_EndMon","AsmntAggFun"), agg_exc=FALSE, agg_exc_as_n=TRUE){
 	
 ###Set up
 #data=conventionals
