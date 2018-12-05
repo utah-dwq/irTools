@@ -70,6 +70,10 @@ if(dim(data_screen)[1]!=dim(data)[1]){
 	stop("Error: dimension[1] of input != dimension[1] of output. This is usually a startRow input arg error...")
 }
 
+#Quick function output for user check
+update <- table(data_screen[,names(data_screen)%in%c(flag_col_name)])
+print(paste0("Data screened using ",sheetname,". ",update[1]," ACCEPTED records, ",update[2]," REJECTED records."))
+
 return(data_screen)
 
 
