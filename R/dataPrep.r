@@ -10,6 +10,7 @@
 #' @param cf_formulas_sheetname Name of sheet in criterion workbook holding conversion factors and criterion formulas for criteria dependent on CFs.
 #' @param startRow_formulas Row to start reading the formulas table from (in case headers have been added). Defaults to 1.
 #' @param split_agg_tds Logical. If TRUE (default) split off TDS records w/ function assigned in AsmntAggFun into separate output. If FALSE, these records are passed through to conventionals output.
+#' @param sampnum Number of rows to sample for data prep check. Defaults to 0.
 
 #' @return A list of objects ready for assessments.
 
@@ -21,7 +22,7 @@
 #' @importFrom plyr rbind.fill
 
 #' @export
-dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb, cf_formulas_sheetname, startRow_unit=1, startRow_formulas=1, split_agg_tds=TRUE){
+dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb, cf_formulas_sheetname, startRow_unit=1, startRow_formulas=1, split_agg_tds=TRUE, sampnum=0){
 
 
 #
@@ -43,7 +44,7 @@ result=list()
 reasons=data.frame(data[0,])
 reasons$reason=character(0)
 
-
+print("Performing data checks and unit conversions...")
 
 #Remove records w/o criteria (in case they have been optionally passed through assignCriteria - these cause errors in aggregation steps as they do not have aggregation functions specified)
 data=data[!is.na(data$NumericCriterion) | data$BeneficialUse=="CF",]
@@ -196,7 +197,6 @@ data_n=within(data_n,{
 	})
 data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
-print(table(reasons$reason))
 rm(data_n)
 
 #JV - in hindsight, shouldn't really be needed. Converted to warning.
@@ -228,6 +228,7 @@ data_n=within(data_n,{
 	})
 data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+print("Data prep rejection reasons and counts:")
 print(table(reasons$reason))
 rm(data_n)
 
@@ -252,6 +253,7 @@ table(data[data$IR_DataPrep_FLAG=="ACCEPT","IR_UnitConv_FLAG"])
 
 
 ###Pull out accepted data
+print("Splitting and aggregating data for counts and assessments and performing necessary correction factor calculations...")
 acc_data=data[data$IR_DataPrep_FLAG=="ACCEPT",]
 
 #Subset columns (note - col names may change w/ standards table, may want a cleaner way around this)
@@ -467,11 +469,22 @@ dim(conventionals)
 if(split_agg_tds){
 	agg_tds=conventionals[conventionals$R3172ParameterName=="Total Dissolved Solids" & !is.na(as.character(conventionals$AsmntAggFun)),]
 	conventionals=conventionals[conventionals$R3172ParameterName!="Total Dissolved Solids" | (conventionals$R3172ParameterName=="Total Dissolved Solids" & is.na(as.character(conventionals$AsmntAggFun))),]
-}
+	result$agg_tds=agg_tds
+	dim(agg_tds)
+	}
 dim(conventionals)
-dim(agg_tds)
 result$conventionals=conventionals
-result$agg_tds=agg_tds
+
+#Random row checks - toxics and conventionals
+if(sampnum>0){
+  tox_check <- toxics[!is.na(toxics$CalculatedCrit),!names(toxics)%in%c("R317Descrp","IR_Lat","IR_Long")]
+  print(paste("Toxics row check:", sampnum,"random rows selected"))
+  print(tox_check[sample(nrow(tox_check),sampnum),])
+  
+  conv_check <- conventionals[,!names(conventionals)%in%c("R317Descrp","IR_Lat","IR_Long")]
+  print(paste("Conventionals row check:", sampnum,"random rows selected"))
+  print(conv_check[sample(nrow(conv_check),sampnum),])
+}
 
 
 objects(result)
@@ -491,6 +504,8 @@ objects(result)
 #Estimated & calculated value check
 #Holding times
 
+print("Prepped data are contained as a list in output object with following names:")
+print(objects(result))
 
 return(result)
 
