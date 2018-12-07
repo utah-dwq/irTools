@@ -25,7 +25,7 @@ countExceedances=function(data, group_vars=c("IR_MLID","R317Descrp","IR_Lat","IR
 #Set class for all group_vars to factor
 data[,names(data) %in% group_vars]=as.data.frame(lapply(data[,names(data) %in% group_vars], as.factor))
 
-if(any(is.na(data$CriterionType))){stop("Error: NA values in criterion type (min or max). Standards table update required")}
+if(any(is.na(data$CriterionType[data$BeneficialUse!="CF"]))){stop("Error: NA values in criterion type (min or max). Standards table update required")}
 
 #Make sure NumericCriterion is numeric class
 
