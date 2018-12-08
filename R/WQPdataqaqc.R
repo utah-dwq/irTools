@@ -24,11 +24,12 @@
 WQPdataqaqc <- function(outfile_path, narrowresult_file, sites_file, activity_file, detquantlim_file, dupcheck=c("narrowresult","sites","activity","detquantlim")){
   
 ## Testing setup ##
-# outfile_path = "C:\\Users\\ehinman\\Desktop"
-# sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites101001-110930.csv"
-# narrowresult_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\narrowresult101001-110930.csv"
-# activity_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\activity101001-110930.csv"
-# detquantlim_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\detquantlim101001-110930.csv"
+outfile_path = "C:\\Users\\ehinman\\Desktop"
+sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites061001-080930.csv"
+narrowresult_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\narrowresult061001-080930.csv"
+activity_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\activity061001-080930.csv"
+detquantlim_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\detquantlim061001-080930.csv"
+dupcheck = c("narrowresult","detquantlim","activity","sites")
 
 print("------------READING IN FILES--------------") #JV note - recommend moving to a separate readWQPfiles() function that will call the rest of this function
 narrowresult <- read.csv(narrowresult_file, stringsAsFactors = FALSE)#, strip.white = TRUE)
@@ -125,4 +126,18 @@ orph_check(narrowresult,activity)
 orph_check(narrowresult,detquantlim)
 
 }
+
+# Check for non-numeric data in numeric columns
+print("Checking for non-numeric characters in numeric columns...")
+
+which.nonnum <- function(x) {
+  ROW_NUM <- which(is.na(suppressWarnings(as.numeric(as.character(x)))) & !is.na(x))
+  VALUE <- x[wherenums]
+  numnums <- data.frame(ROW_NUM,VALUE)
+  print(paste(x,"non-numeric values in numeric columns:"))
+  print(numnums)
+}
+
+which.nonnum(detquantlim$DetectionQuantitationLimitMeasure.MeasureValue)
+which.nonnum(narrowresult$ResultMeasureValue)
 
