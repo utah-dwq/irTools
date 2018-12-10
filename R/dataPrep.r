@@ -376,7 +376,7 @@ toxics=plyr::rbind.fill(toxics_strms_daily, toxics_lakes_daily)
 
 
 
-#Calculate hardness (will need to update for different hardness parameters):
+#Calculate hardness (will need to update for different hardness parameters, max of 400?):
 toxics=within(toxics,{
 		hardness=100*(`cf_min_Calcium_mg/l`/40.08 + `cf_min_Magnesium_mg/l`/24.3)
 		#hardness[is.na(hardness)]=OTHER HARDNESS COLUMNS HERE...
