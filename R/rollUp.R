@@ -19,7 +19,7 @@ rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172Paramete
 ####
 
 # Combine all assessed data into one dataframe for roll up
-dat=mget(data)
+dat=mget(data, inherits = TRUE)
 dat_all=do.call(plyr::rbind.fill, dat)
 
 if(expand_uses & !"BEN_CLASS" %in% group_vars){group_vars=append(group_vars, "BEN_CLASS")}
