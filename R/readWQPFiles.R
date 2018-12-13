@@ -13,14 +13,14 @@
 
 ## Testing Function ##
 
-wqpdat <- readWQPFiles("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\narrowresult061001-080930.csv",
-            "P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites061001-080930.csv",
-            "P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\activity061001-080930.csv",
-            "P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\detquantlim061001-080930.csv",
-            orph_check = TRUE,num_check=TRUE)
+# wqpdat <- readWQPFiles("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\narrowresult061001-080930.csv",
+#             "P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites061001-080930.csv",
+#             "P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\activity061001-080930.csv",
+#             "P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\detquantlim061001-080930.csv",
+#             orph_check = TRUE)
 
 #' @export
-readWQPFiles <- function(narrowresult_file, sites_file, activity_file, detquantlim_file, orph_check=TRUE, num_check=TRUE){
+readWQPFiles <- function(narrowresult_file, sites_file, activity_file, detquantlim_file, orph_check=TRUE){
 
 ## Testing setup ##
 # sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites061001-080930.csv"
@@ -31,9 +31,9 @@ readWQPFiles <- function(narrowresult_file, sites_file, activity_file, detquantl
 wqpdat <- list()
 
 print("------------READING IN FILES--------------") #JV note - recommend moving to a separate readWQPfiles() function that will call the rest of this function
-wqpdat$narrowresult <- read.csv(narrowresult_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
+narrowresult <- read.csv(narrowresult_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
+activity <- read.csv(activity_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
 wqpdat$sites <- read.csv(sites_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
-wqpdat$activity <- read.csv(activity_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
 wqpdat$detquantlim <- read.csv(detquantlim_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
   
 ### Check for duplicates ###
@@ -127,25 +127,25 @@ if(orph_check){
 }
 
 # Check for non-numeric data in numeric columns
-if(num_check){
-  print("----NON-NUMERIC CHARACTERS IN NUMERIC COLUMN CHECK----")
-  
-  # Search for any non-numeric data in numeric columns
-  det_num <- which(is.na(suppressWarnings(as.numeric(as.character(detquantlim$DetectionQuantitationLimitMeasure.MeasureValue)))) & !is.na(detquantlim$DetectionQuantitationLimitMeasure.MeasureValue))
-  nr_num <- which(is.na(suppressWarnings(as.numeric(as.character(narrowresult$ResultMeasureValue)))) & !is.na(narrowresult$ResultMeasureValue))
-  
-  # Produces editable table that saves edits in new object added to list.
-  if(length(det_num)>0){
-  det_edits <- edit(detquantlim[det_num,names(detquantlim)%in%c("ActivityIdentifier","ResultIdentifier","CharacteristicName","DetectionQuantitationLimitTypeName","DetectionQuantitationLimitMeasure.MeasureValue","DetectionQuantitationLimitMeasure.MeasureUnitCode")])
-  detquantlim[det_num,detquantlim$DetectionQuantitationLimitMeasure.MeasureValue] = det_edits$DetectionQuantitationLimitMeasure.MeasureValue
-  }
-  
-  if(length(nr_num)>0){
-  nr_edits <- edit(narrowresult[nr_num,names(narrowresult)%in%c("ActivityIdentifier","ResultIdentifier","CharacteristicName","ResultMeasureValue","ResultMeasure.MeasureUnitCode")])
-  narrowresult[nr_num,narrowresult$ResultMeasureValue] = nr_edits$ResultMeasureValue
-  
-  }
-}
+# if(num_check){
+#   print("----NON-NUMERIC CHARACTERS IN NUMERIC COLUMN CHECK----")
+#   
+#   # Search for any non-numeric data in numeric columns
+#   det_num <- which(is.na(suppressWarnings(as.numeric(as.character(detquantlim$DetectionQuantitationLimitMeasure.MeasureValue)))) & !is.na(detquantlim$DetectionQuantitationLimitMeasure.MeasureValue))
+#   nr_num <- which(is.na(suppressWarnings(as.numeric(as.character(narrowresult$ResultMeasureValue)))) & !is.na(narrowresult$ResultMeasureValue))
+#   
+#   # Produces editable table that saves edits in new object added to list.
+#   if(length(det_num)>0){
+#   det_edits <- edit(detquantlim[det_num,names(detquantlim)%in%c("ActivityIdentifier","ResultIdentifier","CharacteristicName","DetectionQuantitationLimitTypeName","DetectionQuantitationLimitMeasure.MeasureValue","DetectionQuantitationLimitMeasure.MeasureUnitCode")])
+#   detquantlim[det_num,detquantlim$DetectionQuantitationLimitMeasure.MeasureValue] = det_edits$DetectionQuantitationLimitMeasure.MeasureValue
+#   }
+#   
+#   if(length(nr_num)>0){
+#   nr_edits <- edit(narrowresult[nr_num,names(narrowresult)%in%c("ActivityIdentifier","ResultIdentifier","CharacteristicName","ResultMeasureValue","ResultMeasure.MeasureUnitCode")])
+#   narrowresult[nr_num,narrowresult$ResultMeasureValue] = nr_edits$ResultMeasureValue
+#   
+#   }
+# }
 
 print("----FILES SUCCESSFULLY ADDED TO R OBJECT LIST----")
 return(wqpdat)
