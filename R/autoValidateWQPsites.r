@@ -21,14 +21,14 @@ autoValidateWQPsites=function(sites_file,master_site_file,waterbody_type_file,po
 
 ##########
 ####TESTING SETUP
-library(sp)
-library(sf)
-sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo2\\sites081001-140930.csv"
-master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\wqp_master_site_file.csv"
-waterbody_type_file = "P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\waterbody_type_domain_table.csv"
-polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\"
-correct_longitude=FALSE
+# library(sp)
+# library(sf)
+# sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo2\\sites081001-140930.csv"
+# master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\wqp_master_site_file.csv"
+# waterbody_type_file = "P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\waterbody_type_domain_table.csv"
+# polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
+# outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\"
+# correct_longitude=FALSE
 #########
 
 
@@ -41,7 +41,9 @@ stn=unique(stn)
 
 # Read in waterbody type domain table
 waterbody_table <- read.csv(waterbody_type_file, stringsAsFactors = FALSE)
-
+if(any(is.na(waterbody_table$MonitoringLocationTypeName)|waterbody_table$MonitoringLocationTypeName=="")){
+  stop("Monitoring location type table missing IR_FLAG data. Fill out table before proceeding.")
+}
 # Remove past InData column
 waterbody_table=waterbody_table[,!names(waterbody_table)%in%"InData"]
 
