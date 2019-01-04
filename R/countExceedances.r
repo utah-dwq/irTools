@@ -88,8 +88,8 @@ aggbyfun=function(x, value_var, drop_vars, agg_var){
 
 ###Aggregate by AsmntAggFun ( if !is.na() )
 if(agg_exc){
-	if(any(names(data)=="AsmntAggFun")){
-		asmnt_agg_data=data[!is.na(data$AsmntAggFun),] #Subset to records that need aggregation
+	asmnt_agg_data=data[!is.na(data$AsmntAggFun),] #Subset to records that need aggregation
+	if(dim(asmnt_agg_data)[1]>0){
 		data=data[is.na(data$AsmntAggFun),] #remove those records from data
 		aggregated=aggbyfun(asmnt_agg_data,value_var="IR_Value",agg_var="AsmntAggFun",drop_vars="ActivityStartDate")
 		data=plyr::rbind.fill(data,aggregated)
