@@ -94,6 +94,7 @@ if(agg_exc){
 		aggregated=aggbyfun(asmnt_agg_data,value_var="IR_Value",agg_var="AsmntAggFun",drop_vars="ActivityStartDate")
 		data=plyr::rbind.fill(data,aggregated)
 	}
+	rm(asmnt_agg_data)
 }
 
 #Mark exceedances w/ 1, non-exceedances w/0
