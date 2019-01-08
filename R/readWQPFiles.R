@@ -135,6 +135,7 @@ if(orph_check){
 }
 
 # Check for non-numeric data in numeric columns
+print("Need to figure out non-numeric data in numeric columns conundrum.")
 # if(num_check){
 #   print("----NON-NUMERIC CHARACTERS IN NUMERIC COLUMN CHECK----")
 #   
@@ -154,6 +155,10 @@ if(orph_check){
 #   
 #   }
 # }
+
+# Convert numeric columns to numeric
+wqpdat$merged_results$ResultMeasureValue = facToNum(wqpdat$merged_results$ResultMeasureValue)
+wqpdat$detquantlim$DetectionQuantitationLimitMeasure.MeasureValue = facToNum(wqpdat$detquantlim$DetectionQuantitationLimitMeasure.MeasureValue)
 
 print("----FILES SUCCESSFULLY ADDED TO R OBJECT LIST----")
 return(wqpdat)
