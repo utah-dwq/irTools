@@ -33,15 +33,15 @@ wqpdat <- list()
 
 print("------------READING IN FILES--------------")
 if(file_select){
-narrowresult=read.csv(choose.files(getwd(), multi=F, caption="Select narrow result file..."),stringsAsFactors = FALSE, na.strings=c(""," ","NA"))
-activity=read.csv(choose.files(getwd(), multi=F, caption="Select activity file..."),stringsAsFactors = FALSE, na.strings=c(""," ","NA"))
-wqpdat$sites <- read.csv(choose.files(getwd(), multi=F, caption="Select sites file..."), stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
-wqpdat$detquantlim <- read.csv(choose.files(getwd(), multi=F, caption="Select detection/quantitation limit file..."), stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
+narrowresult=read.csv(choose.files(getwd(), multi=F, caption="Select narrow result file..."),colClasses=c("ResultMeasureValue"="factor"), na.strings=c(""," ","NA"))
+activity=read.csv(choose.files(getwd(), multi=F, caption="Select activity file..."), na.strings=c(""," ","NA"))
+wqpdat$sites <- read.csv(choose.files(getwd(), multi=F, caption="Select sites file..."), na.strings=c(""," ","NA"))#, strip.white = TRUE)
+wqpdat$detquantlim <- read.csv(choose.files(getwd(), multi=F, caption="Select detection/quantitation limit file..."), colClasses=c("DetectionQuantitationLimitMeasure.MeasureValue"="factor"),na.strings=c(""," ","NA"))#, strip.white = TRUE)
 }else{
-narrowresult <- read.csv(narrowresult_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
-activity <- read.csv(activity_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
-wqpdat$sites <- read.csv(sites_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
-wqpdat$detquantlim <- read.csv(detquantlim_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
+narrowresult <- read.csv(narrowresult_file, colClasses=c("ResultMeasureValue"="factor"),na.strings=c(""," ","NA"))#, strip.white = TRUE)
+activity <- read.csv(activity_file, na.strings=c(""," ","NA"))#, strip.white = TRUE)
+wqpdat$sites <- read.csv(sites_file, na.strings=c(""," ","NA"))#, strip.white = TRUE)
+wqpdat$detquantlim <- read.csv(detquantlim_file, colClasses=c("DetectionQuantitationLimitMeasure.MeasureValue"="factor"), na.strings=c(""," ","NA"))#, strip.white = TRUE)
 }
   
 ### Check for duplicates ###

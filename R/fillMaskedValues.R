@@ -140,14 +140,9 @@ results_dql$IR_UpperLimitUnit[results_dql$IR_UpperLimitUnit==""]=NA
 results_dql$IR_LowerLimitUnit[results_dql$IR_LowerLimitUnit==""]=NA
 
 #Coercing values to numeric if not already numeric (need to double check w/ Emilie re: special characters in these columns)
-suppressWarnings({
-	if(class(results_dql$ResultMeasureValue)!="numeric"){
-		results_dql$ResultMeasureValue=as.numeric(levels(results_dql$ResultMeasureValue))[results_dql$ResultMeasureValue]}
-	if(class(results_dql$IR_LowerLimitValue)!="numeric"){
-		results_dql$IR_LowerLimitValue=as.numeric(levels(results_dql$IR_LowerLimitValue))[results_dql$IR_LowerLimitValue]}
-	if(class(results_dql$IR_UpperLimitValue)!="numeric"){
-		results_dql$IR_UpperLimitValue=as.numeric(levels(results_dql$IR_UpperLimitValue))[results_dql$IR_UpperLimitValue]}
-	})
+results_dql$ResultMeasureValue=facToNum(results_dql$ResultMeasureValue)
+results_dql$IR_LowerLimitValue=facToNum(results_dql$IR_LowerLimitValue)
+results_dql$IR_UpperLimitValue=facToNum(results_dql$IR_UpperLimitValue)
 
 ###Unit checks between result values and limit values###
 print("Checking for disparities in result units and limit units...")
