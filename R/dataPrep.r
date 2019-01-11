@@ -279,12 +279,6 @@ result$lakes_trophic=acc_data[acc_data$AU_Type=="Reservoir/Lake" & acc_data$R317
 #Extract e coli
 result$ecoli=acc_data[acc_data$R3172ParameterName=="E. Coli",] #Note, need to name parameter in param translation table and update here.
 
-facToNum=function(x){
-	if(class(x)=="factor"){result=as.numeric(levels(x))[x]
-	}else{result=x}
-	return(result)
-	}
-
 #x=toxics_strms
 #value_var="IR_Value"
 #drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time")

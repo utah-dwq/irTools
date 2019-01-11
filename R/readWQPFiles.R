@@ -1,14 +1,15 @@
 #' Read WQP Files
 #' 
 #' Creates list object containing data frames needed to run irTools. Removes duplicates and creates objects containing orphan records. Identifies non-numeric values in numeric columns and allows user to edit values and save to new object.
-#' 
+#' @param file_select Logical. If TRUE, navigation window will pop up for manual selection of files. If FALSE, function requires full path names to files.
 #' @param sites_file Full path and filename of sites file queried from WQP to be reviewed (.csv).
 #' @param activity_file Full path and filename of activity file queried from WQP to be reviewed (.csv).
 #' @param narrowresult_file Full path and filename of narrowresult file queried from WQP to be reviewed (.csv).
 #' @param detquantlim_file Full path and filename of detquantlim file queried from WQP to be reviewed (.csv).
 #' @param orph_check Logical. Specifies whether function should perform orphan check between narrowresult and sites, activity, and detquantlim. If TRUE, produces list object containing orphan rows.
-#' @param num_check Logical. Specifies whether function should perform checks for non-numeric values in numeric columns (ResultMeasureValue and DetectionQuantitationLimitMeasure.MeasureValue). Opens edit window to make changes to non-numeric values in the data.
 #' @return List containing dataframes needed to run irTools package, as well as orphan records and edited non-numeric data tables.
+
+# num_check Logical. Specifies whether function should perform checks for non-numeric values in numeric columns (ResultMeasureValue and DetectionQuantitationLimitMeasure.MeasureValue). Opens edit window to make changes to non-numeric values in the data.
 
 
 ## Testing Function ##
@@ -20,7 +21,7 @@
 #             orph_check = TRUE)
 
 #' @export
-readWQPFiles <- function(narrowresult_file, sites_file, activity_file, detquantlim_file, orph_check=TRUE){
+readWQPFiles <- function(file_select,narrowresult_file, sites_file, activity_file, detquantlim_file, orph_check=TRUE){
 
 ## Testing setup ##
 # sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites061001-080930.csv"
@@ -30,11 +31,18 @@ readWQPFiles <- function(narrowresult_file, sites_file, activity_file, detquantl
 
 wqpdat <- list()
 
-print("------------READING IN FILES--------------") #JV note - recommend moving to a separate readWQPfiles() function that will call the rest of this function
-narrowresult <- read.csv(narrowresult_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
-activity <- read.csv(activity_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
-wqpdat$sites <- read.csv(sites_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
-wqpdat$detquantlim <- read.csv(detquantlim_file, stringsAsFactors = FALSE, na.strings=c(""," ","NA"))#, strip.white = TRUE)
+print("------------READING IN FILES--------------")
+if(file_select){
+narrowresult=read.csv(choose.files(getwd(), multi=F, caption="Select narrow result file..."),colClasses=c("ResultMeasureValue"="factor"), na.strings=c(""," ","NA"))
+activity=read.csv(choose.files(getwd(), multi=F, caption="Select activity file..."), na.strings=c(""," ","NA"))
+wqpdat$sites <- read.csv(choose.files(getwd(), multi=F, caption="Select sites file..."), na.strings=c(""," ","NA"))#, strip.white = TRUE)
+wqpdat$detquantlim <- read.csv(choose.files(getwd(), multi=F, caption="Select detection/quantitation limit file..."), colClasses=c("DetectionQuantitationLimitMeasure.MeasureValue"="factor"),na.strings=c(""," ","NA"))#, strip.white = TRUE)
+}else{
+narrowresult <- read.csv(narrowresult_file, colClasses=c("ResultMeasureValue"="factor"),na.strings=c(""," ","NA"))#, strip.white = TRUE)
+activity <- read.csv(activity_file, na.strings=c(""," ","NA"))#, strip.white = TRUE)
+wqpdat$sites <- read.csv(sites_file, na.strings=c(""," ","NA"))#, strip.white = TRUE)
+wqpdat$detquantlim <- read.csv(detquantlim_file, colClasses=c("DetectionQuantitationLimitMeasure.MeasureValue"="factor"), na.strings=c(""," ","NA"))#, strip.white = TRUE)
+}
   
 ### Check for duplicates ###
 print("----REMOVING EXACT DUPLICATES-----")
@@ -127,6 +135,7 @@ if(orph_check){
 }
 
 # Check for non-numeric data in numeric columns
+print("Need to figure out non-numeric data in numeric columns conundrum.")
 # if(num_check){
 #   print("----NON-NUMERIC CHARACTERS IN NUMERIC COLUMN CHECK----")
 #   
@@ -146,6 +155,10 @@ if(orph_check){
 #   
 #   }
 # }
+
+# Convert numeric columns to numeric
+wqpdat$merged_results$ResultMeasureValue = facToNum(wqpdat$merged_results$ResultMeasureValue)
+wqpdat$detquantlim$DetectionQuantitationLimitMeasure.MeasureValue = facToNum(wqpdat$detquantlim$DetectionQuantitationLimitMeasure.MeasureValue)
 
 print("----FILES SUCCESSFULLY ADDED TO R OBJECT LIST----")
 return(wqpdat)

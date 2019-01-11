@@ -27,14 +27,6 @@ data[,names(data) %in% group_vars]=as.data.frame(lapply(data[,names(data) %in% g
 
 if(any(is.na(data$CriterionType[data$BeneficialUse!="CF"]))){stop("Error: NA values in criterion type (min or max). Standards table update required")}
 
-#Make sure NumericCriterion is numeric class
-
-facToNum=function(x){
-	if(class(x)=="factor"){result=as.numeric(levels(x))[x]
-	}else{result=x}
-	return(result)
-	}
-
 #addNA to factor type columns function
 addNA_fac=function(x){
 	if(class(x)=="factor"){

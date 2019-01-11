@@ -4,10 +4,12 @@
 \alias{readWQPFiles}
 \title{Read WQP Files}
 \usage{
-readWQPFiles(narrowresult_file, sites_file, activity_file,
+readWQPFiles(file_select, narrowresult_file, sites_file, activity_file,
   detquantlim_file, orph_check = TRUE)
 }
 \arguments{
+\item{file_select}{Logical. If TRUE, navigation window will pop up for manual selection of files. If FALSE, function requires full path names to files.}
+
 \item{narrowresult_file}{Full path and filename of narrowresult file queried from WQP to be reviewed (.csv).}
 
 \item{sites_file}{Full path and filename of sites file queried from WQP to be reviewed (.csv).}
@@ -17,8 +19,6 @@ readWQPFiles(narrowresult_file, sites_file, activity_file,
 \item{detquantlim_file}{Full path and filename of detquantlim file queried from WQP to be reviewed (.csv).}
 
 \item{orph_check}{Logical. Specifies whether function should perform orphan check between narrowresult and sites, activity, and detquantlim. If TRUE, produces list object containing orphan rows.}
-
-\item{num_check}{Logical. Specifies whether function should perform checks for non-numeric values in numeric columns (ResultMeasureValue and DetectionQuantitationLimitMeasure.MeasureValue). Opens edit window to make changes to non-numeric values in the data.}
 }
 \value{
 List containing dataframes needed to run irTools package, as well as orphan records and edited non-numeric data tables.
