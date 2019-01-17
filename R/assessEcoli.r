@@ -8,29 +8,29 @@ gmean=function(x){exp(mean(log(x)))}
 #######################
 #dataPreProc
 #function for data preprocessing: subs 1 for <1 and 2420 for >2419.6, calculates site/date geomeans, trims to rec season, creates flat file (MLID+Date+Use=UID, repeats data as necessary)
+# Testing
+#load R packages
+require(lubridate)
+require(reshape2)
+require(plyr)
+require(dplyr)
+require(lubridate)
 
-dataPreProc=function(data_raw){
-	data_raw=data_raw[data_raw$Parameter=="E.coli",]
-	data_raw$Month=month(as.Date(data_raw$Date,format='%m/%d/%Y'))
-	data_raw$Day=day(as.Date(data_raw$Date,format='%m/%d/%Y'))
-	data_raw$Year=year(as.Date(data_raw$Date,format='%m/%d/%Y'))
-	StartMonth=month(as.Date(SeasonStartDate,format='%m-%d'))
-	StartDay=day(as.Date(SeasonStartDate,format='%m-%d'))
-	EndMonth=month(as.Date(SeasonEndDate,format='%m-%d'))
-	EndDay=day(as.Date(SeasonEndDate,format='%m-%d'))
-	data_raw=data_raw[data_raw$Month>=StartMonth&data_raw$Day>=StartDay&data_raw$Month<=EndMonth&data_raw$Day<=EndDay,]
-	data_raw$MPN_FINAL=gsub("<1",1,data_raw$MPN_FINAL)
-	data_raw$MPN_FINAL=as.numeric(gsub(">2419.6",2420,data_raw$MPN_FINAL))
-	data_processed=aggregate(MPN_FINAL~MLID+BEN_CLASS+Date,data=data_raw,FUN='gmean')
-	data_processed=data_processed[data_processed$Date!="",]
-	data_processed$Date=as.Date(data_processed$Date,format='%m/%d/%Y')
-	data_processed$Year=year(data_processed$Date)
-	uses=colsplit(data_processed$BEN_CLASS,"/",names=paste0(rep("u",15),seq(1,15,1)))
-	MLID=data_processed$MLID
-	uses=data.frame(MLID,uses)
-	uses_flat=melt(uses,id.vars="MLID",na.rm=T,value.name="Use")
-	uses_flat=unique(uses_flat[uses_flat$Use!=""&uses_flat$Use=="1C"|uses_flat$Use=="2A"|uses_flat$Use=="2B",c("MLID","Use")])
-	data_processed=merge(data_processed,uses_flat,by="MLID",all=T)	
+data_raw = prepped_data$ecoli
+#Define rec season ("mm-dd"):
+SeasonStartDate="05-01"
+SeasonEndDate="10-31"
+
+dataPreProc=function(data_raw, SeasonStartDate, SeasonEndDate){
+  data_raw$ActivityStartDate=as.Date(data_raw$ActivityStartDate,format='%Y-%m-%d')
+  data_raw=data_raw[month(data_raw$ActivityStartDate)>=month(as.Date(SeasonStartDate,format='%m-%d'))
+	                  &day(data_raw$ActivityStartDate)>=day(as.Date(SeasonStartDate,format='%m-%d'))
+	                  &month(data_raw$ActivityStartDate)<=month(as.Date(SeasonEndDate,format='%m-%d'))
+	                  &day(data_raw$ActivityStartDate)<=day(as.Date(SeasonEndDate,format='%m-%d')),]
+  data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
+	data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
+	data_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_raw,FUN='gmean')
+	#data_processed=merge(data_agg,data_raw, all.x=TRUE) WRONG
 	return(data_processed)
 	}
 
