@@ -23,10 +23,14 @@ SeasonEndDate="10-31"
 
 dataPreProc=function(data_raw, SeasonStartDate, SeasonEndDate){
   data_raw$ActivityStartDate=as.Date(data_raw$ActivityStartDate,format='%Y-%m-%d')
+  
+  # Restrict assessments to data collected during recreation season
   data_raw=data_raw[month(data_raw$ActivityStartDate)>=month(as.Date(SeasonStartDate,format='%m-%d'))
 	                  &day(data_raw$ActivityStartDate)>=day(as.Date(SeasonStartDate,format='%m-%d'))
 	                  &month(data_raw$ActivityStartDate)<=month(as.Date(SeasonEndDate,format='%m-%d'))
 	                  &day(data_raw$ActivityStartDate)<=day(as.Date(SeasonEndDate,format='%m-%d')),]
+  
+  # Substitute numbers for ND and OD limits.
   data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
 	data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
 	data_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_raw,FUN='gmean')
