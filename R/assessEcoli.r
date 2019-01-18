@@ -16,7 +16,9 @@ require(plyr)
 require(dplyr)
 require(lubridate)
 
-data_raw = prepped_data$ecoli
+
+#data_raw = prepped_data$ecoli
+data_raw <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
 #Define rec season ("mm-dd"):
 SeasonStartDate="05-01"
 SeasonEndDate="10-31"
@@ -34,7 +36,7 @@ dataPreProc=function(data_raw, SeasonStartDate, SeasonEndDate){
   data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
 	data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
 	data_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_raw,FUN='gmean')
-	#data_processed=merge(data_agg,data_raw, all.x=TRUE) WRONG
+  data_processed <- merge(data_agg,data_raw, all.x=TRUE)
 	return(data_processed)
 	}
 
@@ -46,28 +48,15 @@ dataPreProc=function(data_raw, SeasonStartDate, SeasonEndDate){
 #Loop through each date in rec season, select samples, then apply to get max # of samples for that date.
 #If max # of samples satisfies min requirements for representative data (i.e. >=5 samps), calc 30 d average
 
-maxSamps48hr=function(x){
-x$doy=yday(as.Date(x$Date,format='%m/%d/%Y'))
-count=vector()
-for(n in 1:dim(x)[1]){
-	data_n=x
-	if(dim(data_n)[1]>0){
-	doy_seed=data_n$doy[n]
-	data_n=data_n[data_n$doy-doy_seed>1|data_n$doy-doy_seed<(-1)|data_n$doy-doy_seed==0,]
-	data_ni=data_n
-	i=n+1
-	if(i>dim(data_ni)[1]){i=1}
-	while(doy_seed!=data_ni[i,"doy"]){	
-		data_ni=data_ni[data_ni$doy-data_ni[i,"doy"]>1|data_ni$doy-data_ni[i,"doy"]<(-1)|data_ni$doy-data_ni[i,"doy"]==0|data_ni$doy==doy_seed,]
-		doy_seed!=data_ni[i,"doy"]
-		if(i<dim(data_ni)[1]){i=i+1}else{i=1}
-		#print(data_n[n,"doy"]!=data_ni[i,"doy"])
-		}
-		count=append(count,dim(data_ni)[1])
-		max_count=max(count)}}
-	if(dim(data_n)[1]==0){max_count=0}
-return(max_count)
+maxSamps48hr = function(x){
+  x = sort(x) # order by DOY
+  consecutive.groupings <- c(0, which(diff(x) != 1), length(x)) # Determine breaks in 1 by 1 sequence
+  consec.groups <- sum(ceiling(diff(consecutive.groupings)/2)) # Determine length of each sequential group, divide by two, and round up to get the max number of samples occurring at least 48 hours apart
+  return(consec.groups)
 }
+
+data_processed_max <- data_processed[is.na(data_processed$AsmntAggFun),]
+dat_48 <- aggregate(ActivityStartDate~IR_MLID+BeneficialUse, data=data_processed_max, FUN='maxSamps48hr')
 
 ##############################
 #assessEColi
@@ -174,6 +163,27 @@ ru=cbind(ru,AssessCat)
 
 
 #Old code:
+#####################################
+# maxSamps48hr=function(x){
+#   count=vector()
+#   for(n in 1:dim(x)[1]){
+#     data_n=x 
+#     if(dim(data_n)[1]>0){
+#       doy_seed=data_n$doy[n] 
+#       data_n=data_n[data_n$doy-doy_seed>1|data_n$doy-doy_seed<(-1)|data_n$doy-doy_seed==0,]
+#       data_ni=data_n
+#       i=n+1
+#       if(i>dim(data_ni)[1]){i=1}
+#       while(doy_seed!=data_ni[i,"doy"]){	
+#         data_ni=data_ni[data_ni$doy-data_ni[i,"doy"]>1|data_ni$doy-data_ni[i,"doy"]<(-1)|data_ni$doy-data_ni[i,"doy"]==0|data_ni$doy==doy_seed,]
+#         if(i<dim(data_ni)[1]){i=i+1}else{i=1}
+#       }
+#       count=append(count,dim(data_ni)[1])
+#       max_count=max(count)}}
+#   if(dim(data_n)[1]==0){max_count=0}
+#   return(max_count)
+# }
+
 #
 #
 #
