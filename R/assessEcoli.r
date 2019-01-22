@@ -1,11 +1,6 @@
 #E Coli specific functions
 
 #######################
-#gmean
-#geomean function
-gmean=function(x){exp(mean(log(x)))}
-
-#######################
 #dataPreProc
 #function for data preprocessing: subs 1 for <1 and 2420 for >2419.6, calculates site/date geomeans, trims to rec season, creates flat file (MLID+Date+Use=UID, repeats data as necessary)
 # Testing
@@ -23,31 +18,32 @@ data_raw <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\
 SeasonStartDate="05-01"
 SeasonEndDate="10-31"
 
-dataPreProc=function(data_raw, SeasonStartDate, SeasonEndDate){
-  data_raw$ActivityStartDate=as.Date(data_raw$ActivityStartDate,format='%Y-%m-%d')
+# Geometric mean function
+gmean=function(x){exp(mean(log(x)))}
+
+# Convert dates to R dates
+data_raw$ActivityStartDate=as.Date(data_raw$ActivityStartDate,format='%Y-%m-%d')
+
+# Create year column for scenario calculations
+data_raw$Year=year(data_raw$ActivityStartDate)
+
+
+# Restrict assessments to data collected during recreation season.
+data_raw=data_raw[month(data_raw$ActivityStartDate)>=month(as.Date(SeasonStartDate,format='%m-%d'))
+                  &day(data_raw$ActivityStartDate)>=day(as.Date(SeasonStartDate,format='%m-%d'))
+                  &month(data_raw$ActivityStartDate)<=month(as.Date(SeasonEndDate,format='%m-%d'))
+                  &day(data_raw$ActivityStartDate)<=day(as.Date(SeasonEndDate,format='%m-%d')),]
+
   
-  # Restrict assessments to data collected during recreation season
-  data_raw=data_raw[month(data_raw$ActivityStartDate)>=month(as.Date(SeasonStartDate,format='%m-%d'))
-	                  &day(data_raw$ActivityStartDate)>=day(as.Date(SeasonStartDate,format='%m-%d'))
-	                  &month(data_raw$ActivityStartDate)<=month(as.Date(SeasonEndDate,format='%m-%d'))
-	                  &day(data_raw$ActivityStartDate)<=day(as.Date(SeasonEndDate,format='%m-%d')),]
-  
-  # Substitute numbers for ND and OD limits.
-  data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
-	data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
-	data_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_raw,FUN='gmean')
-  data_processed <- merge(data_agg,data_raw, all.x=TRUE)
-	return(data_processed)
-	}
+# Substitute numbers for ND and OD limits and aggregate to daily values.
+data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
+data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
+daily_agg_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_raw,FUN='gmean')
+data_processed <- merge(daily_agg,data_raw, all.x=TRUE)
 
+##### SCENARIO A #####
 
-#############
-#maxSamps48hr
-#This function is a double loop to count max number of samples w/ 48 hr spacing from any given data set
-#Should feed this function data from dataPreProc function
-#Loop through each date in rec season, select samples, then apply to get max # of samples for that date.
-#If max # of samples satisfies min requirements for representative data (i.e. >=5 samps), calc 30 d average
-
+# maxSamps48hr function - counts the maximum number of samples collected over the rec season that were not collected within 48 hours of another sample(s).
 maxSamps48hr = function(x){
   x = sort(x) # order by DOY
   consecutive.groupings <- c(0, which(diff(x) != 1), length(x)) # Determine breaks in 1 by 1 sequence
@@ -55,8 +51,20 @@ maxSamps48hr = function(x){
   return(consec.groups)
 }
 
+# Restrict to records without aggregating function (used for geometric means in Scenarios B and C)
 data_processed_max <- data_processed[is.na(data_processed$AsmntAggFun),]
-dat_48 <- aggregate(ActivityStartDate~IR_MLID+BeneficialUse, data=data_processed_max, FUN='maxSamps48hr')
+
+# Aggregate by rec season year and determine max exceedance count for Scenario A
+data_48hr_check <- aggregate(ActivityStartDate~IR_MLID+BeneficialUse+Year, data=data_processed_max, FUN='maxSamps48hr')
+names(data_48hr_check)[names(data_48hr_check)=="ActivityStartDate"]<- "maxSamps48hr_byYear"
+data_48hr_check$ExcCountLim = ifelse(data_48hr_check$maxSamps48hr_byYear>=5,ceiling(data_48hr_check$maxSamps48hr_byYear*.1),1)
+
+data_ScenA <- merge(data_48hr_check, data_processed_max, all=TRUE)
+data_ScenA$ExcCount = 0
+data_ScenA$ExcCount[data_ScenA$IR_Value>data_ScenA$NumericCriterion]=1
+
+ScenarioA_agg <- aggregate(ExcCount~IR_MLID+BeneficialUse+Year+maxSamps48hr_byYear+ExcCountLim, data=data_ScenA, FUN=sum)
+
 
 ##############################
 #assessEColi
