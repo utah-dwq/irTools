@@ -25,7 +25,7 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb,
 
 
 #
-##SETUP#####
+###SETUP#####
 #rm(list=ls(all=TRUE))
 #load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
 #data=data_crit
@@ -267,7 +267,7 @@ acc_data=acc_data[,c("OrganizationIdentifier","ActivityIdentifier","ActivityStar
 
 ######
 ###Extract lake profiles
-result$lake_profiles=acc_data[!is.na(acc_data$DataLoggerLine) & acc_data$BeneficialUse %in% c("3A","3B","3C","3D","3E"),]
+result$lake_profiles=acc_data[!is.na(acc_data$DataLoggerLine) & acc_data$BeneficialUse %in% c("3A","3B","3C","3D","3E","CF"),]
 
 #Remove profiles from acc_data
 acc_data=acc_data[!acc_data$ActivityIdentifier %in% result$lake_profiles$ActivityIdentifier,]

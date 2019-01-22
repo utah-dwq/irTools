@@ -8,9 +8,10 @@
 #' @export
 assessLakeProfiles <- function(data){
 
-#### Testing setup
-#data=
-####
+### Testing setup
+load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
+data=prepped_data$lake_profiles
+###
 
 
 
