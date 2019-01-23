@@ -30,17 +30,17 @@ fillMaskedValues = function(results, detquantlim, translation_wb, detsheetname="
 
 ####TESTING SETUP
 ####
-# 
-# results=merged_results
-# detquantlim=detquantlim
-# translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
-# detsheetname="detLimitTypeTable"
-# unitsheetname="unitConvTable"
-# lql_fac=0.5
-# uql_fac=1
-# detstartRow=3
-# unitstartRow=1
-# unitstartCol=1
+ 
+ results=merged_results
+ detquantlim=detquantlim
+ translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
+ detsheetname="detLimitTypeTable"
+ unitsheetname="unitConvTable"
+ lql_fac=0.5
+ uql_fac=1
+ detstartRow=3
+ unitstartRow=1
+ unitstartCol=1
 #######
 #######
 
@@ -315,10 +315,9 @@ results_dql[!is.na(results_dql$ResultMeasureValue)&
 			results_dql$ResultMeasureValue>0
 			,"IR_DetCond"] = "DET"
 
-# Allow zero values in profile measures
-results_dql[results_dql$ResultMeasureValue==0&
-			!is.na(results_dql$DataLoggerLine)
-			,"IR_DetCond"] = "DET"
+# Allow zero values in profile depth measures
+results_dql[results_dql$ResultMeasureValue==0 & results_dql$CharacteristicName=="Depth, data-logger (ported)","IR_DetCond"] = "DET"
+
 
 
 print("Detection condition counts:")
@@ -341,7 +340,7 @@ results_dql[results_dql$IR_DetCond=="OD","IR_Unit"]=as.character(results_dql[res
 results_dql[results_dql$IR_DetCond=="NRV","IR_Value"]=NA
 results_dql[results_dql$IR_DetCond=="NRV","IR_Unit"]=NA
 
-return(results_dql)
 
+return(results_dql)
 
 }
