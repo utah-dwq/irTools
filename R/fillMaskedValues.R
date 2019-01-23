@@ -28,21 +28,21 @@
 fillMaskedValues = function(results, detquantlim, translation_wb, detsheetname="detLimitTypeTable", unitsheetname="unitConvTable", detstartRow=3, unitstartRow=1, unitstartCol=1, lql_fac=0.5, uql_fac=1){
 
 
-####TESTING SETUP
-####
- 
- results=merged_results
- detquantlim=detquantlim
- translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
- detsheetname="detLimitTypeTable"
- unitsheetname="unitConvTable"
- lql_fac=0.5
- uql_fac=1
- detstartRow=3
- unitstartRow=1
- unitstartCol=1
-#######
-#######
+#####TESTING SETUP
+#####
+# 
+# results=merged_results
+# detquantlim=detquantlim
+# translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
+# detsheetname="detLimitTypeTable"
+# unitsheetname="unitConvTable"
+# lql_fac=0.5
+# uql_fac=1
+# detstartRow=3
+# unitstartRow=1
+# unitstartCol=1
+########
+########
 
 
 ###Selecting upper and lower limit types by translation wb rankings
@@ -317,8 +317,6 @@ results_dql[!is.na(results_dql$ResultMeasureValue)&
 
 # Allow zero values in profile depth measures
 results_dql[results_dql$ResultMeasureValue==0 & results_dql$CharacteristicName=="Depth, data-logger (ported)","IR_DetCond"] = "DET"
-
-
 
 print("Detection condition counts:")
 print(table(results_dql$IR_DetCond, exclude=NULL))
