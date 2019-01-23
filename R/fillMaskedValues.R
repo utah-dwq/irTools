@@ -315,6 +315,12 @@ results_dql[!is.na(results_dql$ResultMeasureValue)&
 			results_dql$ResultMeasureValue>0
 			,"IR_DetCond"] = "DET"
 
+# Allow zero values in profile measures
+results_dql[results_dql$ResultMeasureValue==0&
+			!is.na(results_dql$DataLoggerLine)
+			,"IR_DetCond"] = "DET"
+
+
 print("Detection condition counts:")
 print(table(results_dql$IR_DetCond, exclude=NULL))
 
