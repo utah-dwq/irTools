@@ -38,10 +38,13 @@ data_raw=data_raw[month(data_raw$ActivityStartDate)>=month(as.Date(SeasonStartDa
 # Substitute numbers for ND and OD limits and aggregate to daily values.
 data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
 data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
-daily_agg_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_raw,FUN='gmean')
+daily_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_raw,FUN='gmean')
 data_processed <- merge(daily_agg,data_raw, all.x=TRUE)
 
 ##### SCENARIO A #####
+
+# Restrict to records without aggregating function (used for geometric means in Scenarios B and C)
+data_processed_max <- data_processed[is.na(data_processed$AsmntAggFun),]
 
 # maxSamps48hr function - counts the maximum number of samples collected over the rec season that were not collected within 48 hours of another sample(s).
 maxSamps48hr = function(x){
@@ -51,27 +54,38 @@ maxSamps48hr = function(x){
   return(consec.groups)
 }
 
-# Restrict to records without aggregating function (used for geometric means in Scenarios B and C)
-data_processed_max <- data_processed[is.na(data_processed$AsmntAggFun),]
-
 # Aggregate by rec season year and determine max exceedance count for Scenario A
 data_48hr_check <- aggregate(ActivityStartDate~IR_MLID+BeneficialUse+Year, data=data_processed_max, FUN='maxSamps48hr')
-names(data_48hr_check)[names(data_48hr_check)=="ActivityStartDate"]<- "maxSamps48hr_byYear"
-data_48hr_check$ExcCountLim = ifelse(data_48hr_check$maxSamps48hr_byYear>=5,ceiling(data_48hr_check$maxSamps48hr_byYear*.1),1)
+names(data_48hr_check)[names(data_48hr_check)=="ActivityStartDate"]<- "Ncount"
+data_48hr_check$ExcCountLim = ifelse(data_48hr_check$Ncount>=5,ceiling(data_48hr_check$Ncount*.1),1)
 
 data_ScenA <- merge(data_48hr_check, data_processed_max, all=TRUE)
 data_ScenA$ExcCount = 0
-data_ScenA$ExcCount[data_ScenA$IR_Value>data_ScenA$NumericCriterion]=1
+data_ScenA$ExcCount[data_ScenA$IR_Value>data_ScenA$NumericCriterion] = 1
 
-ScenarioA_agg <- aggregate(ExcCount~IR_MLID+BeneficialUse+Year+maxSamps48hr_byYear+ExcCountLim, data=data_ScenA, FUN=sum)
+# Obtain Scenario A Exc Counts for each MLID/Use/Year
+ScenarioA_agg <- aggregate(ExcCount~IR_MLID+BeneficialUse+Year+Ncount+ExcCountLim, data=data_ScenA, FUN=sum)
+ScenarioA_agg$Cat <- NA
+
+ScenarioA <- within(ScenarioA_agg,{
+  Scenario = "A"
+  Cat[Ncount<5&ExcCount>ExcCountLim] = "idE"
+  Cat[Ncount<5&ExcCount<=ExcCountLim] = "idNE"
+  Cat[Ncount>=5&ExcCount<=ExcCountLim] = "FS"
+  Cat[Ncount>=5&ExcCount>ExcCountLim] = "NS"
+})
+
+#### SCENARIO B ####
+
+# Restrict to records with geomean aggregating function 
+data_processed_gmean <- data_processed[!is.na(data_processed$AsmntAggFun),]
+
+# Subset records undergoing Scenario B to those that were Fully Supporting in Scenario A
+data_ScenB <- ScenarioA[ScenarioA$Cat=="FS",names(ScenarioA)%in%c("IR_MLID","BeneficialUse","Year")]
+data_ScenB <- merge(data_ScenB, data_processed_gmean, all.x=TRUE)
 
 
-##############################
-#assessEColi
-#performs EColi assessments for scenarios A, B, & C
-#data=preprocessed standard E Coli dataframe including ben use (standard geofile format) column (from dataPreProc() function)
-
-assessA=function(data){
+  assessA=function(data){
 	#maxSamps48hr=maxSamps48hr(data)#48 hr spacing turned off
 	maxSamps48hr=dim(data)[1]#48 hr spacing turned off
 	Use=data$Use[1]
