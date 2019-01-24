@@ -81,8 +81,6 @@ calcTdepth=function(x){
 }
 
 t_profs=profs_exc[,c("BeneficialUse","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","Profile.depth","Temperature..water")]
-dim(t_profs)
-dim(unique(t_profs[,c("ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","BeneficialUse")]))
 
 thermo_depths=plyr::ddply(t_profs,
 						  c("BeneficialUse","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID"),
@@ -91,8 +89,6 @@ thermo_depths=dplyr::rename(tc_depth_m="V1", thermo_depths)
 thermo_depths$stratified = 0
 thermo_depths$stratified[thermo_depths$tc_depth_m!="NaN"]=1
 
-head(thermo_depths)
-
 
 # Merge thermocline depths back to profiles
 profs_exc=merge(profs_exc,thermo_depths, all.x=T)
@@ -100,8 +96,6 @@ profs_exc=merge(profs_exc,thermo_depths, all.x=T)
 # Determine DO + temp exc
 profs_exc$do_temp_exc=0
 profs_exc$do_temp_exc[profs_exc$do_exc==1 & profs_exc$temp_exc==1]=1
-
-test=profs_exc[profs_exc$ActivityIdentifier=="UTAHDWQ_WQX-BORFG061615-4938550-0617-Pr-F",]
 
 assessOneProfile=function(x){
 	x=x[order(x$Profile.depth),]
@@ -142,8 +136,6 @@ assessOneProfile=function(x){
 	return(asmnt)
 }
 
-test2=assessOneProfile(test)
-class(test2$do_temp_asmnt)
 
 profile_asmnts=plyr::ddply(profs_exc,
 						  c("BeneficialUse","BEN_CLASS","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","AU_NAME","R317Descrp","IR_Lat","IR_Long"),
@@ -153,11 +145,6 @@ profile_asmnts=merge(profile_asmnts, thermo_depths)
 
 profile_asmnts[c("do_temp_asmnt","do_asmnt","temp_asmnt","pH_asmnt")]=lapply(profile_asmnts[c("do_temp_asmnt","do_asmnt","temp_asmnt","pH_asmnt")], factor, 
             levels=c("NS","FS","idE","idNE"))
-
-head(profile_asmnts)
-
-head(profile_asmnts[profile_asmnts$AU_NAME=="Utah Lake",])
-plot(-1*Profile.depth~Temperature..water, profs_exc[profs_exc$ActivityIdentifier=="UTAHDWQ_WQX-LAKES2015-4917310-0709-Pr-F",])
 
 # Flatten assessments
 profile_asmnts_flat=reshape2::melt(profile_asmnts,nar.rm=T,value.name="IR_Cat",
