@@ -1,16 +1,18 @@
 #' Run lake profile assessments
 #'
-#' Description description description
+#' Performs lake profile assessments per IR assessment methods. This includes identifying stratified profiles & applying appropriate assessment methods for stratified & non stratified profiles.
 #'
 #' @param data Lake profiles object returned by dataPrep step.
 #' @param uses_assessed Vector of beneficial uses to be assessed for lake profiles. Defaults to 3A & 3B uses.
-#' @param do_crit List of beneficial use classes and associated dissolved oxygen criteria to use for assessment. Defaults to list("3A"=5, "3B"=3). Objects in this list should match the uses_assessed argument.
-#' @param temp_crit List of beneficial use classes and associated water temperature criteria to use for assessment. Defaults to list("3A"=20, "3B"=27). Objects in this list should match the uses_assessed argument.
-#' @return Returns dataframe with assessment categories for each AU/BenUse/R3172ParameterName.
-#' @ importFrom reshape2 dcast
-#' @ importFrom dplyr rename
-#' @ importFrom rLakeAnalyzer thermo.depth
-#' @ importFrom plyr ddply
+#' @param do_crit List of beneficial use classes and associated dissolved oxygen criteria to use for assessment. Defaults to list("3A"=5, "3B"=3). This excludes chronic & ELS present criteria per assessment methods. Sites with site specific criteria will be assessed regardless of criteria specified in this argument. Objects in this list should match the uses_assessed argument.
+#' @param temp_crit List of beneficial use classes and associated water temperature criteria to use for assessment. Defaults to list("3A"=20, "3B"=27). This excludes chronic & ELS present criteria per assessment methods. Sites with site specific criteria will be assessed regardless of criteria specified in this argument. Objects in this list should match the uses_assessed argument.
+#' @return Returns a list of lake profile assessment dataframes. profile_asmnts_mlid_param contains site/parameter level profile assessments, profile_asmnts_individual contains assessments for each individual profile,
+#' 	profile_criteria contains the criteria used for the profile assessment (excluding any site-specific criteria that may have occurred in the input dataset), 
+#'  profiles_long contains profile data in long format including the numeric criterion associated with each parameter, profiles_wide contains profile data cast to wide format.
+#' @importFrom reshape2 dcast
+#' @importFrom dplyr rename
+#' @importFrom rLakeAnalyzer thermo.depth
+#' @importFrom plyr ddply
 
 #' @export
 assessLakeProfiles <- function(data, do_crit=list("3A"=5, "3B"=3), temp_crit=list("3A"=20, "3B"=27), uses_assessed=c("3A","3B")){
@@ -42,7 +44,7 @@ input_crit=rbind(do_crit, temp_crit)
 data_sub=data
 data_sub=merge(data_sub,input_crit, all.x=T)
 
-data_sub=subset(data_sub, (is.na(input_crit) | NumericCriterion == input_crit) & BeneficialUse %in% uses_assessed)
+data_sub=subset(data_sub, (is.na(input_crit) | NumericCriterion == input_crit | !is.na(SSC_StartMon)) & BeneficialUse %in% uses_assessed)
 data_sub=data_sub[,names(data_sub)!="input_crit"]
 
 # Pull out criteria for future usage
@@ -175,7 +177,7 @@ profile_asmnts_flat=profile_asmnts_flat[,names(profile_asmnts_flat)!="variable"]
 
 
 # Roll up to site level (MLID, use, param), removing ActivityIdentifier & date
-profile_asmnts_rolledUp=rollUp(data=list(profile_asmnts_flat), group_vars=c("ASSESS_ID","AU_NAME","R317Descrp","BEN_CLASS","IR_MLID","IR_Lat","IR_Long","BeneficialUse","R3172ParameterName"), expand_uses=F, print=F)
+profile_asmnts_rolledUp=irTools::rollUp(data=list(profile_asmnts_flat), group_vars=c("ASSESS_ID","AU_NAME","R317Descrp","BEN_CLASS","IR_MLID","IR_Lat","IR_Long","BeneficialUse","R3172ParameterName"), expand_uses=F, print=F)
 names(profile_asmnts_rolledUp)[names(profile_asmnts_rolledUp)=="AssessCat"]="IR_Cat"
 
 # Gather objects to return
@@ -183,15 +185,9 @@ profile_asmnts_individual=profile_asmnts
 profs_exc=dplyr::rename(profs_exc,DO_mgL="Minimum.Dissolved.Oxygen", Temp_degC="Temperature..water", Depth_m="Profile.depth",Thermocline_depth_m="tc_depth_m")
 profiles_wide=profs_exc
 
-result=list(profile_asmnts_mlid_param=profile_asmnts_rolledUp,profile_asmnts_individual=profile_asmnts_individual,profiles_wide=profiles_wide, profile_criteria=crit)
+result=list(profile_asmnts_mlid_param=profile_asmnts_rolledUp,profile_asmnts_individual=profile_asmnts_individual,profiles_wide=profiles_wide, profiles_long=profs_long, profile_criteria=crit)
 
 return(result)
 
 }
-
-load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
-profs_assessed=assessLakeProfiles(prepped_data$lake_profiles)
-head(profs_assessed$profile_asmnts_mlid_param)
-
-
 
