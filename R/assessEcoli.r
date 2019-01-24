@@ -17,159 +17,194 @@ data_raw <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\
 #Define rec season ("mm-dd"):
 SeasonStartDate="05-01"
 SeasonEndDate="10-31"
+rec_season = TRUE
 
-# Geometric mean function
-gmean=function(x){exp(mean(log(x)))}
-
-# Convert dates to R dates
-data_raw$ActivityStartDate=as.Date(data_raw$ActivityStartDate,format='%Y-%m-%d')
-
-# Create year column for scenario calculations
-data_raw$Year=year(data_raw$ActivityStartDate)
-
-
-# Restrict assessments to data collected during recreation season.
-data_raw=data_raw[month(data_raw$ActivityStartDate)>=month(as.Date(SeasonStartDate,format='%m-%d'))
-                  &day(data_raw$ActivityStartDate)>=day(as.Date(SeasonStartDate,format='%m-%d'))
-                  &month(data_raw$ActivityStartDate)<=month(as.Date(SeasonEndDate,format='%m-%d'))
-                  &day(data_raw$ActivityStartDate)<=day(as.Date(SeasonEndDate,format='%m-%d')),]
-
+assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31"){
+  # Geometric mean function
+  gmean=function(x){exp(mean(log(x)))}
   
-# Substitute numbers for ND and OD limits and aggregate to daily values.
-data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
-data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
-daily_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_raw,FUN='gmean')
-data_processed <- merge(daily_agg,data_raw, all.x=TRUE)
-
+  # Convert dates to R dates
+  data_raw$ActivityStartDate=as.Date(data_raw$ActivityStartDate,format='%Y-%m-%d')
+  
+  # Create year column for scenario calculations
+  data_raw$Year=year(data_raw$ActivityStartDate)
+  
+  
+  # Restrict assessments to data collected during recreation season.
+  if(rec_season){
+    data_raw=data_raw[month(data_raw$ActivityStartDate)>=month(as.Date(SeasonStartDate,format='%m-%d'))
+                      &day(data_raw$ActivityStartDate)>=day(as.Date(SeasonStartDate,format='%m-%d'))
+                      &month(data_raw$ActivityStartDate)<=month(as.Date(SeasonEndDate,format='%m-%d'))
+                      &day(data_raw$ActivityStartDate)<=day(as.Date(SeasonEndDate,format='%m-%d')),]
+  }
+  
+  
+  # Substitute numbers for ND and OD limits and aggregate to daily values.
+  data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
+  data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
+  daily_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_raw,FUN='gmean')
+  data_processed <- merge(daily_agg,data_raw, all.x=TRUE)
+  
+  # maxSamps48hr function - counts the maximum number of samples collected over the rec season that were not collected within 48 hours of another sample(s).
+  maxSamps48hr = function(x){
+    x = sort(x) # order by DOY
+    consecutive.groupings <- c(0, which(diff(x) != 1), length(x)) # Determine breaks in 1 by 1 sequence
+    consec.groups <- sum(ceiling(diff(consecutive.groupings)/2)) # Determine length of each sequential group, divide by two, and round up to get the max number of samples occurring at least 48 hours apart
+    return(consec.groups)
+  }
+  
 ##### SCENARIO A #####
+  
+  # Restrict to records without aggregating function (used for geometric means in Scenarios B and C)
+  data_processed_max <- data_processed[is.na(data_processed$AsmntAggFun),]
+  
+  # Aggregate by rec season year and determine max exceedance count for Scenario A
+  data_48hr_check <- aggregate(ActivityStartDate~IR_MLID+BeneficialUse+Year, data=data_processed_max, FUN='maxSamps48hr')
+  names(data_48hr_check)[names(data_48hr_check)=="ActivityStartDate"]<- "Ncount"
+  data_48hr_check$ExcCountLim = ifelse(data_48hr_check$Ncount>=5,ceiling(data_48hr_check$Ncount*.1),1)
+  
+  data_ScenA <- merge(data_48hr_check, data_processed_max, all=TRUE)
+  data_ScenA$ExcCount = 0
+  data_ScenA$ExcCount[data_ScenA$IR_Value>data_ScenA$NumericCriterion] = 1
+  
+  # Obtain Scenario A Exc Counts for each MLID/Use/Year
+  ScenarioA_agg <- aggregate(ExcCount~IR_MLID+BeneficialUse+Year+Ncount+ExcCountLim, data=data_ScenA, FUN=sum)
+  ScenarioA_agg$Cat <- NA
+  
+  ScenarioA <- within(ScenarioA_agg,{
+    Scenario = "A"
+    Cat[Ncount<5&ExcCount>ExcCountLim] = "idE"
+    Cat[Ncount<5&ExcCount<=ExcCountLim] = "idNE"
+    Cat[Ncount>=5&ExcCount<=ExcCountLim] = "ScenB"
+    Cat[Ncount>=5&ExcCount>ExcCountLim] = "NS"
+  })
+  
+##### SCENARIO B #####
+  
+  # Restrict to records with geomean aggregating function 
+  data_processed_gmean <- data_processed[!is.na(data_processed$AsmntAggFun),]
+  
+  # Count number of samples within each MLID/BenUse/Year
+  ncount_year <- aggregate(ActivityStartDate~IR_MLID+BeneficialUse+Year, data=data_processed_gmean, FUN=length)
+  
+  # Include only combinations with =>5 samples
+  data_ScenB <- ncount_year[ncount_year$ActivityStartDate>=5,c("IR_MLID","BeneficialUse","Year")]
+  data_ScenB <- merge(data_ScenB,data_processed_gmean, all.x=TRUE)
+  
+  # Function to (1) determine whether MLID/Use/Year data applicable to ScenB and (2) assess using ScenB  
+  assessB <- function(x){
+    # Create empty vector to hold geometric means
+    geomeans <- vector()
+    n = 1 # counter for geomeans vector population
+    # Loop through each day 
+    for(i in 1:dim(x)[1]){
+      dmax = x$ActivityStartDate[i]+29 # create 30 day window
+      samps = x[x$ActivityStartDate>=x$ActivityStartDate[i]&x$ActivityStartDate<=dmax,] # Isolate samples occurring within that window
+      # Calculate geometric mean on ALL samples IF 5 or more samples are spaced at least 48 hours apart
+      if(maxSamps48hr(samps$ActivityStartDate)>=5){
+          geomeans[n] <- gmean(samps$IR_Value)
+          n=n+1
+        }
+    }
+    # Create output dataframe with MLID/Use/Year/Ncount...etc.
+    if(length(geomeans)>0){
+      out <- samps[1,c("IR_MLID","BeneficialUse","Year")]
+      out$Ncount = length(geomeans)
+      out$ExcCountLim = 1
+      out$ExcCount = length(geomeans[geomeans>=x$NumericCriterion[1]])
+      out$Cat = ifelse(any(geomeans>=x$NumericCriterion[1]),"NS","ScenC")
+      out$Scenario = "B"
+      return(out)
+      }else{return(NULL)}  
+    }
+  ScenarioB=ddply(.data=data_ScenB,.(IR_MLID,BeneficialUse,Year),.fun=assessB)
 
-# Restrict to records without aggregating function (used for geometric means in Scenarios B and C)
-data_processed_max <- data_processed[is.na(data_processed$AsmntAggFun),]
 
-# maxSamps48hr function - counts the maximum number of samples collected over the rec season that were not collected within 48 hours of another sample(s).
-maxSamps48hr = function(x){
-  x = sort(x) # order by DOY
-  consecutive.groupings <- c(0, which(diff(x) != 1), length(x)) # Determine breaks in 1 by 1 sequence
-  consec.groups <- sum(ceiling(diff(consecutive.groupings)/2)) # Determine length of each sequential group, divide by two, and round up to get the max number of samples occurring at least 48 hours apart
-  return(consec.groups)
+##### SCENARIO C #####
+  # Calculate geometric mean for all data by MLID/Use/YEAR
+  ScenarioC_agg <- aggregate(IR_Value~IR_MLID+BeneficialUse+Year,data=data_processed_gmean, FUN=gmean)
+  data_ScenC = merge(ScenarioC_agg, ncount_year, all.x=TRUE)
+  names(data_ScenC)[names(data_ScenC)=="ActivityStartDate"]<-"Ncount"
+  data_ScenC$ExcCountLim = NA
+  data_ScenC$ExcCount = NA
+  
+  ScenarioC <- within(data_ScenC,{
+    Scenario = "C"
+    Cat[Ncount<5&ExcCount>ExcCountLim] = "idE"
+    Cat[Ncount<5&ExcCount<=ExcCountLim] = "idNE"
+    Cat[Ncount>=5&ExcCount<=ExcCountLim] = "ScenB"
+    Cat[Ncount>=5&ExcCount>ExcCountLim] = "NS"
+  })
+  
+  assessBC=function(data){
+    Year=data$Year[1]
+    Use=data$Use[1]
+    rec_season=format(seq(from=as.Date(paste0(Year,"-",SeasonStartDate)),to=as.Date(paste0(Year,"-",SeasonEndDate)),by=1),format="%m-%d-%Y")
+    if(Use[1]=="2A"){gmean30d_crit=std2A_30Dgmean}
+    if(Use[1]=="2B"){gmean30d_crit=std2B_30Dgmean}
+    if(Use[1]=="1C"){gmean30d_crit=std1C_30Dgmean}
+    if(dim(data)[1]<5){assess=c(paste(dim(data)[1]),"C","C")}
+    if(dim(data)[1]>=5){
+      gmean=vector(length=length(rec_season))
+      for(j in 1:length(rec_season)){
+        dmin=as.Date(rec_season[j],format='%m-%d-%Y')
+        dmax=as.Date(rec_season[j],format='%m-%d-%Y')+29
+        data_j=data[data$Date>=dmin&data$Date<=dmax,]
+        maxSamps48hr_j=maxSamps48hr(data_j)
+        if(maxSamps48hr_j>=5){gmean_j=gmean(data_j$MPN_FINAL)}else{gmean_j=0}#Note that 0s here denote no gmean calculated, not a gmean of 0
+        gmean[j]=gmean_j}
+      if(any(gmean>gmean30d_crit)==TRUE){assess=c(paste(dim(data)[1]),5,"B")}else{assess=c(paste(dim(data)[1]),"C","C")
+      }
+    }
+    if(assess[3]=="C"){
+      gmean_recseason=gmean(data$MPN_FINAL)
+      if(dim(data)[1]<10&gmean_recseason<=gmean30d_crit){assess=c(paste(dim(data)[1]),2,"C")}
+      if(dim(data)[1]<10&gmean_recseason>gmean30d_crit){assess=c(paste(dim(data)[1]),"3A","C")}
+      if(dim(data)[1]>=10&gmean_recseason<=gmean30d_crit){assess=c(paste(dim(data)[1]),2,"C")}
+      if(dim(data)[1]>=10&gmean_recseason>gmean30d_crit){assess=c(paste(dim(data)[1]),5,"C")}
+    }	
+    return(assess)
+  }
+  
+  assessEColi_MLIDYr=function(data){
+    assessedA=ddply(.data=data_preprocessed,.(MLID,Year,Use),.fun=assessA)
+    colnames(assessedA)=c("MLID","Year","Use","totalSamps","Cat","Scen")
+    
+    data_bc=merge(data_preprocessed,assessedA)
+    data_bc=data_bc[data_bc$Scen=="BC",]
+    
+    assessedBC=ddply(.data=data_bc,.(MLID,Year,Use),.fun=assessBC)
+    colnames(assessedBC)=c("MLID","Year","Use","totalSamps","Cat","Scen")
+    
+    assessedA=assessedA[assessedA$Scen=="A",]
+    ecoli_assessments=rbind(assessedA,assessedBC)
+    return(ecoli_assessments)
+  }
+  
+  
+  ####################
+  ######MLIDYr_rollup#
+  #Rolls up assessments for MLIDs w/ multiple years
+  #Categories: 5>3A>3E>2
+  #Input data is output from assessEColi_MLIDYr
+  
+  MLIDYr_rollup=function(data){
+    ru=dcast(data,MLID+Use~Year,value.var="Cat")
+    ru[is.na(ru)]=0 #note, 0 here denotes no data for each year
+    AssessCat=vector()
+    for(n in 1:dim(ru)[1]){
+      data_n=ru[n,]
+      if(any(data_n[3:dim(data_n)[2]]==5)){assess_n=5
+      }else{if(any(data_n[3:dim(data_n)[2]]=="3A")){assess_n="3A"
+      }else{if(any(data_n[3:dim(data_n)[2]]=="3E")){assess_n="3E"
+      }else{if(all(data_n[3:dim(data_n)[2]]==2)){assess_n=2}}}}
+      AssessCat=append(AssessCat,assess_n)
+    }
+    ru=cbind(ru,AssessCat)
+  }
+  
 }
 
-# Aggregate by rec season year and determine max exceedance count for Scenario A
-data_48hr_check <- aggregate(ActivityStartDate~IR_MLID+BeneficialUse+Year, data=data_processed_max, FUN='maxSamps48hr')
-names(data_48hr_check)[names(data_48hr_check)=="ActivityStartDate"]<- "Ncount"
-data_48hr_check$ExcCountLim = ifelse(data_48hr_check$Ncount>=5,ceiling(data_48hr_check$Ncount*.1),1)
-
-data_ScenA <- merge(data_48hr_check, data_processed_max, all=TRUE)
-data_ScenA$ExcCount = 0
-data_ScenA$ExcCount[data_ScenA$IR_Value>data_ScenA$NumericCriterion] = 1
-
-# Obtain Scenario A Exc Counts for each MLID/Use/Year
-ScenarioA_agg <- aggregate(ExcCount~IR_MLID+BeneficialUse+Year+Ncount+ExcCountLim, data=data_ScenA, FUN=sum)
-ScenarioA_agg$Cat <- NA
-
-ScenarioA <- within(ScenarioA_agg,{
-  Scenario = "A"
-  Cat[Ncount<5&ExcCount>ExcCountLim] = "idE"
-  Cat[Ncount<5&ExcCount<=ExcCountLim] = "idNE"
-  Cat[Ncount>=5&ExcCount<=ExcCountLim] = "FS"
-  Cat[Ncount>=5&ExcCount>ExcCountLim] = "NS"
-})
-
-#### SCENARIO B ####
-
-# Restrict to records with geomean aggregating function 
-data_processed_gmean <- data_processed[!is.na(data_processed$AsmntAggFun),]
-
-# Subset records undergoing Scenario B to those that were Fully Supporting in Scenario A
-data_ScenB <- ScenarioA[ScenarioA$Cat=="FS",names(ScenarioA)%in%c("IR_MLID","BeneficialUse","Year")]
-data_ScenB <- merge(data_ScenB, data_processed_gmean, all.x=TRUE)
-
-
-  assessA=function(data){
-	#maxSamps48hr=maxSamps48hr(data)#48 hr spacing turned off
-	maxSamps48hr=dim(data)[1]#48 hr spacing turned off
-	Use=data$Use[1]
-	if(Use=="2A"){max_crit=std2A_max}
-	if(Use=="2B"){max_crit=std2B_max}
-	if(Use=="1C"){max_crit=std1C_max}
-	if(maxSamps48hr<5){
-		if(any(data$MPN_FINAL>max_crit)){assessed=c(paste(dim(data)[1]),"3A","A")
-		}else{assessed=c(paste(dim(data)[1]),"3E","A")}
-	}
-	if(maxSamps48hr>=5){
-		tenpct=ceiling(dim(data)[1]/10)
-			if(dim(data[data$MPN_FINAL>max_crit,])[1]>tenpct){assessed=c(paste(dim(data)[1]),"5","A")
-			}else{assessed=c(paste(dim(data)[1]),"BC","BC")}
-	}
-return(assessed)	
-}
-
-assessBC=function(data){
-	Year=data$Year[1]
-	Use=data$Use[1]
-	rec_season=format(seq(from=as.Date(paste0(Year,"-",SeasonStartDate)),to=as.Date(paste0(Year,"-",SeasonEndDate)),by=1),format="%m-%d-%Y")
-	if(Use[1]=="2A"){gmean30d_crit=std2A_30Dgmean}
-	if(Use[1]=="2B"){gmean30d_crit=std2B_30Dgmean}
-	if(Use[1]=="1C"){gmean30d_crit=std1C_30Dgmean}
-	if(dim(data)[1]<5){assess=c(paste(dim(data)[1]),"C","C")}
-	if(dim(data)[1]>=5){
-		gmean=vector(length=length(rec_season))
-		for(j in 1:length(rec_season)){
-			dmin=as.Date(rec_season[j],format='%m-%d-%Y')
-			dmax=as.Date(rec_season[j],format='%m-%d-%Y')+29
-			data_j=data[data$Date>=dmin&data$Date<=dmax,]
-			maxSamps48hr_j=maxSamps48hr(data_j)
-			if(maxSamps48hr_j>=5){gmean_j=gmean(data_j$MPN_FINAL)}else{gmean_j=0}#Note that 0s here denote no gmean calculated, not a gmean of 0
-			gmean[j]=gmean_j}
-		if(any(gmean>gmean30d_crit)==TRUE){assess=c(paste(dim(data)[1]),5,"B")}else{assess=c(paste(dim(data)[1]),"C","C")
-		}
-	}
-		if(assess[3]=="C"){
-			gmean_recseason=gmean(data$MPN_FINAL)
-			if(dim(data)[1]<10&gmean_recseason<=gmean30d_crit){assess=c(paste(dim(data)[1]),2,"C")}
-			if(dim(data)[1]<10&gmean_recseason>gmean30d_crit){assess=c(paste(dim(data)[1]),"3A","C")}
-			if(dim(data)[1]>=10&gmean_recseason<=gmean30d_crit){assess=c(paste(dim(data)[1]),2,"C")}
-			if(dim(data)[1]>=10&gmean_recseason>gmean30d_crit){assess=c(paste(dim(data)[1]),5,"C")}
-		}	
-	return(assess)
-}
-
-assessEColi_MLIDYr=function(data){
-	assessedA=ddply(.data=data_preprocessed,.(MLID,Year,Use),.fun=assessA)
-	colnames(assessedA)=c("MLID","Year","Use","totalSamps","Cat","Scen")
-	
-	data_bc=merge(data_preprocessed,assessedA)
-	data_bc=data_bc[data_bc$Scen=="BC",]
-	
-	assessedBC=ddply(.data=data_bc,.(MLID,Year,Use),.fun=assessBC)
-	colnames(assessedBC)=c("MLID","Year","Use","totalSamps","Cat","Scen")
-
-	assessedA=assessedA[assessedA$Scen=="A",]
-	ecoli_assessments=rbind(assessedA,assessedBC)
-	return(ecoli_assessments)
-}
-
-
-####################
-######MLIDYr_rollup#
-#Rolls up assessments for MLIDs w/ multiple years
-#Categories: 5>3A>3E>2
-#Input data is output from assessEColi_MLIDYr
-
-MLIDYr_rollup=function(data){
-ru=dcast(data,MLID+Use~Year,value.var="Cat")
-ru[is.na(ru)]=0 #note, 0 here denotes no data for each year
-AssessCat=vector()
-for(n in 1:dim(ru)[1]){
-	data_n=ru[n,]
-	if(any(data_n[3:dim(data_n)[2]]==5)){assess_n=5
-	}else{if(any(data_n[3:dim(data_n)[2]]=="3A")){assess_n="3A"
-	}else{if(any(data_n[3:dim(data_n)[2]]=="3E")){assess_n="3E"
-	}else{if(all(data_n[3:dim(data_n)[2]]==2)){assess_n=2}}}}
-	AssessCat=append(AssessCat,assess_n)
-	}
-ru=cbind(ru,AssessCat)
-}
 
 
 
@@ -186,6 +221,26 @@ ru=cbind(ru,AssessCat)
 
 #Old code:
 #####################################
+# assessA=function(data){
+#   #maxSamps48hr=maxSamps48hr(data)#48 hr spacing turned off
+#   maxSamps48hr=dim(data)[1]#48 hr spacing turned off
+#   Use=data$Use[1]
+#   if(Use=="2A"){max_crit=std2A_max}
+#   if(Use=="2B"){max_crit=std2B_max}
+#   if(Use=="1C"){max_crit=std1C_max}
+#   if(maxSamps48hr<5){
+#     if(any(data$MPN_FINAL>max_crit)){assessed=c(paste(dim(data)[1]),"3A","A")
+#     }else{assessed=c(paste(dim(data)[1]),"3E","A")}
+#   }
+#   if(maxSamps48hr>=5){
+#     tenpct=ceiling(dim(data)[1]/10)
+#     if(dim(data[data$MPN_FINAL>max_crit,])[1]>tenpct){assessed=c(paste(dim(data)[1]),"5","A")
+#     }else{assessed=c(paste(dim(data)[1]),"BC","BC")}
+#   }
+#   return(assessed)	
+# }
+# 
+
 # maxSamps48hr=function(x){
 #   count=vector()
 #   for(n in 1:dim(x)[1]){
