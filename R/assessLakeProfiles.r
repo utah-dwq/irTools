@@ -15,13 +15,13 @@
 #' @export
 assessLakeProfiles <- function(data, do_crit=list("3A"=5, "3B"=3), temp_crit=list("3A"=20, "3B"=27), uses_assessed=c("3A","3B")){
 
-#### Testing setup
-load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
-data=prepped_data$lake_profiles
-uses_assessed=c("3A","3B")
-do_crit=list("3A"=5, "3B"=3)
-temp_crit=list("3A"=20, "3B"=27)
-####
+##### Testing setup
+#load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
+#data=prepped_data$lake_profiles
+#uses_assessed=c("3A","3B")
+#do_crit=list("3A"=5, "3B"=3)
+#temp_crit=list("3A"=20, "3B"=27)
+#####
 
 # Make numeric criterion numeric
 if(class(data$NumericCriterion)=="character"){data$NumericCriterion=as.numeric(data$NumericCriterion)}
@@ -103,7 +103,8 @@ test=profs_exc[profs_exc$ActivityIdentifier=="UTAHDWQ_WQX-BORFG061615-4938550-06
 
 assessOneProfile=function(x){
 	x=x[order(x$Profile.depth),]
-
+	
+	samp_count=dim(x)[1]
 	pct10=ceiling(dim(x)[1] *0.1)
 	do_exc_cnt=sum(x$do_exc)
 	temp_exc_cnt=sum(x$temp_exc)
@@ -134,7 +135,7 @@ assessOneProfile=function(x){
 		do_asmnt=ifelse(do_exc_cnt>pct10 & do_exc_cnt>=2,"NS","FS")
 	}
 
-	asmnt=data.frame(max_hab_width,do_temp_asmnt,do_exc_cnt,do_asmnt,temp_exc_cnt,temp_asmnt,pH_exc_cnt,pH_asmnt,pct10)
+	asmnt=data.frame(max_hab_width,do_temp_asmnt,do_exc_cnt,do_asmnt,temp_exc_cnt,temp_asmnt,pH_exc_cnt,pH_asmnt,samp_count,pct10)
 	
 	return(asmnt)
 }
@@ -143,7 +144,7 @@ test2=assessOneProfile(test)
 class(test2$do_temp_asmnt)
 
 profile_asmnts=plyr::ddply(profs_exc,
-						  c("BeneficialUse","BEN_CLASS","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","AU_NAME"),
+						  c("BeneficialUse","BEN_CLASS","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","AU_NAME","R317Descrp","IR_Lat","IR_Long"),
 						  .fun=assessOneProfile)
 
 profile_asmnts=merge(profile_asmnts, thermo_depths)
@@ -157,9 +158,10 @@ head(profile_asmnts[profile_asmnts$AU_NAME=="Utah Lake",])
 plot(-1*Profile.depth~Temperature..water, profs_exc[profs_exc$ActivityIdentifier=="UTAHDWQ_WQX-LAKES2015-4917310-0709-Pr-F",])
 
 # Flatten assessments
-profile_asmnts_flat=reshape2::melt(profile_asmnts,nar.rm=T,value.name="AssessCat",
-								   id.vars=c("ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS"),
+profile_asmnts_flat=reshape2::melt(profile_asmnts,nar.rm=T,value.name="IR_Cat",
+								   id.vars=c("BeneficialUse","BEN_CLASS","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","AU_NAME","R317Descrp","IR_Lat","IR_Long"),
 								   measure.vars=c("do_temp_asmnt","do_asmnt","temp_asmnt","pH_asmnt"))
+
 
 # Rename Variables
 profile_asmnts_flat=within(profile_asmnts_flat,{
@@ -173,18 +175,23 @@ profile_asmnts_flat=profile_asmnts_flat[,names(profile_asmnts_flat)!="variable"]
 
 
 # Roll up to site level (MLID, use, param), removing ActivityIdentifier & date
-profile_asmnts_rolledUp=rollUp(data="profile_asmnts_flat", group_vars=c("IR_MLID","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS"), expand=F)
+profile_asmnts_rolledUp=rollUp(data=list(profile_asmnts_flat), group_vars=c("ASSESS_ID","AU_NAME","R317Descrp","BEN_CLASS","IR_MLID","IR_Lat","IR_Long","BeneficialUse","R3172ParameterName"), expand_uses=F, print=F)
+names(profile_asmnts_rolledUp)[names(profile_asmnts_rolledUp)=="AssessCat"]="IR_Cat"
 
 # Gather objects to return
 profile_asmnts_individual=profile_asmnts
 profs_exc=dplyr::rename(profs_exc,DO_mgL="Minimum.Dissolved.Oxygen", Temp_degC="Temperature..water", Depth_m="Profile.depth",Thermocline_depth_m="tc_depth_m")
 profiles_wide=profs_exc
 
-result=list(profile_asmnts_rolledUp=profile_asmnts_rolledUp,profile_asmnts_individual=profile_asmnts_individual,profiles_wide=profiles_wide, profile_criteria=crit)
+result=list(profile_asmnts_mlid_param=profile_asmnts_rolledUp,profile_asmnts_individual=profile_asmnts_individual,profiles_wide=profiles_wide, profile_criteria=crit)
 
 return(result)
 
 }
+
+load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
+profs_assessed=assessLakeProfiles(prepped_data$lake_profiles)
+head(profs_assessed$profile_asmnts_mlid_param)
 
 
 
