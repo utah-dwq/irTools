@@ -2,8 +2,15 @@
 #'
 #' Description description description
 #'
-#' @param data 
+#' @param data Lake profiles object returned by dataPrep step.
+#' @param uses_assessed Vector of beneficial uses to be assessed for lake profiles. Defaults to 3A & 3B uses.
+#' @param do_crit List of beneficial use classes and associated dissolved oxygen criteria to use for assessment. Defaults to list("3A"=5, "3B"=3). Objects in this list should match the uses_assessed argument.
+#' @param temp_crit List of beneficial use classes and associated water temperature criteria to use for assessment. Defaults to list("3A"=20, "3B"=27). Objects in this list should match the uses_assessed argument.
 #' @return Returns dataframe with assessment categories for each AU/BenUse/R3172ParameterName.
+#' @ importFrom reshape2 dcast
+#' @ importFrom dplyr rename
+#' @ importFrom rLakeAnalyzer thermo.depth
+#' @ importFrom plyr ddply
 
 #' @export
 assessLakeProfiles <- function(data, do_crit=list("3A"=5, "3B"=3), temp_crit=list("3A"=20, "3B"=27), uses_assessed=c("3A","3B")){
@@ -11,9 +18,9 @@ assessLakeProfiles <- function(data, do_crit=list("3A"=5, "3B"=3), temp_crit=lis
 #### Testing setup
 load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
 data=prepped_data$lake_profiles
+uses_assessed=c("3A","3B")
 do_crit=list("3A"=5, "3B"=3)
 temp_crit=list("3A"=20, "3B"=27)
-uses_assessed=c("3A","3B")
 ####
 
 # Make numeric criterion numeric
@@ -64,41 +71,118 @@ profs_exc=merge(profs_wide,exc_wide,all=T)
 names(profs_exc)=make.names(names(profs_exc))
 
 # Calculate thermocline depths
-test=profs_exc[profs_exc$ActivityIdentifier=="UTAHDWQ_WQX-BORFG061615-4938550-0617-Pr-F",]
-thermo_depths=rLakeAnalyzer::thermo.depth(test$Temperature..water, test$Profile.depth)
-
 calcTdepth=function(x){
-	x_agg=aggregate(Temperature..water~Profile.depth, x, FUN='mean')
-	return(rLakeAnalyzer::thermo.depth(x_agg$Temperature..water, x_agg$Profile.depth))
+	if(any(!is.na(x$Profile.depth))){
+		x_agg=aggregate(Temperature..water~Profile.depth, x, FUN='mean')
+		return(rLakeAnalyzer::thermo.depth(x_agg$Temperature..water, x_agg$Profile.depth))
+	}else{return("NaN")}
 }
 
-t_profs=profs_exc[,c("ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","Profile.depth","Temperature..water")]
+t_profs=profs_exc[,c("BeneficialUse","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","Profile.depth","Temperature..water")]
 dim(t_profs)
-t_profs2=aggregate(Temperature..water~., data=t_profs, FUN='length')
-dim(t_profs2)
-
+dim(unique(t_profs[,c("ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","BeneficialUse")]))
 
 thermo_depths=plyr::ddply(t_profs,
-						  c("ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID"),
+						  c("BeneficialUse","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID"),
 						  .fun=calcTdepth)
+thermo_depths=dplyr::rename(tc_depth_m="V1", thermo_depths)
+thermo_depths$stratified = 0
+thermo_depths$stratified[thermo_depths$tc_depth_m!="NaN"]=1
+
+head(thermo_depths)
 
 
+# Merge thermocline depths back to profiles
+profs_exc=merge(profs_exc,thermo_depths, all.x=T)
+
+# Determine DO + temp exc
+profs_exc$do_temp_exc=0
+profs_exc$do_temp_exc[profs_exc$do_exc==1 & profs_exc$temp_exc==1]=1
+
+test=profs_exc[profs_exc$ActivityIdentifier=="UTAHDWQ_WQX-BORFG061615-4938550-0617-Pr-F",]
+
+assessOneProfile=function(x){
+	x=x[order(x$Profile.depth),]
+
+	pct10=ceiling(dim(x)[1] *0.1)
+	do_exc_cnt=sum(x$do_exc)
+	temp_exc_cnt=sum(x$temp_exc)
+	pH_exc_cnt=sum(x$pH_exc)
+	pH_asmnt=ifelse(pH_exc_cnt<=pct10,"FS","NS")
+
+	rles=rle(x$do_temp_exc)
+	strat=data.frame(rles$lengths, rles$values)
+	strat=within(strat,{
+		bottom_index=cumsum(rles$lengths)
+		bottom_depth=x$Profile.depth[bottom_index]
+		top_index=bottom_index-rles.lengths+1
+		top_depth=x$Profile.depth[top_index]
+		layer_width=bottom_depth-top_depth
+	})
+	
+	strat		
+	max_hab_width=max(strat$layer_width[strat$rles.values==0])
+
+	if(x$stratified[1]==1 & max(x$Profile.depth)>3){ #stratified
+		do_temp_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
+		do_asmnt=as.factor(NA)
+		temp_asmnt=as.factor(NA)
+	
+	}else{ #non-stratified
+		do_temp_asmnt=as.factor(NA)
+		temp_asmnt=ifelse(temp_exc_cnt>pct10 & temp_exc_cnt>=2,"NS","FS")
+		do_asmnt=ifelse(do_exc_cnt>pct10 & do_exc_cnt>=2,"NS","FS")
+	}
+
+	asmnt=data.frame(max_hab_width,do_temp_asmnt,do_exc_cnt,do_asmnt,temp_exc_cnt,temp_asmnt,pH_exc_cnt,pH_asmnt,pct10)
+	
+	return(asmnt)
+}
+
+test2=assessOneProfile(test)
+class(test2$do_temp_asmnt)
+
+profile_asmnts=plyr::ddply(profs_exc,
+						  c("BeneficialUse","BEN_CLASS","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","AU_NAME"),
+						  .fun=assessOneProfile)
+
+profile_asmnts=merge(profile_asmnts, thermo_depths)
+
+profile_asmnts[c("do_temp_asmnt","do_asmnt","temp_asmnt","pH_asmnt")]=lapply(profile_asmnts[c("do_temp_asmnt","do_asmnt","temp_asmnt","pH_asmnt")], factor, 
+            levels=c("NS","FS","idE","idNE"))
+
+head(profile_asmnts)
+
+head(profile_asmnts[profile_asmnts$AU_NAME=="Utah Lake",])
+plot(-1*Profile.depth~Temperature..water, profs_exc[profs_exc$ActivityIdentifier=="UTAHDWQ_WQX-LAKES2015-4917310-0709-Pr-F",])
+
+# Flatten assessments
+profile_asmnts_flat=reshape2::melt(profile_asmnts,nar.rm=T,value.name="AssessCat",
+								   id.vars=c("ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS"),
+								   measure.vars=c("do_temp_asmnt","do_asmnt","temp_asmnt","pH_asmnt"))
+
+# Rename Variables
+profile_asmnts_flat=within(profile_asmnts_flat,{
+	R3172ParameterName=as.character(NA)
+	R3172ParameterName[variable=="do_temp_asmnt"]="DO-temperature habitat profile width"
+	R3172ParameterName[variable=="do_asmnt"]="Minimum Dissolved Oxygen"
+	R3172ParameterName[variable=="temp_asmnt"]="Temperature, water"
+	R3172ParameterName[variable=="pH_asmnt"]="pH"
+})
+profile_asmnts_flat=profile_asmnts_flat[,names(profile_asmnts_flat)!="variable"]
 
 
+# Roll up to site level (MLID, use, param), removing ActivityIdentifier & date
+profile_asmnts_rolledUp=rollUp(data="profile_asmnts_flat", group_vars=c("IR_MLID","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS"), expand=F)
 
-#
+# Gather objects to return
+profile_asmnts_individual=profile_asmnts
+profs_exc=dplyr::rename(profs_exc,DO_mgL="Minimum.Dissolved.Oxygen", Temp_degC="Temperature..water", Depth_m="Profile.depth",Thermocline_depth_m="tc_depth_m")
+profiles_wide=profs_exc
 
+result=list(profile_asmnts_rolledUp=profile_asmnts_rolledUp,profile_asmnts_individual=profile_asmnts_individual,profiles_wide=profiles_wide, profile_criteria=crit)
 
-
-
-
-
-
-
-
-
-
-return(profile_asmnts)
+return(result)
 
 }
 
