@@ -20,18 +20,27 @@ SeasonEndDate="10-31"
 rec_season = TRUE
 
 assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31"){
-  # Create list object to hold assessments
-  ecoli_assessments <- list()
   
+  if(all_scenarios){
+  # Create list object to hold assessments
+  ecoli_assessments <- list() 
+  }
+
   # Geometric mean function
   gmean=function(x){exp(mean(log(x)))}
   
+  # Obtain unique use/criterion 
+  uses_stds <- unique(data_raw[c("BeneficialUse","CriterionLabel","NumericCriterion")])
+  
+  # Remove duplicates from data
+  data_raw <- data_raw[,!names(data_raw)%in%c("AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","CriterionLabel","NumericCriterion")]
+  data_raw <- unique(data_raw)
+  
   # Convert dates to R dates
-  data_raw$ActivityStartDate=as.Date(data_raw$ActivityStartDate,format='%Y-%m-%d')
+  data_raw$ActivityStartDate=as.Date(data_raw$ActivityStartDate,format='%m/%d/%Y')
   
   # Create year column for scenario calculations
   data_raw$Year=year(data_raw$ActivityStartDate)
-  
   
   # Restrict assessments to data collected during recreation season.
   if(rec_season){
@@ -40,7 +49,6 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
                       &month(data_raw$ActivityStartDate)<=month(as.Date(SeasonEndDate,format='%m-%d'))
                       &day(data_raw$ActivityStartDate)<=day(as.Date(SeasonEndDate,format='%m-%d')),]
   }
-  
   
   # Substitute numbers for ND and OD limits and aggregate to daily values.
   data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
@@ -58,44 +66,33 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
   
 ##### SCENARIO A #####
   
-  # Restrict to records without aggregating function (used for geometric means in Scenarios B and C)
-  data_processed_max <- data_processed[is.na(data_processed$AsmntAggFun),]
-  
-  # Aggregate by rec season year and determine max exceedance count for Scenario A
-  data_48hr_check <- aggregate(ActivityStartDate~IR_MLID+BeneficialUse+Year, data=data_processed_max, FUN='maxSamps48hr')
-  names(data_48hr_check)[names(data_48hr_check)=="ActivityStartDate"]<- "Ncount"
-  data_48hr_check$ExcCountLim = ifelse(data_48hr_check$Ncount>=5,ceiling(data_48hr_check$Ncount*.1),1)
-  
-  data_ScenA <- merge(data_48hr_check, data_processed_max, all=TRUE)
-  data_ScenA$ExcCount = 0
-  data_ScenA$ExcCount[data_ScenA$IR_Value>data_ScenA$NumericCriterion] = 1
-  
-  # Obtain Scenario A Exc Counts for each MLID/Use/Year
-  ScenarioA_agg <- aggregate(ExcCount~IR_MLID+BeneficialUse+Year+Ncount+ExcCountLim, data=data_ScenA, FUN=sum)
-  ScenarioA_agg$Cat <- NA
-  
-  ScenarioA <- within(ScenarioA_agg,{
-    Scenario = "A"
-    Cat[Ncount<5&ExcCount>ExcCountLim] = "idE"
-    Cat[Ncount<5&ExcCount<=ExcCountLim] = "idNE"
-    Cat[Ncount>=5&ExcCount<=ExcCountLim] = "ScenB"
-    Cat[Ncount>=5&ExcCount>ExcCountLim] = "NS"
-  })
-  
+  assessA = function(x){
+    out_48_hr = maxSamps48hr(x$ActivityStartDate)
+    stdcrit = uses_stds$NumericCriterion[uses_stds$BeneficialUse==x$BeneficialUse[1]&uses_stds$CriterionLabel=="max_crit"]
+    out <- x[1,c("IR_MLID","BeneficialUse","Year")]
+    out$Scenario = "A"
+    out$Ncount = length(x$ActivityStartDate)
+    out$ExcCountLim = ifelse(out_48_hr>=5,ceiling(out_48_hr*.1),1)
+    out$ExcCount = length(x$IR_Value[x$IR_Value>stdcrit])
+    if(out$Ncount<5){
+      out$Cat = ifelse(out$ExcCount>out$ExcCountLim,"idE","idNE")
+    }else{
+      out$Cat = ifelse(out$ExcCount>out$ExcCountLim,"NS","ScenB")
+    }
+    return(out)
+    }
+
 ##### SCENARIO B #####
-  
-  # Restrict to records with geomean aggregating function 
-  data_processed_gmean <- data_processed[!is.na(data_processed$AsmntAggFun),]
-  
-  # Count number of samples within each MLID/BenUse/Year
-  ncount_year <- aggregate(ActivityStartDate~IR_MLID+BeneficialUse+Year, data=data_processed_gmean, FUN=length)
-  
-  # Include only combinations with =>5 samples
-  data_ScenB <- ncount_year[ncount_year$ActivityStartDate>=5,c("IR_MLID","BeneficialUse","Year")]
-  data_ScenB <- merge(data_ScenB,data_processed_gmean, all.x=TRUE)
-  
-  # Function to (1) determine whether MLID/Use/Year data applicable to ScenB and (2) assess using ScenB  
+
   assessB <- function(x){
+    out_48_hr = maxSamps48hr(x$ActivityStartDate)
+    if(out_48_hr<5){
+      out <- x[1,c("IR_MLID","BeneficialUse","Year")]
+      out$Ncount = out_48_hr
+      out$Cat = "Not Assessed"
+      out$Scenario = "B"
+    }
+    stdcrit = uses_stds$NumericCriterion[uses_stds$BeneficialUse==x$BeneficialUse[1]&uses_stds$CriterionLabel=="30-day"]
     # Create empty vector to hold geometric means
     geomeans <- vector()
     n = 1 # counter for geomeans vector population
@@ -104,57 +101,82 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
       dmax = x$ActivityStartDate[i]+29 # create 30 day window
       samps = x[x$ActivityStartDate>=x$ActivityStartDate[i]&x$ActivityStartDate<=dmax,] # Isolate samples occurring within that window
       # Calculate geometric mean on ALL samples IF 5 or more samples are spaced at least 48 hours apart
-      if(maxSamps48hr(samps$ActivityStartDate)>=5){
-          geomeans[n] <- gmean(samps$IR_Value)
-          n=n+1
-        }
-    }
+      geomeans[i] <- ifelse(maxSamps48hr(samps$ActivityStartDate)>=5,gmean(samps$IR_Value),0)
+      }
     # Create output dataframe with MLID/Use/Year/Ncount...etc.
-    if(length(geomeans)>0){
       out <- samps[1,c("IR_MLID","BeneficialUse","Year")]
       out$Ncount = length(geomeans)
       out$ExcCountLim = 1
-      out$ExcCount = length(geomeans[geomeans>=x$NumericCriterion[1]])
-      out$Cat = ifelse(any(geomeans>=x$NumericCriterion[1]),"NS","ScenC")
+      out$ExcCount = length(geomeans[geomeans>=stdcrit])
+      out$Cat = ifelse(any(geomeans>=stdcrit),"NS","ScenC")
       out$Scenario = "B"
       return(out)
-      }else{return(NULL)}  
-    }
-  ScenarioB=ddply(.data=data_ScenB,.(IR_MLID,BeneficialUse,Year),.fun=assessB)
-
+  }
 
 ##### SCENARIO C #####
-  # Calculate geometric mean for all data by MLID/Use/YEAR
-  ScenarioC_agg <- aggregate(IR_Value~IR_MLID+BeneficialUse+Year+NumericCriterion,data=data_processed_gmean, FUN=gmean)
-  data_ScenC = merge(ScenarioC_agg, ncount_year, all.x=TRUE)
-  names(data_ScenC)[names(data_ScenC)=="ActivityStartDate"]<-"Ncount"
-  names(data_ScenC)[names(data_ScenC)=="IR_Value"]<-"RecGmean"
-  data_ScenC$ExcCountLim = NA # add empty columns in anticipation for rbinding with other scenarios
-  data_ScenC$ExcCount = NA
-  data_ScenC$Cat = NA
   
-  # Determine categories based on number of samples and whether rec season geomean exceeds criterion
-  ScenarioC <- within(data_ScenC,{
-    Scenario = "C"
-    Cat[Ncount<10&RecGmean>NumericCriterion] = "idE"
-    Cat[Ncount<10&RecGmean<=NumericCriterion] = "FS"
-    Cat[Ncount>=10&RecGmean>NumericCriterion] = "NS"
-    Cat[Ncount>=10&RecGmean<=NumericCriterion] = "FS"
-  })
-  
- ScenarioC = ScenarioC[,!names(ScenarioC)%in%c("NumericCriterion","RecGmean")]
+  assessC <- function(x){
+    out_48_hr = maxSamps48hr(x$ActivityStartDate)
+    if(out_48_hr<5){
+      out <- x[1,c("IR_MLID","BeneficialUse","Year")]
+      out$Ncount = out_48_hr
+      out$Cat = "Not Assessed"
+      out$Scenario = "C"
+    }else{
+      stdcrit = uses_stds$NumericCriterion[uses_stds$BeneficialUse==x$BeneficialUse[1]&uses_stds$CriterionLabel=="30-day"]
+      out <- x[1,c("IR_MLID","BeneficialUse","Year")]
+      out$Scenario = "C"
+      out$Ncount = length(x$ActivityStartDate)
+      geomean <- gmean(x$IR_Value)
+      if(out$Ncount<10){
+        out$Cat = ifelse(geomean>stdcrit,"idE","idNE")
+      }else{
+        out$Cat = ifelse(geomean>stdcrit,"NS","FS")
+      }
+    }
+    return(out)
+  }
   
 ##### COMBINE SCENARIOS ####
- ABC_assessments <- rbind(ScenarioA,ScenarioB,ScenarioC)
- 
- ecoli_assessments$ABC_Scenarios = ABC_assessments
- 
-#### ROLL UP TO SITE ASSESSMENTS ####
- 
- 
   
+    ScenA = ddply(.data=data_processed,.(IR_MLID,BeneficialUse,Year),.fun=assessA)
+    ScenB = ddply(.data=data_processed,.(IR_MLID,BeneficialUse,Year),.fun=assessB)
+    ScenC = ddply(.data=data_processed,.(IR_MLID,BeneficialUse,Year),.fun=assessC)
+
+    ecoli_assessments$ScenABC = bind_rows(ScenA,ScenB,ScenC)
+
+## Rank Scenarios ##
   
-  ####################
+  ScenABC = ecoli_assessments$ScenABC
+  ScenABC = ScenABC[!(ScenABC$Cat=="ScenB"|ScenABC$Cat=="ScenC"|ScenABC$Cat=="Not Assessed"),]
+  ScenABC$S.rank = 3
+  ScenABC$S.rank[ScenABC$Scenario=="B"] = 2
+  ScenABC$S.rank[ScenABC$Scenario=="C"] = 1
+  
+  ## Roll up by scenario ##
+  
+  ScenABC_agg <- aggregate(S.rank~IR_MLID+BeneficialUse+Year, data=ScenABC, FUN=max)
+  ScenABC_agg$Scenario = "A"
+  ScenABC_agg$Scenario[ScenABC_agg$S.rank==2]="B"
+  ScenABC_agg$Scenario[ScenABC_agg$S.rank==1]="C"
+  ScenABC_assess <- merge(ScenABC_agg, ScenABC, all.x=TRUE)
+  ScenABC_assess = ScenABC_assess[,!names(ScenABC_assess)%in%c("S.rank")]
+
+
+ 
+ 
+ ABC_assessments_lim <- within(ABC_assessments_lim,{
+   # Rank categories numerically
+   Cat1[Cat=="FS"]<-1
+   Cat1[Cat=="idNE"]<-2
+   Cat1[Cat=="idE"]<-3
+   Cat1[Cat=="NS"]<-4
+ })
+ 
+ 
+ 
+ 
+ ####################
   ######MLIDYr_rollup#
   #Rolls up assessments for MLIDs w/ multiple years
   #Categories: 5>3A>3E>2
@@ -406,4 +428,65 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
 ##rolledup=data.frame(rolledup,row.names=NULL)
 ##return(rolledup)
 #
-#
+#####################ELISE OLD CODE###############################
+# Restrict to records without aggregating function (used for geometric means in Scenarios B and C)
+# Aggregate by rec season year and determine max exceedance count for Scenario A
+# data_48hr_check <- aggregate(ActivityStartDate~IR_MLID+BeneficialUse+Year, data=data_processed_max, FUN='maxSamps48hr')
+# names(data_48hr_check)[names(data_48hr_check)=="ActivityStartDate"]<- "Ncount"
+# data_48hr_check$ExcCountLim = ifelse(data_48hr_check$Ncount>=5,ceiling(data_48hr_check$Ncount*.1),1)
+# 
+# data_ScenA <- merge(data_48hr_check, data_processed_max, all=TRUE)
+# data_ScenA$ExcCount = 0
+# data_ScenA$ExcCount[data_ScenA$IR_Value>data_ScenA$NumericCriterion] = 1
+# 
+# # Obtain Scenario A Exc Counts for each MLID/Use/Year
+# ScenarioA_agg <- aggregate(ExcCount~IR_MLID+BeneficialUse+Year+Ncount+ExcCountLim, data=data_ScenA, FUN=sum)
+# ScenarioA_agg$Cat <- NA
+# 
+# ScenarioA <- within(ScenarioA_agg,{
+#   Scenario = "A"
+#   Cat[Ncount<5&ExcCount>ExcCountLim] = "idE"
+#   Cat[Ncount<5&ExcCount<=ExcCountLim] = "idNE"
+#   Cat[Ncount>=5&ExcCount<=ExcCountLim] = "ScenB"
+#   Cat[Ncount>=5&ExcCount>ExcCountLim] = "NS"
+# })
+
+# ScenA_only <- ScenarioA[!ScenarioA$Cat=="ScenB",] # Assessed in ScenA (not FS)
+# ScenB_mlids <- ScenarioA$IR_MLID[ScenarioA$Cat=="ScenB"] # Sent to ScenB (FS)
+# ScenB_only <- ScenarioB[ScenarioB$IR_MLID%in%ScenB_mlids&!ScenarioB$Cat=="ScenC",] # Assessed in ScenB and not sent to ScenC
+# ScenC_mlids <- ScenarioB$IR_MLID[ScenarioB$IR_MLID%in%ScenB_mlids&!ScenarioB$IR_MLID%in%ScenA_mlids&ScenarioB$Cat=="ScenC"] # MLIDS sent to ScenC from ScenB
+# ScenC_only <- ScenarioC[ScenarioC$IR_MLID%in%ScenC_mlids,] # Assessed in ScenC
+# 
+# # Combine Scenarios
+# ABC_assessments_lim <- rbind(ScenA_only,ScenB_only,ScenC_only)
+# 
+# # Isolate those with NS cats
+# ABC_asmt_NS <- ABC_assessments_lim[ABC_assessments_lim$Cat=="NS",]
+# 
+# # Aggregate multiple years of NS cats to most recent year of NS
+# if(dim(ABC_asmt_NS)[1]>0){
+#   ABC_asmt_NS <- aggregate(Year~IR_MLID+BeneficialUse+Cat+Scenario,data=ABC_asmt_NS, FUN=max) 
+# }
+# NS_mlids <- unique(ABC_asmt_NS$IR_MLID)
+# 
+# # Remove MLIDs with NS cat(s)
+# ABC_asmt_notNS <- ABC_assessments_lim[!ABC_assessments_lim$IR_MLID%in%NS_mlids,]
+# 
+# # Isolate those with idE cats
+# ABC_asmt_idE <- ABC_asmt_notNS[ABC_asmt_notNS$Cat=="idE",]
+# 
+# # Aggregate multiple years of idE cats to most recent year of idE
+# if(dim(ABC_asmt_idE)[1]>0){
+#   ABC_asmt_idE <- aggregate(Year~IR_MLID+BeneficialUse+Cat+Scenario,data=ABC_asmt_idE, FUN=max) 
+# }
+# idE_mlids <- unique(ABC_asmt_idE$IR_MLID)
+# 
+# # Remove MLIDs with idE cat(s)
+# ABC_asmt_notidE <- ABC_asmt_notNS[!ABC_asmt_notNS$IR_MLID%in%idE_mlids,]
+# 
+# # Aggregate multiple years of idNE and FS to most recent year, and choose that designation
+# if(dim(ABC_asmt_notidE)[1]>0){
+#   ABC_asmt_support <- aggregate(Year~IR_MLID+BeneficialUse+Cat+Scenario,data=ABC_asmt_notidE, FUN=max)
+# }
+# 
+# 
