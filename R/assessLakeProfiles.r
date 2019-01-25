@@ -60,7 +60,7 @@ data_exc=within(data_exc, {
 	})
 
 # Cast to wide (note - values averaged when more than 1 value per line recorded)
-profs_long=unique(data_exc[,c("DataLoggerLine","ActivityIdentifier","ActivityStartDate","IR_MLID","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS","R3172ParameterName","IR_Value","exc")])
+profs_long=unique(data_exc[,c("DataLoggerLine","ActivityIdentifier","ActivityStartDate","IR_MLID","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS","R3172ParameterName","IR_Value","NumericCriterion","exc")])
 profs_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+R317Descrp+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse+BEN_CLASS~R3172ParameterName,
 					data=profs_long, value.var="IR_Value", fun.aggregate=mean, na.rm=T)
 exc_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+R317Descrp+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse+BEN_CLASS~R3172ParameterName,
