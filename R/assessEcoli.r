@@ -20,6 +20,9 @@ SeasonEndDate="10-31"
 rec_season = TRUE
 
 assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31"){
+  # Create list object to hold assessments
+  ecoli_assessments <- list()
+  
   # Geometric mean function
   gmean=function(x){exp(mean(log(x)))}
   
@@ -122,64 +125,33 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
 
 ##### SCENARIO C #####
   # Calculate geometric mean for all data by MLID/Use/YEAR
-  ScenarioC_agg <- aggregate(IR_Value~IR_MLID+BeneficialUse+Year,data=data_processed_gmean, FUN=gmean)
+  ScenarioC_agg <- aggregate(IR_Value~IR_MLID+BeneficialUse+Year+NumericCriterion,data=data_processed_gmean, FUN=gmean)
   data_ScenC = merge(ScenarioC_agg, ncount_year, all.x=TRUE)
   names(data_ScenC)[names(data_ScenC)=="ActivityStartDate"]<-"Ncount"
-  data_ScenC$ExcCountLim = NA
+  names(data_ScenC)[names(data_ScenC)=="IR_Value"]<-"RecGmean"
+  data_ScenC$ExcCountLim = NA # add empty columns in anticipation for rbinding with other scenarios
   data_ScenC$ExcCount = NA
+  data_ScenC$Cat = NA
   
+  # Determine categories based on number of samples and whether rec season geomean exceeds criterion
   ScenarioC <- within(data_ScenC,{
     Scenario = "C"
-    Cat[Ncount<5&ExcCount>ExcCountLim] = "idE"
-    Cat[Ncount<5&ExcCount<=ExcCountLim] = "idNE"
-    Cat[Ncount>=5&ExcCount<=ExcCountLim] = "ScenB"
-    Cat[Ncount>=5&ExcCount>ExcCountLim] = "NS"
+    Cat[Ncount<10&RecGmean>NumericCriterion] = "idE"
+    Cat[Ncount<10&RecGmean<=NumericCriterion] = "FS"
+    Cat[Ncount>=10&RecGmean>NumericCriterion] = "NS"
+    Cat[Ncount>=10&RecGmean<=NumericCriterion] = "FS"
   })
   
-  assessBC=function(data){
-    Year=data$Year[1]
-    Use=data$Use[1]
-    rec_season=format(seq(from=as.Date(paste0(Year,"-",SeasonStartDate)),to=as.Date(paste0(Year,"-",SeasonEndDate)),by=1),format="%m-%d-%Y")
-    if(Use[1]=="2A"){gmean30d_crit=std2A_30Dgmean}
-    if(Use[1]=="2B"){gmean30d_crit=std2B_30Dgmean}
-    if(Use[1]=="1C"){gmean30d_crit=std1C_30Dgmean}
-    if(dim(data)[1]<5){assess=c(paste(dim(data)[1]),"C","C")}
-    if(dim(data)[1]>=5){
-      gmean=vector(length=length(rec_season))
-      for(j in 1:length(rec_season)){
-        dmin=as.Date(rec_season[j],format='%m-%d-%Y')
-        dmax=as.Date(rec_season[j],format='%m-%d-%Y')+29
-        data_j=data[data$Date>=dmin&data$Date<=dmax,]
-        maxSamps48hr_j=maxSamps48hr(data_j)
-        if(maxSamps48hr_j>=5){gmean_j=gmean(data_j$MPN_FINAL)}else{gmean_j=0}#Note that 0s here denote no gmean calculated, not a gmean of 0
-        gmean[j]=gmean_j}
-      if(any(gmean>gmean30d_crit)==TRUE){assess=c(paste(dim(data)[1]),5,"B")}else{assess=c(paste(dim(data)[1]),"C","C")
-      }
-    }
-    if(assess[3]=="C"){
-      gmean_recseason=gmean(data$MPN_FINAL)
-      if(dim(data)[1]<10&gmean_recseason<=gmean30d_crit){assess=c(paste(dim(data)[1]),2,"C")}
-      if(dim(data)[1]<10&gmean_recseason>gmean30d_crit){assess=c(paste(dim(data)[1]),"3A","C")}
-      if(dim(data)[1]>=10&gmean_recseason<=gmean30d_crit){assess=c(paste(dim(data)[1]),2,"C")}
-      if(dim(data)[1]>=10&gmean_recseason>gmean30d_crit){assess=c(paste(dim(data)[1]),5,"C")}
-    }	
-    return(assess)
-  }
+ ScenarioC = ScenarioC[,!names(ScenarioC)%in%c("NumericCriterion","RecGmean")]
   
-  assessEColi_MLIDYr=function(data){
-    assessedA=ddply(.data=data_preprocessed,.(MLID,Year,Use),.fun=assessA)
-    colnames(assessedA)=c("MLID","Year","Use","totalSamps","Cat","Scen")
-    
-    data_bc=merge(data_preprocessed,assessedA)
-    data_bc=data_bc[data_bc$Scen=="BC",]
-    
-    assessedBC=ddply(.data=data_bc,.(MLID,Year,Use),.fun=assessBC)
-    colnames(assessedBC)=c("MLID","Year","Use","totalSamps","Cat","Scen")
-    
-    assessedA=assessedA[assessedA$Scen=="A",]
-    ecoli_assessments=rbind(assessedA,assessedBC)
-    return(ecoli_assessments)
-  }
+##### COMBINE SCENARIOS ####
+ ABC_assessments <- rbind(ScenarioA,ScenarioB,ScenarioC)
+ 
+ ecoli_assessments$ABC_Scenarios = ABC_assessments
+ 
+#### ROLL UP TO SITE ASSESSMENTS ####
+ 
+ 
   
   
   ####################
@@ -205,41 +177,8 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
   
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #Old code:
 #####################################
-# assessA=function(data){
-#   #maxSamps48hr=maxSamps48hr(data)#48 hr spacing turned off
-#   maxSamps48hr=dim(data)[1]#48 hr spacing turned off
-#   Use=data$Use[1]
-#   if(Use=="2A"){max_crit=std2A_max}
-#   if(Use=="2B"){max_crit=std2B_max}
-#   if(Use=="1C"){max_crit=std1C_max}
-#   if(maxSamps48hr<5){
-#     if(any(data$MPN_FINAL>max_crit)){assessed=c(paste(dim(data)[1]),"3A","A")
-#     }else{assessed=c(paste(dim(data)[1]),"3E","A")}
-#   }
-#   if(maxSamps48hr>=5){
-#     tenpct=ceiling(dim(data)[1]/10)
-#     if(dim(data[data$MPN_FINAL>max_crit,])[1]>tenpct){assessed=c(paste(dim(data)[1]),"5","A")
-#     }else{assessed=c(paste(dim(data)[1]),"BC","BC")}
-#   }
-#   return(assessed)	
-# }
-# 
 
 # maxSamps48hr=function(x){
 #   count=vector()
@@ -261,9 +200,71 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
 #   return(max_count)
 # }
 
+
+# assessA=function(data){
+#   #maxSamps48hr=maxSamps48hr(data)#48 hr spacing turned off
+#   maxSamps48hr=dim(data)[1]#48 hr spacing turned off
+#   Use=data$Use[1]
+#   if(Use=="2A"){max_crit=std2A_max}
+#   if(Use=="2B"){max_crit=std2B_max}
+#   if(Use=="1C"){max_crit=std1C_max}
+#   if(maxSamps48hr<5){
+#     if(any(data$MPN_FINAL>max_crit)){assessed=c(paste(dim(data)[1]),"3A","A")
+#     }else{assessed=c(paste(dim(data)[1]),"3E","A")}
+#   }
+#   if(maxSamps48hr>=5){
+#     tenpct=ceiling(dim(data)[1]/10)
+#     if(dim(data[data$MPN_FINAL>max_crit,])[1]>tenpct){assessed=c(paste(dim(data)[1]),"5","A")
+#     }else{assessed=c(paste(dim(data)[1]),"BC","BC")}
+#   }
+#   return(assessed)	
+# }
+# 
+# assessBC=function(data){
+#   Year=data$Year[1]
+#   Use=data$Use[1]
+#   rec_season=format(seq(from=as.Date(paste0(Year,"-",SeasonStartDate)),to=as.Date(paste0(Year,"-",SeasonEndDate)),by=1),format="%m-%d-%Y")
+#   if(Use[1]=="2A"){gmean30d_crit=std2A_30Dgmean}
+#   if(Use[1]=="2B"){gmean30d_crit=std2B_30Dgmean}
+#   if(Use[1]=="1C"){gmean30d_crit=std1C_30Dgmean}
+#   if(dim(data)[1]<5){assess=c(paste(dim(data)[1]),"C","C")}
+#   if(dim(data)[1]>=5){
+#     gmean=vector(length=length(rec_season))
+#     for(j in 1:length(rec_season)){
+#       dmin=as.Date(rec_season[j],format='%m-%d-%Y')
+#       dmax=as.Date(rec_season[j],format='%m-%d-%Y')+29
+#       data_j=data[data$Date>=dmin&data$Date<=dmax,]
+#       maxSamps48hr_j=maxSamps48hr(data_j)
+#       if(maxSamps48hr_j>=5){gmean_j=gmean(data_j$MPN_FINAL)}else{gmean_j=0}#Note that 0s here denote no gmean calculated, not a gmean of 0
+#       gmean[j]=gmean_j}
+#     if(any(gmean>gmean30d_crit)==TRUE){assess=c(paste(dim(data)[1]),5,"B")}else{assess=c(paste(dim(data)[1]),"C","C")
+#     }
+#   }
+#   if(assess[3]=="C"){
+#     gmean_recseason=gmean(data$MPN_FINAL)
+#     if(dim(data)[1]<10&gmean_recseason<=gmean30d_crit){assess=c(paste(dim(data)[1]),2,"C")}
+#     if(dim(data)[1]<10&gmean_recseason>gmean30d_crit){assess=c(paste(dim(data)[1]),"3A","C")}
+#     if(dim(data)[1]>=10&gmean_recseason<=gmean30d_crit){assess=c(paste(dim(data)[1]),2,"C")}
+#     if(dim(data)[1]>=10&gmean_recseason>gmean30d_crit){assess=c(paste(dim(data)[1]),5,"C")}
+#   }	
+#   return(assess)
+# }
 #
 #
-#
+# assessEColi_MLIDYr=function(data){
+# assessedA=ddply(.data=data_preprocessed,.(MLID,Year,Use),.fun=assessA)
+# colnames(assessedA)=c("MLID","Year","Use","totalSamps","Cat","Scen")
+# 
+# data_bc=merge(data_preprocessed,assessedA)
+# data_bc=data_bc[data_bc$Scen=="BC",]
+# 
+# assessedBC=ddply(.data=data_bc,.(MLID,Year,Use),.fun=assessBC)
+# colnames(assessedBC)=c("MLID","Year","Use","totalSamps","Cat","Scen")
+# 
+# assessedA=assessedA[assessedA$Scen=="A",]
+# ecoli_assessments=rbind(assessedA,assessedBC)
+# return(ecoli_assessments)
+# }
 #
 #makeKey=function(data){
 #	data=cbind(data,uses)
