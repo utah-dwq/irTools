@@ -20,11 +20,8 @@ SeasonEndDate="10-31"
 rec_season = TRUE
 
 assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31"){
-  
-  if(all_scenarios){
-  # Create list object to hold assessments
+
   ecoli_assessments <- list() 
-  }
 
   # Geometric mean function
   gmean=function(x){exp(mean(log(x)))}
