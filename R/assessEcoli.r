@@ -13,11 +13,11 @@ require(lubridate)
 
 
 #data_raw = prepped_data$ecoli
-data_raw <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
+# data_raw <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
 #Define rec season ("mm-dd"):
-SeasonStartDate="05-01"
-SeasonEndDate="10-31"
-rec_season = TRUE
+# SeasonStartDate="05-01"
+# SeasonEndDate="10-31"
+# rec_season = TRUE
 
 assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31"){
 
@@ -72,9 +72,9 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
     out$ExcCountLim = ifelse(out_48_hr>=5,ceiling(out_48_hr*.1),1)
     out$ExcCount = length(x$IR_Value[x$IR_Value>stdcrit])
     if(out$Ncount<5){
-      out$Cat = ifelse(out$ExcCount>out$ExcCountLim,"idE","idNE")
+      out$IR_Cat = ifelse(out$ExcCount>out$ExcCountLim,"idE","idNE")
     }else{
-      out$Cat = ifelse(out$ExcCount>out$ExcCountLim,"NS","ScenB")
+      out$IR_Cat = ifelse(out$ExcCount>out$ExcCountLim,"NS","ScenB")
     }
     return(out)
     }
@@ -86,7 +86,7 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
     if(out_48_hr<5){
       out <- x[1,c("IR_MLID","BeneficialUse","Year")]
       out$Ncount = out_48_hr
-      out$Cat = "Not Assessed"
+      out$IR_Cat = "Not Assessed"
       out$Scenario = "B"
     }
     stdcrit = uses_stds$NumericCriterion[uses_stds$BeneficialUse==x$BeneficialUse[1]&uses_stds$CriterionLabel=="30-day"]
@@ -105,7 +105,7 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
       out$Ncount = length(geomeans)
       out$ExcCountLim = 1
       out$ExcCount = length(geomeans[geomeans>=stdcrit])
-      out$Cat = ifelse(any(geomeans>=stdcrit),"NS","ScenC")
+      out$IR_Cat = ifelse(any(geomeans>=stdcrit),"NS","ScenC")
       out$Scenario = "B"
       return(out)
   }
@@ -117,7 +117,7 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
     if(out_48_hr<5){
       out <- x[1,c("IR_MLID","BeneficialUse","Year")]
       out$Ncount = out_48_hr
-      out$Cat = "Not Assessed"
+      out$IR_Cat = "Not Assessed"
       out$Scenario = "C"
     }else{
       stdcrit = uses_stds$NumericCriterion[uses_stds$BeneficialUse==x$BeneficialUse[1]&uses_stds$CriterionLabel=="30-day"]
@@ -126,9 +126,9 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
       out$Ncount = length(x$ActivityStartDate)
       geomean <- gmean(x$IR_Value)
       if(out$Ncount<10){
-        out$Cat = ifelse(geomean>stdcrit,"idE","idNE")
+        out$IR_Cat = ifelse(geomean>stdcrit,"idE","idNE")
       }else{
-        out$Cat = ifelse(geomean>stdcrit,"NS","FS")
+        out$IR_Cat = ifelse(geomean>stdcrit,"NS","FS")
       }
     }
     return(out)
@@ -145,7 +145,7 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
 ## Rank Scenarios ##
   
   ScenABC = ecoli_assessments$ScenABC
-  ScenABC = ScenABC[!(ScenABC$Cat=="ScenB"|ScenABC$Cat=="ScenC"|ScenABC$Cat=="Not Assessed"),]
+  ScenABC = ScenABC[!(ScenABC$IR_Cat=="ScenB"|ScenABC$IR_Cat=="ScenC"|ScenABC$IR_Cat=="Not Assessed"),]
   ScenABC$S.rank = 3
   ScenABC$S.rank[ScenABC$Scenario=="B"] = 2
   ScenABC$S.rank[ScenABC$Scenario=="C"] = 1
@@ -159,45 +159,41 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
   ScenABC_assess <- merge(ScenABC_agg, ScenABC, all.x=TRUE)
   ScenABC_assess = ScenABC_assess[,!names(ScenABC_assess)%in%c("S.rank")]
 
-
+  # Merge data back to original dataset
+  data_raw1 <- unique(data_raw[,c("IR_MLID","ASSESS_ID","BeneficialUse","BEN_CLASS","R3172ParameterName")])
  
+  ecoli.assessed <- merge(ScenABC_assess,data_raw1, all.x=TRUE)
  
- ABC_assessments_lim <- within(ABC_assessments_lim,{
-   # Rank categories numerically
-   Cat1[Cat=="FS"]<-1
-   Cat1[Cat=="idNE"]<-2
-   Cat1[Cat=="idE"]<-3
-   Cat1[Cat=="NS"]<-4
- })
- 
- 
- 
- 
- ####################
+  ecoli.site.dat <- rollUp(ecoli.assessed, group_vars=c("IR_MLID", "ASSESS_ID","BeneficialUse","R3172ParameterName"), expand_uses=TRUE, ecoli=TRUE)
+  
+  ecoli_assessments$ecoli_site_rollup <- ecoli.site.dat
+  
+  return(ecoli_assessments)
+} 
+  #Old code:
+#####################################
+  ####################
   ######MLIDYr_rollup#
   #Rolls up assessments for MLIDs w/ multiple years
   #Categories: 5>3A>3E>2
   #Input data is output from assessEColi_MLIDYr
   
-  MLIDYr_rollup=function(data){
-    ru=dcast(data,MLID+Use~Year,value.var="Cat")
-    ru[is.na(ru)]=0 #note, 0 here denotes no data for each year
-    AssessCat=vector()
-    for(n in 1:dim(ru)[1]){
-      data_n=ru[n,]
-      if(any(data_n[3:dim(data_n)[2]]==5)){assess_n=5
-      }else{if(any(data_n[3:dim(data_n)[2]]=="3A")){assess_n="3A"
-      }else{if(any(data_n[3:dim(data_n)[2]]=="3E")){assess_n="3E"
-      }else{if(all(data_n[3:dim(data_n)[2]]==2)){assess_n=2}}}}
-      AssessCat=append(AssessCat,assess_n)
-    }
-    ru=cbind(ru,AssessCat)
-  }
-  
-}
-
-#Old code:
-#####################################
+#   MLIDYr_rollup=function(data){
+#     ru=dcast(data,MLID+Use~Year,value.var="Cat")
+#     ru[is.na(ru)]=0 #note, 0 here denotes no data for each year
+#     AssessCat=vector()
+#     for(n in 1:dim(ru)[1]){
+#       data_n=ru[n,]
+#       if(any(data_n[3:dim(data_n)[2]]==5)){assess_n=5
+#       }else{if(any(data_n[3:dim(data_n)[2]]=="3A")){assess_n="3A"
+#       }else{if(any(data_n[3:dim(data_n)[2]]=="3E")){assess_n="3E"
+#       }else{if(all(data_n[3:dim(data_n)[2]]==2)){assess_n=2}}}}
+#       AssessCat=append(AssessCat,assess_n)
+#     }
+#     ru=cbind(ru,AssessCat)
+#   }
+#   
+# }
 
 # maxSamps48hr=function(x){
 #   count=vector()

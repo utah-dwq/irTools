@@ -5,12 +5,14 @@
 #' @param data A prepped list of water quality portal data objects with exceedances counted and assessed for each site, use, and R3172 parameter. Will likely contain toxics assessed, conventionals assessed, lakes assessed, etc.
 #' @param group_vars Vector of column names on which to group data for assessment rollups. Defaults to subset by ASSESS_ID, BeneficialUse, and R3172ParameterName.
 #' @param expand_uses Logical. If TRUE (default), uses are expanded in the output to include all uses associated with group_vars, including unassessed groups which are marked as 'NA' in output dataframe column AssessCat.  If FALSE, only assessed groups are included in the output.
+#' @param ecoli Logical. If TRUE, skips step to combine lists of prepped data into one dataframe. Defaults to FALSE.
+
 #' @return Returns dataframe with assessment categories for each AU/BenUse/R3172ParameterName.
 #' @importFrom plyr rbind.fill
 #' @importFrom reshape2 colsplit
 
 #' @export
-rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172ParameterName"), expand_uses=TRUE){
+rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172ParameterName"), expand_uses=TRUE, ecoli=FALSE){
 
 #### Testing setup
 #data=c("toxics_assessed", "conv_assessed")
@@ -19,8 +21,11 @@ rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172Paramete
 ####
 
 # Combine all assessed data into one dataframe for roll up
-dat=mget(data, inherits = TRUE)
-dat_all=do.call(plyr::rbind.fill, dat)
+if(ecoli){
+  dat_all=data
+}else{dat=mget(data, inherits = TRUE)
+dat_all=do.call(plyr::rbind.fill, dat)}
+
 
 if(expand_uses & !"BEN_CLASS" %in% group_vars){group_vars=append(group_vars, "BEN_CLASS")}
 
@@ -32,8 +37,9 @@ if(expand_uses & !"BEN_CLASS" %in% group_vars){group_vars=append(group_vars, "BE
 dat_all$AssessCat[dat_all$IR_Cat=="NS"]<-5
 #dat_all$AssessCat[dat_all$IR_Cat=="TMDLa"]<- 4 - (JV) turning off TMDL approved for now. Not sure if we want to include this here yet or as a sort of "secondary review" type step
 dat_all$AssessCat[dat_all$IR_Cat=="idE"]<-3
-dat_all$AssessCat[dat_all$IR_Cat=="idNE"]<-2
-dat_all$AssessCat[dat_all$IR_Cat=="FS"]<-1
+dat_all$AssessCat[dat_all$IR_Cat=="FS"]<-2
+dat_all$AssessCat[dat_all$IR_Cat=="idNE"]<-1
+
 
 # Turn group_vars into a formula argument
 subs_eq <- paste(group_vars, collapse="+")
@@ -55,10 +61,10 @@ rollup=within(rollup,{
 	AssessCat[AssessCat=="1"]="FS"
 })
 
-rollup[rollup$ASSESS_ID=="UT14070003-001_00",]
-rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4925218",]
-rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4925440",]
-rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4901100",]
+# rollup[rollup$ASSESS_ID=="UT14070003-001_00",]
+# rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4925218",]
+# rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4925440",]
+# rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4901100",]
 
 if(expand_uses){
 	#Expand comma separated uses (BEN_CLASS)
@@ -85,10 +91,10 @@ if(expand_uses){
 
 }
 
-head(rollup[rollup$SampleCount>=10,])
-rollup[rollup$R3172ParameterName=="Aluminum" & rollup$AssessCat=="NS",]
-toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929010" & toxics$R3172ParameterName=="Aluminum",]
-toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929100" & toxics$R3172ParameterName=="Aluminum",]
+# head(rollup[rollup$SampleCount>=10,])
+# rollup[rollup$R3172ParameterName=="Aluminum" & rollup$AssessCat=="NS",]
+# toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929010" & toxics$R3172ParameterName=="Aluminum",]
+# toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929100" & toxics$R3172ParameterName=="Aluminum",]
 
 
 
