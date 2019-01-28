@@ -25,7 +25,7 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb,
 
 
 #
-##SETUP#####
+###SETUP#####
 #rm(list=ls(all=TRUE))
 #load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
 #data=data_crit
@@ -36,18 +36,15 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb,
 #crit_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\IR_uses_standards.xlsx"
 #cf_formulas_sheetname="cf_formulas"
 #startRow_formulas=1
-########
+#######
 
 result=list()
 
 reasons=data.frame(data[0,])
 reasons$reason=character(0)
 
-
-
 #Remove records w/o criteria (in case they have been optionally passed through assignCriteria - these cause errors in aggregation steps as they do not have aggregation functions specified)
-data=data[!is.na(data$NumericCriterion) | data$BeneficialUse=="CF",]
-
+data=data[!is.na(data$NumericCriterion) | data$BeneficialUse=="CF" | data$R3172ParameterName=="Profile depth",]
 
 ####################################
 ######Activity type check###########
@@ -268,6 +265,8 @@ acc_data=acc_data[,c("OrganizationIdentifier","ActivityIdentifier","ActivityStar
 ######
 ###Extract lake profiles
 result$lake_profiles=acc_data[!is.na(acc_data$DataLoggerLine) & acc_data$BeneficialUse %in% c("3A","3B","3C","3D","3E"),]
+
+table(result$lake_profiles$R3172ParameterName)
 
 #Remove profiles from acc_data
 acc_data=acc_data[!acc_data$ActivityIdentifier %in% result$lake_profiles$ActivityIdentifier,]
