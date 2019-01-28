@@ -54,7 +54,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   # Substitute numbers for ND and OD limits and aggregate to daily values.
   data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
   data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
-  daily_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_raw,FUN='gmean')
+  daily_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_raw,FUN=function(x){exp(mean(log(x)))})
   data_processed <- merge(daily_agg,data_raw, all.x=TRUE)
   
   # maxSamps48hr function - counts the maximum number of samples collected over the rec season that were not collected within 48 hours of another sample(s).
