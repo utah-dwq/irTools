@@ -28,8 +28,8 @@
 fillMaskedValues = function(results, detquantlim, translation_wb, detsheetname="detLimitTypeTable", unitsheetname="unitConvTable", detstartRow=3, unitstartRow=1, unitstartCol=1, lql_fac=0.5, uql_fac=1){
 
 
-####TESTING SETUP
-####
+#####TESTING SETUP
+#####
 # 
 # results=merged_results
 # detquantlim=detquantlim
@@ -41,8 +41,8 @@ fillMaskedValues = function(results, detquantlim, translation_wb, detsheetname="
 # detstartRow=3
 # unitstartRow=1
 # unitstartCol=1
-#######
-#######
+########
+########
 
 
 ###Selecting upper and lower limit types by translation wb rankings
@@ -315,6 +315,9 @@ results_dql[!is.na(results_dql$ResultMeasureValue)&
 			results_dql$ResultMeasureValue>0
 			,"IR_DetCond"] = "DET"
 
+# Allow zero values in profile depth measures
+results_dql[results_dql$ResultMeasureValue==0 & results_dql$CharacteristicName=="Depth, data-logger (ported)","IR_DetCond"] = "DET"
+
 print("Detection condition counts:")
 print(table(results_dql$IR_DetCond, exclude=NULL))
 
@@ -335,7 +338,7 @@ results_dql[results_dql$IR_DetCond=="OD","IR_Unit"]=as.character(results_dql[res
 results_dql[results_dql$IR_DetCond=="NRV","IR_Value"]=NA
 results_dql[results_dql$IR_DetCond=="NRV","IR_Unit"]=NA
 
-return(results_dql)
 
+return(results_dql)
 
 }

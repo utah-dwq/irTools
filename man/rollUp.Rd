@@ -2,21 +2,23 @@
 % Please edit documentation in R/rollUp.R
 \name{rollUp}
 \alias{rollUp}
-\title{Scale up toxics and conventionals assessments to Assessment Units}
+\title{Summarize assessments to different spatial resolutions}
 \usage{
 rollUp(data, group_vars = c("ASSESS_ID", "BeneficialUse",
-  "R3172ParameterName"), expand_uses = TRUE)
+  "R3172ParameterName"), expand_uses = TRUE, print = TRUE)
 }
 \arguments{
-\item{data}{A prepped list of water quality portal data objects with exceedances counted and assessed for each site, use, and R3172 parameter. Will likely contain toxics assessed, conventionals assessed, lakes assessed, etc.}
+\item{data}{A list of assessment output objects to be rolled up to a different spatial resolution.}
 
-\item{group_vars}{Vector of column names on which to group data for assessment rollups. Defaults to subset by ASSESS_ID, BeneficialUse, and R3172ParameterName.}
+\item{group_vars}{Vector of column names on which to group data for assessment rollups. Defaults to aggregate by ASSESS_ID, BeneficialUse, and R3172ParameterName.}
 
 \item{expand_uses}{Logical. If TRUE (default), uses are expanded in the output to include all uses associated with group_vars, including unassessed groups which are marked as 'NA' in output dataframe column AssessCat.  If FALSE, only assessed groups are included in the output.}
+
+\item{print}{Logical. If TRUE (default) print summary table of applicable assessment categories & parameters.}
 }
 \value{
 Returns dataframe with assessment categories for each AU/BenUse/R3172ParameterName.
 }
 \description{
-Compares water quality result values to standards to calculates sample and exceedance counts. This is geared towards conventional and toxic assessments.
+Summarizes and aggregates assessments at one spatial resolution to another spatial resolution. For example, a collection of assessments conducted at the site/use/parameter level can be rolled up to the AU/use/parameter level or to the AU/use/level.
 }

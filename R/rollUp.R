@@ -1,26 +1,27 @@
-#' Scale up toxics and conventionals assessments to Assessment Units
+#' Summarize assessments to different spatial resolutions
 #'
-#' Compares water quality result values to standards to calculates sample and exceedance counts. This is geared towards conventional and toxic assessments.
+#' Summarizes and aggregates assessments at one spatial resolution to another spatial resolution. For example, a collection of assessments conducted at the site/use/parameter level can be rolled up to the AU/use/parameter level or to the AU/use/level.
 #'
-#' @param data A prepped list of water quality portal data objects with exceedances counted and assessed for each site, use, and R3172 parameter. Will likely contain toxics assessed, conventionals assessed, lakes assessed, etc.
-#' @param group_vars Vector of column names on which to group data for assessment rollups. Defaults to subset by ASSESS_ID, BeneficialUse, and R3172ParameterName.
+#' @param data A list of assessment output objects to be rolled up to a different spatial resolution.
+#' @param group_vars Vector of column names on which to group data for assessment rollups. Defaults to aggregate by ASSESS_ID, BeneficialUse, and R3172ParameterName.
 #' @param expand_uses Logical. If TRUE (default), uses are expanded in the output to include all uses associated with group_vars, including unassessed groups which are marked as 'NA' in output dataframe column AssessCat.  If FALSE, only assessed groups are included in the output.
+#' @param print Logical. If TRUE (default) print summary table of applicable assessment categories & parameters.
 #' @return Returns dataframe with assessment categories for each AU/BenUse/R3172ParameterName.
 #' @importFrom plyr rbind.fill
 #' @importFrom reshape2 colsplit
 
 #' @export
-rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172ParameterName"), expand_uses=TRUE){
+rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172ParameterName"), expand_uses=TRUE, print=TRUE){
 
-#### Testing setup
-#data=c("toxics_assessed", "conv_assessed")
+##### Testing setup
+#data=list(conv_assessed, toxics_assessed)
 #group_vars=c("ASSESS_ID","AU_NAME", "IR_MLID", "BeneficialUse","R3172ParameterName", "CriterionLabel", "SampleCount", "ExcCount")
 #expand_uses=FALSE
-####
+#####
 
 # Combine all assessed data into one dataframe for roll up
-dat=mget(data, inherits = TRUE)
-dat_all=do.call(plyr::rbind.fill, dat)
+#dat=mget(data, inherits = TRUE)
+dat_all=do.call(plyr::rbind.fill, data)
 
 if(expand_uses & !"BEN_CLASS" %in% group_vars){group_vars=append(group_vars, "BEN_CLASS")}
 
@@ -90,7 +91,7 @@ rollup[rollup$R3172ParameterName=="Aluminum" & rollup$AssessCat=="NS",]
 toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929010" & toxics$R3172ParameterName=="Aluminum",]
 toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929100" & toxics$R3172ParameterName=="Aluminum",]
 
-
+if(print){
 
 if("BeneficialUse" %in% group_vars){
 	print("Beneficial use assessment category frequencies:")
@@ -102,6 +103,7 @@ if("R3172ParameterName" %in% group_vars){
 	print(table(rollup$R3172ParameterName[rollup$AssessCat=="NS"]))
 }
 
+}
 
 
 
