@@ -5,14 +5,12 @@
 #' @param data A prepped list of water quality portal data objects with exceedances counted and assessed for each site, use, and R3172 parameter. Will likely contain toxics assessed, conventionals assessed, lakes assessed, etc.
 #' @param group_vars Vector of column names on which to group data for assessment rollups. Defaults to subset by ASSESS_ID, BeneficialUse, and R3172ParameterName.
 #' @param expand_uses Logical. If TRUE (default), uses are expanded in the output to include all uses associated with group_vars, including unassessed groups which are marked as 'NA' in output dataframe column AssessCat.  If FALSE, only assessed groups are included in the output.
-#' @param ecoli Logical. If TRUE, skips step to combine lists of prepped data into one dataframe. Defaults to FALSE.
-
 #' @return Returns dataframe with assessment categories for each AU/BenUse/R3172ParameterName.
 #' @importFrom plyr rbind.fill
 #' @importFrom reshape2 colsplit
 
 #' @export
-rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172ParameterName"), expand_uses=TRUE, ecoli=FALSE){
+rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172ParameterName"), expand_uses=TRUE){
 
 #### Testing setup
 #data=c("toxics_assessed", "conv_assessed")
@@ -21,10 +19,8 @@ rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172Paramete
 ####
 
 # Combine all assessed data into one dataframe for roll up
-if(ecoli){
-  dat_all=data
-}else{dat=mget(data, inherits = TRUE)
-dat_all=do.call(plyr::rbind.fill, dat)}
+dat=mget(data, inherits = TRUE)
+dat_all=do.call(plyr::rbind.fill, dat)
 
 
 if(expand_uses & !"BEN_CLASS" %in% group_vars){group_vars=append(group_vars, "BEN_CLASS")}

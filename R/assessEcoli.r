@@ -1,30 +1,34 @@
-#E Coli specific functions
+#' Assess E.coli data at the year/site level.
+#'
+#' Compares E.coli data to 30-day and max criterion standards using Scenarios A, B, and C, and assigns e. coli assessment categories to each site.
+#'
+#' @param data A prepped dataframe object (likely the ecoli object within the prepped_data list--prepped_data$ecoli) containing e.coli data at the site/use/parameter level with standards assigned. 
+#' @param SeasonStartDate A string in the form "mm-dd" to define beginning of rec season over which to perform assessments.
+#' @param SeasonEndDate A string in the form "mm-dd" to define end of rec season over which to perform assessments.
+#' @param rec_season Logical. If TRUE, restricts assessments to recreation season data.
+#' @return Returns list with two objects: assessments from all Scenarios on all data, and ecoli assessments aggregated over scenario and year and rolled up to site level.
+#' @importFrom lubridate year
+#' @importFrom lubridate month
+#' @importFrom lubridate day
+#' @importFrom plyr ddply
+#' @export
 
-#######################
-#dataPreProc
-#function for data preprocessing: subs 1 for <1 and 2420 for >2419.6, calculates site/date geomeans, trims to rec season, creates flat file (MLID+Date+Use=UID, repeats data as necessary)
-# Testing
-#load R packages
-require(lubridate)
-require(reshape2)
-require(plyr)
-require(dplyr)
-require(lubridate)
-
-
-#data_raw = prepped_data$ecoli
+## TESTING ###
 # data_raw <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
-#Define rec season ("mm-dd"):
 # SeasonStartDate="05-01"
 # SeasonEndDate="10-31"
 # rec_season = TRUE
 
-assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31"){
-
-  ecoli_assessments <- list() 
-
+assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31"){
+  
+  # Create new object for holding ecoli assessments
+  ecoli_assessments = list()
+  
+  # Read in data
+  data_raw = data
+  
   # Geometric mean function
-  gmean=function(x){exp(mean(log(x)))}
+  gmean <- function(x){exp(mean(log(x)))}
   
   # Obtain unique use/criterion 
   uses_stds <- unique(data_raw[c("BeneficialUse","CriterionLabel","NumericCriterion")])
@@ -140,9 +144,10 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
     ScenB = ddply(.data=data_processed,.(IR_MLID,BeneficialUse,Year),.fun=assessB)
     ScenC = ddply(.data=data_processed,.(IR_MLID,BeneficialUse,Year),.fun=assessC)
 
+    # Create object with all data run through all assessment scenarios
     ecoli_assessments$ScenABC = bind_rows(ScenA,ScenB,ScenC)
 
-## Rank Scenarios ##
+### Rank Scenarios ###
   
   ScenABC = ecoli_assessments$ScenABC
   ScenABC = ScenABC[!(ScenABC$IR_Cat=="ScenB"|ScenABC$IR_Cat=="ScenC"|ScenABC$IR_Cat=="Not Assessed"),]
@@ -150,7 +155,7 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
   ScenABC$S.rank[ScenABC$Scenario=="B"] = 2
   ScenABC$S.rank[ScenABC$Scenario=="C"] = 1
   
-  ## Roll up by scenario ##
+### Roll up by scenario ###
   
   ScenABC_agg <- aggregate(S.rank~IR_MLID+BeneficialUse+Year, data=ScenABC, FUN=max)
   ScenABC_agg$Scenario = "A"
@@ -164,9 +169,29 @@ assessEColi <- function(prepped_data, rec_season = TRUE, SeasonStartDate="05-01"
  
   ecoli.assessed <- merge(ScenABC_assess,data_raw1, all.x=TRUE)
  
-  ecoli.site.dat <- rollUp(ecoli.assessed, group_vars=c("IR_MLID", "ASSESS_ID","BeneficialUse","R3172ParameterName"), expand_uses=TRUE, ecoli=TRUE)
+### Roll up to site level assessments ###
   
-  ecoli_assessments$ecoli_site_rollup <- ecoli.site.dat
+  # Represent categories numerically so we can select the "max" category to define the AU
+  # Hierarchy of decision making within each subset: NS>TMDLa>idE>FS>idNE
+  ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="NS"]<-5
+  ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="idE"]<-3
+  ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="FS"]<-2
+  ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="idNE"]<-1
+  
+  ecoli.assess.agg <- aggregate(AssessCat~IR_MLID+ASSESS_ID+BeneficialUse+BEN_CLASS+R3172ParameterName, data=ecoli.assessed, FUN=max)
+  
+  names(ecoli.assess.agg)[names(ecoli.assess.agg)=="AssessCat"]<- "IR_Cat"
+  
+  #Renaming assessment categories
+  ecoli.assess.agg$IR_Cat=as.character(ecoli.assess.agg$IR_Cat)
+  ecoli.assess.agg=within(ecoli.assess.agg,{
+    IR_Cat[IR_Cat=="5"]="NS"
+    IR_Cat[IR_Cat=="3"]="idE"
+    IR_Cat[IR_Cat=="2"]="FS"
+    IR_Cat[IR_Cat=="1"]="idNE"
+  })
+  
+  ecoli_assessments$rollup2site = ecoli.assess.agg
   
   return(ecoli_assessments)
 } 
