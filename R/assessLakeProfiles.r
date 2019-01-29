@@ -15,13 +15,13 @@
 #' @importFrom plyr ddply
 
 #' @export
-assessLakeProfiles <- function(data, do_crit=list("3A"=5, "3B"=3), temp_crit=list("3A"=20, "3B"=27), uses_assessed=c("3A","3B")){
+assessLakeProfiles <- function(data, do_crit=list("3A"=4, "3B"=3), temp_crit=list("3A"=20, "3B"=27), uses_assessed=c("3A","3B")){
 
 ##### Testing setup
 #load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
 #data=prepped_data$lake_profiles
 #uses_assessed=c("3A","3B")
-#do_crit=list("3A"=5, "3B"=3)
+#do_crit=list("3A"=4, "3B"=3)
 #temp_crit=list("3A"=20, "3B"=27)
 #####
 
