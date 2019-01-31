@@ -60,7 +60,8 @@ data_exc=within(data_exc, {
 	})
 
 # Cast to wide (note - values averaged when more than 1 value per line recorded)
-profs_long=unique(data_exc[,c("DataLoggerLine","ActivityIdentifier","ActivityStartDate","IR_MLID","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS","R3172ParameterName","IR_Value","NumericCriterion","exc")])
+profs_long=unique(data_exc[,c("DataLoggerLine","ActivityIdentifier","ActivityStartDate","IR_MLID","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","AU_Type",
+							  "BeneficialUse","BEN_CLASS","R3172ParameterName","IR_Value","IR_Unit","NumericCriterion","exc")])
 profs_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+R317Descrp+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse+BEN_CLASS~R3172ParameterName,
 					data=profs_long, value.var="IR_Value", fun.aggregate=mean, na.rm=T)
 exc_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+R317Descrp+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse+BEN_CLASS~R3172ParameterName,
@@ -95,11 +96,14 @@ profs_exc=merge(profs_exc,thermo_depths, all.x=T)
 
 # Determine DO + temp exc
 profs_exc$do_temp_exc=0
-profs_exc$do_temp_exc[profs_exc$do_exc==1 & profs_exc$temp_exc==1]=1
+profs_exc$do_temp_exc[profs_exc$do_exc==1 | profs_exc$temp_exc==1]=1
+
+#######
+#test=profs_exc[profs_exc$IR_MLID=="UTAHDWQ_WQX-5936760" & profs_exc$ActivityStartDate=="2014-10-02",]
+#######
 
 assessOneProfile=function(x){
 	x=x[order(x$Profile.depth),]
-	
 	samp_count=dim(x)[1]
 	pct10=ceiling(dim(x)[1] *0.1)
 	do_exc_cnt=sum(x$do_exc)
@@ -117,9 +121,9 @@ assessOneProfile=function(x){
 		layer_width=bottom_depth-top_depth
 	})
 	
-	strat		
-	max_hab_width=max(strat$layer_width[strat$rles.values==0])
-
+	if(any(strat$rles.values==0)){
+		max_hab_width=max(strat$layer_width[strat$rles.values==0])
+	}else{max_hab_width=0}
 	if(x$stratified[1]==1 & max(x$Profile.depth)>3){ #stratified
 		do_temp_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
 		do_asmnt=as.factor(NA)
@@ -135,7 +139,6 @@ assessOneProfile=function(x){
 	
 	return(asmnt)
 }
-
 
 profile_asmnts=plyr::ddply(profs_exc,
 						  c("BeneficialUse","BEN_CLASS","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","AU_NAME","R317Descrp","IR_Lat","IR_Long"),
