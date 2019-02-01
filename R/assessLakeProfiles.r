@@ -65,7 +65,8 @@ profs_long=unique(data_exc[,c("DataLoggerLine","ActivityIdentifier","ActivitySta
 profs_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+R317Descrp+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse+BEN_CLASS~R3172ParameterName,
 					data=profs_long, value.var="IR_Value", fun.aggregate=mean, na.rm=T)
 exc_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+R317Descrp+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse+BEN_CLASS~R3172ParameterName,
-					data=profs_long, value.var="exc", fun.aggregate=max, fill=0)
+					data=profs_long, value.var="exc", fun.aggregate=max, fill=NaN)
+
 exc_wide=exc_wide[,names(exc_wide)!="Profile depth"]
 exc_wide=dplyr::rename(exc_wide,do_exc="Minimum Dissolved Oxygen", pH_exc=pH, temp_exc="Temperature, water")
 
