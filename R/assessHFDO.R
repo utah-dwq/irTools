@@ -98,12 +98,11 @@ min.do <- function(x){
 min.do.assessed <- ddply(.data=day.mins, .(IR_MLID,BeneficialUse), .fun=min.do)
 min.do.assessed$CriterionLabel = "Min DO"
 
-#### 7- and 30-DAY MEANS ####
+#### 7-DAY MEANS ####
 # Aggregate to daily averages
 day.means <- aggregate(IR_Value~R3172ParameterName+BeneficialUse+ActivityStartDate+IR_MLID+AsmntAggPeriod+NumericCriterion+CriterionUnits,data=dat.spaced, FUN=mean)
 means7d <- day.means[day.means$AsmntAggPeriod=="7",]
-x = means7d[means7d$IR_MLID=="UTAHDWQ_WQX-4991900"&means7d$BeneficialUse=="3B",]
-
+# x = means7d[means7d$IR_MLID=="UTAHDWQ_WQX-4991900"&means7d$BeneficialUse=="3B",]
 
 assess7d <- function(x){
   out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","NumericCriterion")]
@@ -118,6 +117,38 @@ assess7d <- function(x){
     m = m+1
   }
   tenpct = ceiling(length(datmean)*.1) 
+  out$Ncount = length(datmean)
+  out$ExcCount = length(datmean[datmean<out$NumericCriterion])
+  out$Cat = ifelse(out$ExcCount>tenpct,"NS","FS")
+  return(out)
 }
+
+sevday.do.assessed <- ddply(.data=means7d, .(IR_MLID,BeneficialUse), .fun=assess7d)
+
+###### 30-DAY MEANS #######
+# Aggregate to daily averages
+means30d <- day.means[day.means$AsmntAggPeriod=="30",]
+# x = means7d[means7d$IR_MLID=="UTAHDWQ_WQX-4991900"&means7d$BeneficialUse=="3B",]
+
+assess30d <- function(x){
+  out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","NumericCriterion")]
+  datmean = c()
+  m = 1
+  for(i in 1:dim(x)[1]){
+    dmin = x$ActivityStartDate[i]
+    dmax = x$ActivityStartDate[i]+29
+    datrange <- x[x$ActivityStartDate>=dmin&x$ActivityStartDate<=dmax,]
+    if(dim(datrange)[1]<30){next}
+    datmean[m] <- mean(datrange$IR_Value)
+    m = m+1
+  }
+  tenpct = ceiling(length(datmean)*.1) 
+  out$Ncount = length(datmean)
+  out$ExcCount = length(datmean[datmean<out$NumericCriterion])
+  out$Cat = ifelse(out$ExcCount>tenpct,"NS","FS")
+  return(out)
+}
+
+thirtyday.do.assessed <- ddply(.data=means30d, .(IR_MLID,BeneficialUse), .fun=assess30d)
 
 }
