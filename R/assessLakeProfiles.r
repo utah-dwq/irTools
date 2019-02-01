@@ -99,11 +99,12 @@ profs_exc$do_temp_exc=0
 profs_exc$do_temp_exc[profs_exc$do_exc==1 | profs_exc$temp_exc==1]=1
 
 #######
-#x=profs_exc[profs_exc$IR_MLID=="UTAHDWQ_WQX-5936760" & profs_exc$ActivityStartDate=="2014-10-02",]
+#x=profs_exc[profs_exc$ActivityIdentifier=="UTAHDWQ_WQX-BORFG061615-4938550-0617-Pr-F",]
 #######
 
 assessOneProfile=function(x){
 	x=x[order(x$Profile.depth),]
+	x$Profile.depth[x$DataLoggerLine=="1-Line 1"]=0
 	samp_count=dim(x)[1]
 	pct10=ceiling(dim(x)[1] *0.1)
 	do_exc_cnt=sum(x$do_exc)
