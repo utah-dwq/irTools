@@ -16,22 +16,19 @@ library(data.table)
 load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\hfdo_data.Rdata")
 data = hfdo_data
 # data = hfdo_data[hfdo_data$BeneficialUse=="3B"&hfdo_data$IR_MLID=="UTAHDWQ_WQX-4992320",]
-data$Year = year(data$ActivityStartDate) # aggregate by year
 # data = data[data$Year=="2016",]
 consecday = 7
+
+############## TO DO ##################
+# add in ss handling for spacing determination (if statement whether ss_descrp (or the startmon/endmon) populated)
 
 assessHFDO <- function(data, consecday){
 
 # Remove NA IR_Values
 data = data[!is.na(data$IR_Value),]
-  
-# Create unique standards table for use in functions (removes redundancy of standards in data)
-data$AsmntAggPeriod = as.character(data$AsmntAggPeriod)
-# uniq.use <- unique(data[,c("IR_MLID","BeneficialUse","CriterionLabel")])
-uniq.crit <- unique(data[,c("BeneficialUse","AsmntAggPeriod","CriterionLabel","NumericCriterion")])
-data = unique(data[,!names(data)%in%c("AsmntAggPeriod","AsmntAggPeriodUnit","NumericCriterion","CriterionUnits","BeneficialUse")])
 
-
+data$Year = year(data$ActivityStartDate) # to calculate consecutive dates by year  
+data$AsmntAggPeriod = as.character(data$AsmntAggPeriod) # for subsetting by assessment
 
 # Create new column with hour and day combined to calculate spacing between measurements.
 data$Day = as.numeric(yday(data$ActivityStartDate)) # Convert year day to number
@@ -83,16 +80,11 @@ sc_agg <- function(x){
 
 dat.spaced <- ddply(.data=data,.(IR_MLID,BeneficialUse,AsmntAggPeriod),.fun=sc_agg)
 
-# # Merge uses back in for assessments
-# dat.spaced <- merge(dat.spaced, uniq.use, all.x=TRUE)
-
+#### MIN DO ASSESSMENT ####
 # Aggregate to daily mins
 dat.spaced.mins <- dat.spaced[dat.spaced$AsmntAggPeriod=="1",]
 day.mins <- aggregate(IR_Value~R3172ParameterName+BeneficialUse+ActivityStartDate+IR_MLID+NumericCriterion+CriterionUnits,data=dat.spaced.mins, FUN=min)
 
-#### MIN DO ASSESSMENT ####
-test = day.mins[day.mins$IR_MLID=="UTAHDWQ_WQX-4991900"&day.mins$BeneficialUse=="3B",]
-x = test
 min.do <- function(x){
  out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse")]
  x$Exc = ifelse(x$IR_Value<x$NumericCriterion,1,0)
@@ -104,8 +96,28 @@ min.do <- function(x){
  }
 
 min.do.assessed <- ddply(.data=day.mins, .(IR_MLID,BeneficialUse), .fun=min.do)
+min.do.assessed$CriterionLabel = "Min DO"
 
+#### 7- and 30-DAY MEANS ####
 # Aggregate to daily averages
 day.means <- aggregate(IR_Value~R3172ParameterName+BeneficialUse+ActivityStartDate+IR_MLID+AsmntAggPeriod+NumericCriterion+CriterionUnits,data=dat.spaced, FUN=mean)
+means7d <- day.means[day.means$AsmntAggPeriod=="7",]
+x = means7d[means7d$IR_MLID=="UTAHDWQ_WQX-4991900"&means7d$BeneficialUse=="3B",]
+
+
+assess7d <- function(x){
+  out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","NumericCriterion")]
+  datmean = c()
+  m = 1
+  for(i in 1:dim(x)[1]){
+    dmin = x$ActivityStartDate[i]
+    dmax = x$ActivityStartDate[i]+6
+    datrange <- x[x$ActivityStartDate>=dmin&x$ActivityStartDate<=dmax,]
+    if(dim(datrange)[1]<7){next}
+    datmean[m] <- mean(datrange$IR_Value)
+    m = m+1
+  }
+  tenpct = ceiling(length(datmean)*.1) 
+}
 
 }
