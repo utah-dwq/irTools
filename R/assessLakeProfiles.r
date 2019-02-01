@@ -17,13 +17,13 @@
 #' @export
 assessLakeProfiles <- function(data, do_crit=list("3A"=4, "3B"=3), temp_crit=list("3A"=20, "3B"=27), uses_assessed=c("3A","3B")){
 
-#### Testing setup
-load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
-data=prepped_data$lake_profiles
-uses_assessed=c("3A","3B")
-do_crit=list("3A"=4, "3B"=3)
-temp_crit=list("3A"=20, "3B"=27)
-####
+##### Testing setup
+#load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
+#data=prepped_data$lake_profiles
+#uses_assessed=c("3A","3B")
+#do_crit=list("3A"=4, "3B"=3)
+#temp_crit=list("3A"=20, "3B"=27)
+#####
 
 # Make numeric criterion numeric
 if(class(data$NumericCriterion)=="character"){data$NumericCriterion=as.numeric(data$NumericCriterion)}
@@ -99,7 +99,7 @@ profs_exc$do_temp_exc=0
 profs_exc$do_temp_exc[profs_exc$do_exc==1 | profs_exc$temp_exc==1]=1
 
 #######
-x=profs_exc[profs_exc$IR_MLID=="UTAHDWQ_WQX-5936760" & profs_exc$ActivityStartDate=="2014-10-02",]
+#x=profs_exc[profs_exc$IR_MLID=="UTAHDWQ_WQX-5936760" & profs_exc$ActivityStartDate=="2014-10-02",]
 #######
 
 assessOneProfile=function(x){
