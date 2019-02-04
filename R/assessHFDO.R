@@ -184,5 +184,7 @@ allHFDO_asmnts.list <- list(allHFDO_asmnts)
 site_use_rollup = rollUp(allHFDO_asmnts.list,group_vars = c("IR_MLID","BeneficialUse","R3172ParameterName"),expand_uses=TRUE,print=TRUE)
 HFDO_assessed$site_use_rollup = site_use_rollup
 
+#save(file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\assessments\\HFDO_assessed_example.Rdata", HFDO_assessed)
+
 return(HFDO_assessed)
 }
