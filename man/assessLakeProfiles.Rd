@@ -4,7 +4,7 @@
 \alias{assessLakeProfiles}
 \title{Run lake profile assessments}
 \usage{
-assessLakeProfiles(data, do_crit = list(`3A` = 5, `3B` = 3),
+assessLakeProfiles(data, do_crit = list(`3A` = 4, `3B` = 3),
   temp_crit = list(`3A` = 20, `3B` = 27), uses_assessed = c("3A",
   "3B"))
 }

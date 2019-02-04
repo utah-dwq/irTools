@@ -56,10 +56,10 @@ rollup=within(rollup,{
 	AssessCat[AssessCat=="1"]="FS"
 })
 
-rollup[rollup$ASSESS_ID=="UT14070003-001_00",]
-rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4925218",]
-rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4925440",]
-rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4901100",]
+# rollup[rollup$ASSESS_ID=="UT14070003-001_00",]
+# rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4925218",]
+# rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4925440",]
+# rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4901100",]
 
 if(expand_uses){
 	#Expand comma separated uses (BEN_CLASS)
@@ -86,10 +86,10 @@ if(expand_uses){
 
 }
 
-head(rollup[rollup$SampleCount>=10,])
-rollup[rollup$R3172ParameterName=="Aluminum" & rollup$AssessCat=="NS",]
-toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929010" & toxics$R3172ParameterName=="Aluminum",]
-toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929100" & toxics$R3172ParameterName=="Aluminum",]
+# head(rollup[rollup$SampleCount>=10,])
+# rollup[rollup$R3172ParameterName=="Aluminum" & rollup$AssessCat=="NS",]
+# toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929010" & toxics$R3172ParameterName=="Aluminum",]
+# toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929100" & toxics$R3172ParameterName=="Aluminum",]
 
 if(print){
 

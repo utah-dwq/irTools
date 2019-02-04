@@ -2,27 +2,30 @@
 #'
 #' Performs high frequency dissolved oxygen assessments per IR assessment methods. This includes checking for data sufficiency, calculating daily minima and averages, and 7-day/30-day moving averages.
 #'
-#' @param data HFDO data--for the time being is a test dataset built by EH.
+#' @param data HFDO data--for the time being is a test dataset built by EH using "hfdo_prep.R".
 #' @param consecday Numeric. Minimum number of consecutive days needed to perform an assessment.
-#' @return 
+#' @return List object containing data used for minimum, 7-day, and 30-day assessments, full list of assessments by type, and a rollup to site-use assessments.
 #' @import data.table
 #' @importFrom plyr ddply
-
-#' @export
+#' @importFrom lubridate year
+#' @importFrom lubridate yday
+#' @importFrom lubridate hour
+#' @import data.table
 #' 
-library(lubridate)
-library(plyr)
-library(data.table)
-load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\hfdo_data.Rdata")
-data = hfdo_data
+
+#### TESTING ####
+# library(lubridate)
+# library(plyr)
+# library(data.table)
+# load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\hfdo_data.Rdata")
+# data = hfdo_data
 # data = hfdo_data[hfdo_data$BeneficialUse=="3B"&hfdo_data$IR_MLID=="UTAHDWQ_WQX-4992320",]
 # data = data[data$Year=="2016",]
-consecday = 7
+# consecday = 7
 
-############## TO DO ##################
-# add in ss handling for spacing determination (if statement whether ss_descrp (or the startmon/endmon) populated)
-
-assessHFDO <- function(data, consecday){
+assessHFDO <- function(data, consecday=39){
+  
+HFDO_assessed <- list()
 
 # Remove NA IR_Values
 data = data[!is.na(data$IR_Value),]
@@ -78,29 +81,45 @@ sc_agg <- function(x){
   }else{return(NULL)}
 }
 
-dat.spaced <- ddply(.data=data,.(IR_MLID,BeneficialUse,AsmntAggPeriod),.fun=sc_agg)
-
 #### MIN DO ASSESSMENT ####
+# Determine which sets of data meet spacing requirements...no need to separate seasonal site specific standards for this assessment since all data points are assessed against individually assigned standards.
+# (this is different for the aggregated standards below...)
+dat.spaced <- ddply(.data=data,.(IR_MLID,BeneficialUse,AsmntAggPeriod),.fun=sc_agg)
 # Aggregate to daily mins
 dat.spaced.mins <- dat.spaced[dat.spaced$AsmntAggPeriod=="1",]
 day.mins <- aggregate(IR_Value~R3172ParameterName+BeneficialUse+ActivityStartDate+IR_MLID+NumericCriterion+CriterionUnits,data=dat.spaced.mins, FUN=min)
+HFDO_assessed$min_do_data = day.mins
 
 min.do <- function(x){
- out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse")]
+ out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","NumericCriterion")]
  x$Exc = ifelse(x$IR_Value<x$NumericCriterion,1,0)
  tenpct = ceiling(dim(x)[1]*.1)
  out$Ncount = dim(x)[1]
  out$ExcCount = sum(x$Exc)
- out$Cat = ifelse(sum(x$Exc)>tenpct,"NS","FS")
+ out$IR_Cat = ifelse(sum(x$Exc)>tenpct,"NS","FS")
  return(out)
  }
 
 min.do.assessed <- ddply(.data=day.mins, .(IR_MLID,BeneficialUse), .fun=min.do)
-min.do.assessed$CriterionLabel = "Min DO"
+min.do.assessed$CriterionLabel = "MinDO"
+
+#################### SPACING FOR MOVING WINDOW STDS #####################
+# Again, determine which sets of data meet spacing requirements
+# FOR SITES WITH SITE SPECIFIC STDS ONLY : since aggregated means compared to one standard (and site specific standards for JR change seasonally), need to perform spacing test based on season ranges.
+nonss.data <- data[is.na(data$ss_R317Descrp),] # data without SS stds
+nonss.spaced <- ddply(.data=nonss.data,.(IR_MLID,BeneficialUse,AsmntAggPeriod),.fun=sc_agg) # only aggregate by MLID, Use, and AsmntAggPeriod
+
+ss.data <- data[!is.na(data$ss_R317Descrp),] # data with SS stds
+ss.spaced <- ddply(.data=ss.data,.(IR_MLID,BeneficialUse,AsmntAggPeriod,CriterionLabel),.fun=sc_agg)
+
+# Combine non ss and ss spacing data
+dat.spaced.mov = rbind.fill(nonss.spaced,ss.spaced)
+
+# Aggregate to daily averages
+day.means <- aggregate(IR_Value~R3172ParameterName+BeneficialUse+ActivityStartDate+IR_MLID+AsmntAggPeriod+NumericCriterion+CriterionUnits,data=dat.spaced.mov, FUN=mean)
+HFDO_assessed$moving_avg_data = day.means[!day.means$AsmntAggPeriod=="1",]
 
 #### 7-DAY MEANS ####
-# Aggregate to daily averages
-day.means <- aggregate(IR_Value~R3172ParameterName+BeneficialUse+ActivityStartDate+IR_MLID+AsmntAggPeriod+NumericCriterion+CriterionUnits,data=dat.spaced, FUN=mean)
 means7d <- day.means[day.means$AsmntAggPeriod=="7",]
 # x = means7d[means7d$IR_MLID=="UTAHDWQ_WQX-4991900"&means7d$BeneficialUse=="3B",]
 
@@ -119,11 +138,12 @@ assess7d <- function(x){
   tenpct = ceiling(length(datmean)*.1) 
   out$Ncount = length(datmean)
   out$ExcCount = length(datmean[datmean<out$NumericCriterion])
-  out$Cat = ifelse(out$ExcCount>tenpct,"NS","FS")
+  out$IR_Cat = ifelse(out$ExcCount>tenpct,"NS","FS")
   return(out)
 }
 
 sevday.do.assessed <- ddply(.data=means7d, .(IR_MLID,BeneficialUse), .fun=assess7d)
+sevday.do.assessed$CriterionLabel = "7DA"
 
 ###### 30-DAY MEANS #######
 # Aggregate to daily averages
@@ -145,10 +165,24 @@ assess30d <- function(x){
   tenpct = ceiling(length(datmean)*.1) 
   out$Ncount = length(datmean)
   out$ExcCount = length(datmean[datmean<out$NumericCriterion])
-  out$Cat = ifelse(out$ExcCount>tenpct,"NS","FS")
+  out$IR_Cat = ifelse(out$ExcCount>tenpct,"NS","FS")
   return(out)
 }
 
 thirtyday.do.assessed <- ddply(.data=means30d, .(IR_MLID,BeneficialUse), .fun=assess30d)
+thirtyday.do.assessed$CriterionLabel = "30DA"
 
+### COMBINE ASSESSMENTS ### (add BEN_CLASS back in)
+allHFDO_asmnts = rbind(min.do.assessed,sevday.do.assessed,thirtyday.do.assessed)
+benclass <- unique(data[,c("IR_MLID","BEN_CLASS")])
+allHFDO_asmnts = merge(allHFDO_asmnts,benclass, all.x=TRUE)
+
+HFDO_assessed$allHFDO_asmnts = allHFDO_asmnts
+
+### Roll up to site-use assessment ###
+allHFDO_asmnts.list <- list(allHFDO_asmnts)
+site_use_rollup = rollUp(allHFDO_asmnts.list,group_vars = c("IR_MLID","BeneficialUse","R3172ParameterName"),expand_uses=TRUE,print=TRUE)
+HFDO_assessed$site_use_rollup = site_use_rollup
+
+return(HFDO_assessed)
 }
