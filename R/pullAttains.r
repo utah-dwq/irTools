@@ -6,6 +6,7 @@
 #' @param type ATTAINS data type to pull. One of: "assessmentUnits", "assessments", "actions", or "domains".
 #' @param stateCode Two letter state code (for all pulls where type != "assessments")
 #' @param state Two letter state code (for pull type == "assessments")
+#' @param reportingCycle Character string of four digit year of interest (NOTE: EPA working on update that will return the most recent cycle)
 #' @param ... Additional arguments to be passed to ATTAINS web service path.
 
 #' @importFrom jsonlite fromJSON

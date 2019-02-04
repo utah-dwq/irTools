@@ -14,6 +14,8 @@ pullAttains(type = "assessments", ...)
 \item{stateCode}{Two letter state code (for all pulls where type != "assessments")}
 
 \item{state}{Two letter state code (for pull type == "assessments")}
+
+\item{reportingCycle}{Character string of four digit year of interest (NOTE: EPA working on update that will return the most recent cycle)}
 }
 \value{
 Returns a data.frame of queried ATTAINS data. Note that some results data.frames may contain additional lists of data.frames that can be further flattened.
