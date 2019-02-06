@@ -316,7 +316,7 @@ results_dql[!is.na(results_dql$ResultMeasureValue)&
 table(results_dql$IR_DetCond)
 
 # Allow zero values in profile depth measures
-results_dql[which(results_dql$ResultMeasureValue==0 & results_dql$CharacteristicName=="Depth, data-logger (ported)"),"IR_DetCond"] = "DET"
+results_dql[which(results_dql$ResultMeasureValue==0 & results_dql$CharacteristicName=="Depth, data-logger (ported)" & !is.na(results_dql$ResultMeasureValue)),"IR_DetCond"] = "DET"
 table(results_dql$IR_DetCond)
 
 print("Detection condition counts:")
