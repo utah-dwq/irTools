@@ -271,6 +271,10 @@ table(result$lake_profiles$R3172ParameterName)
 acc_data=acc_data[!acc_data$ActivityIdentifier %in% result$lake_profiles$ActivityIdentifier,]
 sum(table(acc_data$DataLoggerLine))
 
+
+#Return accepted data (minus lake profiles)
+result$accepted_data=acc_data
+
 #Extract lakes trophic data
 result$lakes_trophic=acc_data[acc_data$AU_Type=="Reservoir/Lake" & acc_data$R3172ParameterName %in% c("Chlorophyll a", "Total Phosphorus as P","Depth, Secchi disk depth"),]
 
@@ -498,8 +502,6 @@ if(any(acc_data$AssessmentType=="Conventional")){
 }
 
 objects(result)
-
-
 
 
 #Other possible return objects:
