@@ -255,7 +255,7 @@ acc_data=data[data$IR_DataPrep_FLAG=="ACCEPT",]
 
 #Subset columns (note - col names may change w/ standards table, may want a cleaner way around this)
 acc_data=acc_data[,c("OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","ActivityStartTime.Time","IR_ActivityType","IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long",
-													"ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS",
+													"ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS","CharacteristicName",
 													"R3172ParameterName","IR_Value","IR_Unit","IR_DetCond","IR_Fraction","CriterionUnits","TargetFraction",
 													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
 													"AssessmentType","CriterionLabel","CriterionType","DailyAggFun","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","NumericCriterion","SSC_StartMon","SSC_EndMon","SSC_MLID"
