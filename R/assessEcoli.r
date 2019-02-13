@@ -6,7 +6,7 @@
 #' @param SeasonStartDate A string in the form "mm-dd" to define beginning of rec season over which to perform assessments.
 #' @param SeasonEndDate A string in the form "mm-dd" to define end of rec season over which to perform assessments.
 #' @param rec_season Logical. If TRUE, restricts assessments to recreation season data.
-#' @return Returns list with two objects: assessments from all Scenarios on all data, and ecoli assessments aggregated over scenario and year and rolled up to site level.
+#' @return Returns list with three objects: assessments from all Scenarios on all data, and ecoli assessments aggregated over scenario and year and rolled up to site level.
 #' @importFrom lubridate year
 #' @importFrom lubridate month
 #' @importFrom lubridate day
@@ -14,22 +14,22 @@
 #' @importFrom dplyr bind_rows
 #' @export
 
-assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31"){
-
 ## TESTING ###
-# data_raw <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
+# data <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
 # SeasonStartDate="05-01"
 # SeasonEndDate="10-31"
 # rec_season = TRUE
-
+# 
 # library(irTools)
 # ecoli_data=read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
 # table(ecoli_data$IR_MLID)
-# 
+# #
 # asmnt=assessEColi(ecoli_data)
 # objects(asmnt)
-# table(asmnt$ecoli_mlid_asmtns$IR_MLID)
+# table(asmnt$ecoli_mlid_asmnts$IR_MLID)
 
+
+assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31"){
  
   # Create new object for holding ecoli assessments
   ecoli_assessments = list()
@@ -51,21 +51,36 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   data_raw$ActivityStartDate=as.Date(data_raw$ActivityStartDate,format='%m/%d/%Y')
   
   # Create year column for scenario calculations
-  data_raw$Year=year(data_raw$ActivityStartDate)
+  data_raw$Year=lubridate::year(data_raw$ActivityStartDate)
   
   # Restrict assessments to data collected during recreation season.
   if(rec_season){
-    data_raw=data_raw[month(data_raw$ActivityStartDate)>=month(as.Date(SeasonStartDate,format='%m-%d'))
-                      &day(data_raw$ActivityStartDate)>=day(as.Date(SeasonStartDate,format='%m-%d'))
-                      &month(data_raw$ActivityStartDate)<=month(as.Date(SeasonEndDate,format='%m-%d'))
-                      &day(data_raw$ActivityStartDate)<=day(as.Date(SeasonEndDate,format='%m-%d')),]
-  }
+    data_raw$Rec_Season=ifelse(lubridate::month(data_raw$ActivityStartDate)>=lubridate::month(as.Date(SeasonStartDate,format='%m-%d'))
+                      &lubridate::day(data_raw$ActivityStartDate)>=lubridate::day(as.Date(SeasonStartDate,format='%m-%d'))
+                      &lubridate::month(data_raw$ActivityStartDate)<=lubridate::month(as.Date(SeasonEndDate,format='%m-%d'))
+                      &lubridate::day(data_raw$ActivityStartDate)<=lubridate::day(as.Date(SeasonEndDate,format='%m-%d')),"Yes","No")
+    
+    # Separate rec and non-rec season samples
+    data_rec <- data_raw[data_raw$Rec_Season=="Yes",]
+    data_nonrec <- data_raw[data_raw$Rec_Season=="No",]
+    
+    # Determine which non-rec season MLIDs/Use/Years are unique from rec season MLIDs/Use/Years
+    rec_mlids <- unique(data_rec[,c("IR_MLID","BeneficialUse","Year","Rec_Season")])
+    nonrec_mlids <- unique(data_nonrec[,c("IR_MLID","BeneficialUse","Year")])
+    nonrec_uni <- merge(rec_mlids, nonrec_mlids, all=TRUE)
+    nonrec_unique <- nonrec_uni[is.na(nonrec_uni$Rec_Season),c("IR_MLID","BeneficialUse","Year")]
+    nonrec_unique$IR_Cat <- "Not Assessed - Out of Rec Season"
+    nonrec_data <- merge(nonrec_unique,data_raw, all.x=TRUE)
+    ecoli_assessments$non_assessed_data <- nonrec_data
+  }else{
+      data_rec = data_raw
+    }
   
-  # Substitute numbers for ND and OD limits and aggregate to daily values.
-  data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
-  data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
-  daily_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_raw,FUN=function(x){exp(mean(log(x)))})
-  data_processed <- merge(daily_agg,data_raw, all.x=TRUE)
+  # Aggregate to daily values.
+  # data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
+  # data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
+  daily_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_rec,FUN=function(x){exp(mean(log(x)))})
+  data_processed <- merge(daily_agg,unique(data_rec[,!names(data_rec)%in%c("ActivityStartTime.Time")]), all.x=TRUE)
 
   # JV NOTE - <1 & >2419.6 are coerced to numeric in fillMaskedValues. Simplest solution I can think of right now is to do the conversions in 65 & 66 before coercing to numeric in fillMaskedValues.
   # Should we manually set anything over 2420 to 2420 for assessment? Some over-detect results in WQP have higher limits reported.
@@ -78,8 +93,6 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     return(consec.groups)
   }
 
-
-# JV NOTE - I updated Ncount to SampleCount to match the column names from count & assess Exceedances
 ##### SCENARIO A #####
   
   assessA = function(x){
@@ -153,20 +166,18 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     return(out)
   }
   
-##### COMBINE SCENARIOS ####
+    ##### COMBINE SCENARIOS ####
   
     ScenA = plyr::ddply(.data=data_processed,c("IR_MLID","BeneficialUse","Year"),.fun=assessA) #.() was not working when installed as package w/o importing all of plyr
     ScenB = plyr::ddply(.data=data_processed,c("IR_MLID","BeneficialUse","Year"),.fun=assessB)
     ScenC = plyr::ddply(.data=data_processed,c("IR_MLID","BeneficialUse","Year"),.fun=assessC)
 
     # Create object with all data run through all assessment scenarios
-    ecoli_assessments$ecoli_scenario_asmnts = dplyr::bind_rows(ScenA,ScenB,ScenC)
+    ecoli_assessments$ecoli_scenario_asmnts = dplyr::bind_rows(ScenA,ScenB,ScenC, nonrec_unique)
 
 ### Rank Scenarios ###
-# JV note - I'm unsure what rank & rollup by scenario are for exactly. I initially thought they were updating the ScenABC output, but then realized the output is not re-assigned after 153.
-# I don't think we need to do this to get the site-level asssessments (although it doesn't really hurt either).
   
-  ScenABC = ecoli_assessments$ecoli_scenario_asmnts
+  ScenABC = dplyr::bind_rows(ScenA, ScenB, ScenC)
   ScenABC = ScenABC[!(ScenABC$IR_Cat=="ScenB"|ScenABC$IR_Cat=="ScenC"|ScenABC$IR_Cat=="Not Assessed"),]
   ScenABC$S.rank = 3
   ScenABC$S.rank[ScenABC$Scenario=="B"] = 2
@@ -180,13 +191,20 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   ScenABC_agg$Scenario[ScenABC_agg$S.rank==1]="C"
   ScenABC_assess <- merge(ScenABC_agg, ScenABC, all.x=TRUE)
   ScenABC_assess = ScenABC_assess[,!names(ScenABC_assess)%in%c("S.rank")]
+  ScenABC_assess = dplyr::bind_rows(ScenABC_assess, nonrec_unique)
+  
+  ecoli_assessments$ecoli_scenario_rollup = ScenABC_assess
 
+### Roll up to site level assessments ###
+  
   # Merge data back to original dataset
   data_raw1 <- unique(data_raw[,c("IR_MLID","ASSESS_ID","BeneficialUse","BEN_CLASS","R3172ParameterName")])
- 
-  ecoli.assessed <- merge(ScenABC_assess,data_raw1, all.x=TRUE)
- 
-### Roll up to site level assessments ###
+  
+  ecoli.assessed <- merge(ecoli_assessments$ecoli_scenario_asmnts,data_raw1, all.x=TRUE)
+  ecoli.assessed <- ecoli.assessed[ecoli.assessed$IR_Cat=="NS"|
+                                    ecoli.assessed$IR_Cat=="idNE"|
+                                    ecoli.assessed$IR_Cat=="idE"|
+                                     ecoli.assessed$IR_Cat=="FS",]
   
   # Represent categories numerically so we can select the "max" category to define the AU
   # Hierarchy of decision making within each subset: NS>TMDLa>idE>FS>idNE
@@ -208,7 +226,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     IR_Cat[IR_Cat=="1"]="idNE"
   })
   
-  ecoli_assessments$ecoli_mlid_asmtns = ecoli.assess.agg
+  ecoli_assessments$ecoli_mlid_asmnts = ecoli.assess.agg
   
   return(ecoli_assessments)
 } 
