@@ -15,22 +15,28 @@
 #' @export
 
 ## TESTING ###
-# data <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
-# SeasonStartDate="05-01"
-# SeasonEndDate="10-31"
-# rec_season = TRUE
-# 
 # library(irTools)
 # ecoli_data=read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
 # table(ecoli_data$IR_MLID)
-# #
-# asmnt=assessEColi(ecoli_data)
-# objects(asmnt)
-# table(asmnt$ecoli_mlid_asmnts$IR_MLID)
+# asmnt_rec=assessEColi(ecoli_data)
+# recmlids <- as.character(unique(asmnt_rec$ecoli_allscenario_asmnts$IR_MLID))
+# nonrecmlids <- as.character(unique(asmnt_rec$non_assessed_data$IR_MLID))
+# unique_mlids1 <- unique(c(recmlids,nonrecmlids))
+# 
+# asmnt_nonrec= assessEColi(ecoli_data, rec_season = FALSE)
+# unique_mlids2 <- as.character(unique(asmnt_nonrec$ecoli_allscenario_asmnts$IR_MLID))
+# 
+# test1 <- unique_mlids1[!unique_mlids1%in%unique_mlids2] # Empty
+# test2 <- unique_mlids2[!unique_mlids2%in%unique_mlids1] # Empty
 
 
 assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31"){
  
+  # data <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
+  # SeasonStartDate="05-01"
+  # SeasonEndDate="10-31"
+  # rec_season = TRUE
+  
   # Create new object for holding ecoli assessments
   ecoli_assessments = list()
   
@@ -63,28 +69,25 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     # Separate rec and non-rec season samples
     data_rec <- data_raw[data_raw$Rec_Season=="Yes",]
     data_nonrec <- data_raw[data_raw$Rec_Season=="No",]
+    data_nonrec$IR_Cat <- "Not Assessed - Out of Rec Season"
     
-    # Determine which non-rec season MLIDs/Use/Years are unique from rec season MLIDs/Use/Years
-    rec_mlids <- unique(data_rec[,c("IR_MLID","BeneficialUse","Year","Rec_Season")])
-    nonrec_mlids <- unique(data_nonrec[,c("IR_MLID","BeneficialUse","Year")])
-    nonrec_uni <- merge(rec_mlids, nonrec_mlids, all=TRUE)
-    nonrec_unique <- nonrec_uni[is.na(nonrec_uni$Rec_Season),c("IR_MLID","BeneficialUse","Year")]
-    nonrec_unique$IR_Cat <- "Not Assessed - Out of Rec Season"
-    nonrec_data <- merge(nonrec_unique,data_raw, all.x=TRUE)
-    ecoli_assessments$non_assessed_data <- nonrec_data
-  }else{
+    # Place non-rec season samples in own REJECT object
+    ecoli_assessments$non_assessed_data <- data_nonrec
+    }else{
       data_rec = data_raw
     }
+
+  # JV NOTE - <1 & >2419.6 are coerced to numeric in fillMaskedValues. Simplest solution I can think of right now is to do the conversions in 65 & 66 before coercing to numeric in fillMaskedValues.
+  # EH NOTE: <1 and >2419.6 now handled in readWQP data, before data are coerced to numeric. However, retained in this assessment tool for (potential) data that bypass other segments of irTools.
+  # Should we manually set anything over 2420 to 2420 for assessment? Some over-detect results in WQP have higher limits reported.
+  data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
+  data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
   
   # Aggregate to daily values.
-  # data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
-  # data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
   daily_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_rec,FUN=function(x){exp(mean(log(x)))})
   data_processed <- merge(daily_agg,unique(data_rec[,!names(data_rec)%in%c("ActivityStartTime.Time")]), all.x=TRUE)
 
-  # JV NOTE - <1 & >2419.6 are coerced to numeric in fillMaskedValues. Simplest solution I can think of right now is to do the conversions in 65 & 66 before coercing to numeric in fillMaskedValues.
-  # Should we manually set anything over 2420 to 2420 for assessment? Some over-detect results in WQP have higher limits reported.
-  
+
   # maxSamps48hr function - counts the maximum number of samples collected over the rec season that were not collected within 48 hours of another sample(s).
   maxSamps48hr = function(x){
     x = sort(x) # order by DOY
@@ -172,18 +175,17 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     ScenB = plyr::ddply(.data=data_processed,c("IR_MLID","BeneficialUse","Year"),.fun=assessB)
     ScenC = plyr::ddply(.data=data_processed,c("IR_MLID","BeneficialUse","Year"),.fun=assessC)
 
-    # Create object with all data run through all assessment scenarios
-    ecoli_assessments$ecoli_scenario_asmnts = dplyr::bind_rows(ScenA,ScenB,ScenC, nonrec_unique)
+    # Bind scenarios together into one object and add to ecoli_assessments list
+    ScenABC = dplyr::bind_rows(ScenA, ScenB, ScenC)
 
-### Rank Scenarios ###
+    ecoli_assessments$ecoli_allscenario_asmnts = ScenABC
+
+### Rank and Roll Up By Scenarios (one scenario assessment by MLID/use/year as determined by E. coli scenario hierarchy)###
   
-  ScenABC = dplyr::bind_rows(ScenA, ScenB, ScenC)
   ScenABC = ScenABC[!(ScenABC$IR_Cat=="ScenB"|ScenABC$IR_Cat=="ScenC"|ScenABC$IR_Cat=="Not Assessed"),]
   ScenABC$S.rank = 3
   ScenABC$S.rank[ScenABC$Scenario=="B"] = 2
   ScenABC$S.rank[ScenABC$Scenario=="C"] = 1
-  
-### Roll up by scenario ###
   
   ScenABC_agg <- aggregate(S.rank~IR_MLID+BeneficialUse+Year, data=ScenABC, FUN=max)
   ScenABC_agg$Scenario = "A"
@@ -191,7 +193,6 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   ScenABC_agg$Scenario[ScenABC_agg$S.rank==1]="C"
   ScenABC_assess <- merge(ScenABC_agg, ScenABC, all.x=TRUE)
   ScenABC_assess = ScenABC_assess[,!names(ScenABC_assess)%in%c("S.rank")]
-  ScenABC_assess = dplyr::bind_rows(ScenABC_assess, nonrec_unique)
   
   ecoli_assessments$ecoli_scenario_rollup = ScenABC_assess
 
@@ -200,7 +201,8 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   # Merge data back to original dataset
   data_raw1 <- unique(data_raw[,c("IR_MLID","ASSESS_ID","BeneficialUse","BEN_CLASS","R3172ParameterName")])
   
-  ecoli.assessed <- merge(ecoli_assessments$ecoli_scenario_asmnts,data_raw1, all.x=TRUE)
+  # Using all scenarios for MLID/Use roll-up
+  ecoli.assessed <- merge(ecoli_assessments$ecoli_allscenario_asmnts,data_raw1, all.x=TRUE)
   ecoli.assessed <- ecoli.assessed[ecoli.assessed$IR_Cat=="NS"|
                                     ecoli.assessed$IR_Cat=="idNE"|
                                     ecoli.assessed$IR_Cat=="idE"|
