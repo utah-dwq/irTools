@@ -7,11 +7,8 @@
 #' @return List object containing data used for minimum, 7-day, and 30-day assessments, full list of assessments by type, and a rollup to site-use assessments.
 #' @import data.table
 #' @importFrom plyr ddply
-#' @importFrom lubridate year
-#' @importFrom lubridate yday
 #' @importFrom lubridate hour
-#' @import data.table
-#' 
+#' @export assessHFDO
 
 #### TESTING ####
 # library(lubridate)
@@ -19,9 +16,7 @@
 # library(data.table)
 # load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\hfdo_data.Rdata")
 # data = hfdo_data
-# data = hfdo_data[hfdo_data$BeneficialUse=="3B"&hfdo_data$IR_MLID=="UTAHDWQ_WQX-4992320",]
-# data = data[data$Year=="2016",]
-# consecday = 7
+# consecday = 39
 
 assessHFDO <- function(data, consecday=39){
   
@@ -30,14 +25,16 @@ HFDO_assessed <- list()
 # Remove NA IR_Values
 data = data[!is.na(data$IR_Value),]
 
-data$Year = year(data$ActivityStartDate) # to calculate consecutive dates by year  
+#data$Year = year(data$ActivityStartDate) # to calculate consecutive dates by year  
 data$AsmntAggPeriod = as.character(data$AsmntAggPeriod) # for subsetting by assessment
 
 # Create new column with hour and day combined to calculate spacing between measurements.
-data$Day = as.numeric(yday(data$ActivityStartDate)) # Convert year day to number
-data$Hour = as.numeric(hour(strptime(data$ActivityStartTime.Time, format="%H:%M")))/24 # Get hour sample collected (out of 24), and divide by 24 to obtain a proportion of day between 0 and 1.
-data$yday_hr <- data$Day+data$Hour # Add proportion to numeric year day -- now, mathematically, a sample collected in the 24th hour of one day can be easily comparable in time to a sample collected in the 1st hour of the next day.
+data$Day = as.numeric(data$ActivityStartDate) # Convert date to unique identifier of day number since Excel "beginning of time" 1899-12-30
+data$Hour = as.numeric(lubridate::hour(strptime(data$ActivityStartTime.Time, format="%H:%M")))/24 # Get hour sample collected (out of 24), and divide by 24 to obtain a proportion of day between 0 and 1.
+data$yday_hr <- as.numeric(data$Day+data$Hour) # Add proportion to numeric year day -- now, mathematically, a sample collected in the 24th hour of one day can be easily comparable in time to a sample collected in the 1st hour of the next day.
 
+## Testing ##
+#data1 = data[data$BeneficialUse=="3B"&data$IR_MLID=="UTAHDWQ_WQX-4992320"&data$AsmntAggPeriod=="30",]
 # Spacing check and aggregate function (aggregate by site, year, use)
 sc_agg <- function(x){
   
@@ -84,7 +81,7 @@ sc_agg <- function(x){
 #### MIN DO ASSESSMENT ####
 # Determine which sets of data meet spacing requirements...no need to separate seasonal site specific standards for this assessment since all data points are assessed against individually assigned standards.
 # (this is different for the aggregated standards below...)
-dat.spaced <- ddply(.data=data,.(IR_MLID,BeneficialUse,AsmntAggPeriod),.fun=sc_agg)
+dat.spaced <- plyr::ddply(.data=data,.(IR_MLID,BeneficialUse,AsmntAggPeriod),.fun=sc_agg)
 # Aggregate to daily mins
 dat.spaced.mins <- dat.spaced[dat.spaced$AsmntAggPeriod=="1",]
 day.mins <- aggregate(IR_Value~R3172ParameterName+BeneficialUse+ActivityStartDate+IR_MLID+NumericCriterion+CriterionUnits,data=dat.spaced.mins, FUN=min)
@@ -100,20 +97,20 @@ min.do <- function(x){
  return(out)
  }
 
-min.do.assessed <- ddply(.data=day.mins, .(IR_MLID,BeneficialUse), .fun=min.do)
+min.do.assessed <- plyr::ddply(.data=day.mins, .(IR_MLID,BeneficialUse), .fun=min.do)
 min.do.assessed$CriterionLabel = "MinDO"
 
 #################### SPACING FOR MOVING WINDOW STDS #####################
 # Again, determine which sets of data meet spacing requirements
 # FOR SITES WITH SITE SPECIFIC STDS ONLY : since aggregated means compared to one standard (and site specific standards for JR change seasonally), need to perform spacing test based on season ranges.
 nonss.data <- data[is.na(data$ss_R317Descrp),] # data without SS stds
-nonss.spaced <- ddply(.data=nonss.data,.(IR_MLID,BeneficialUse,AsmntAggPeriod),.fun=sc_agg) # only aggregate by MLID, Use, and AsmntAggPeriod
+nonss.spaced <- plyr::ddply(.data=nonss.data,.(IR_MLID,BeneficialUse,AsmntAggPeriod),.fun=sc_agg) # only aggregate by MLID, Use, and AsmntAggPeriod
 
 ss.data <- data[!is.na(data$ss_R317Descrp),] # data with SS stds
-ss.spaced <- ddply(.data=ss.data,.(IR_MLID,BeneficialUse,AsmntAggPeriod,CriterionLabel),.fun=sc_agg)
+ss.spaced <- plyr::ddply(.data=ss.data,.(IR_MLID,BeneficialUse,AsmntAggPeriod,CriterionLabel),.fun=sc_agg)
 
 # Combine non ss and ss spacing data
-dat.spaced.mov = rbind.fill(nonss.spaced,ss.spaced)
+dat.spaced.mov = plyr::rbind.fill(nonss.spaced,ss.spaced)
 
 # Aggregate to daily averages
 day.means <- aggregate(IR_Value~R3172ParameterName+BeneficialUse+ActivityStartDate+IR_MLID+AsmntAggPeriod+NumericCriterion+CriterionUnits,data=dat.spaced.mov, FUN=mean)
@@ -142,8 +139,11 @@ assess7d <- function(x){
   return(out)
 }
 
-sevday.do.assessed <- ddply(.data=means7d, .(IR_MLID,BeneficialUse), .fun=assess7d)
-sevday.do.assessed$CriterionLabel = "7DA"
+sevday.do.assessed <- plyr::ddply(.data=means7d, .(IR_MLID,BeneficialUse), .fun=assess7d)
+
+if(dim(sevday.do.assessed)[1]>0){
+  sevday.do.assessed$CriterionLabel = "7DA" 
+}
 
 ###### 30-DAY MEANS #######
 # Aggregate to daily averages
@@ -169,11 +169,14 @@ assess30d <- function(x){
   return(out)
 }
 
-thirtyday.do.assessed <- ddply(.data=means30d, .(IR_MLID,BeneficialUse), .fun=assess30d)
-thirtyday.do.assessed$CriterionLabel = "30DA"
+thirtyday.do.assessed <- plyr::ddply(.data=means30d, .(IR_MLID,BeneficialUse), .fun=assess30d)
+if(dim(thirtyday.do.assessed)[1]>0){
+  thirtyday.do.assessed$CriterionLabel = "30DA"
+}
+
 
 ### COMBINE ASSESSMENTS ### (add BEN_CLASS back in)
-allHFDO_asmnts = rbind(min.do.assessed,sevday.do.assessed,thirtyday.do.assessed)
+allHFDO_asmnts = plyr::rbind.fill(min.do.assessed,sevday.do.assessed,thirtyday.do.assessed)
 benclass <- unique(data[,c("IR_MLID","BEN_CLASS")])
 allHFDO_asmnts = merge(allHFDO_asmnts,benclass, all.x=TRUE)
 
