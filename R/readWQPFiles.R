@@ -139,8 +139,8 @@ if(orph_check){
 ## Check for non-numeric data in numeric columns ##
 
 # Replace Common E.coli notation for ND and OD.
-wqpdat$merged_results$ResultMeasureValue=gsub("<1",1,wqpdat$merged_results$ResultMeasureValue)
-wqpdat$merged_results$ResultMeasureValue=as.numeric(gsub(">2419.6",2420,wqpdat$merged_results$ResultMeasureValue))
+wqpdat$merged_results$ResultMeasureValue[wqpdat$merged_results$ResultMeasureValue=="<1" & wqpdat$merged_results$ResultMeasure.MeasureUnitCode=="MPN/100ml"] = 1
+wqpdat$merged_results$ResultMeasureValue[wqpdat$merged_results$ResultMeasureValue==">2419.6" & wqpdat$merged_results$ResultMeasure.MeasureUnitCode=="MPN/100ml"] = 2420
 
 print("Need to figure out non-numeric data in numeric columns conundrum.")
 # if(num_check){
