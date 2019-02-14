@@ -15,12 +15,126 @@
 # library(plyr)
 # library(data.table)
 # load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\hfdo_data.Rdata")
-# data = hfdo_data
-# consecday = 39
+data = hfdo_data
+consecday = 39
 
 assessHFDO <- function(data, consecday=39){
   
-HFDO_assessed <- list()
+  HFDO_assessed <- list()
+  
+  data$DailyAggFun[data$AsmntAggPeriod>1]="mean" #These should be means in the standards table
+  head(data)
+  
+  #just_data=unique(data[,c("IR_MLID","ActivityStartDate","ActivityStartTime.Time","IR_Value")])
+  data$time=as.Date(lubridate::hm(data$ActivityStartTime.Time), origin=lubridate::origin)
+  data$hour=lubridate::hour(data$time)
+  head(data)
+  data=droplevels(data)
+  
+  full_days <- function(x){
+    # Count samples per hr+date
+    date_hour_count=aggregate(IR_Value~hour+ActivityStartDate+IR_MLID, x, FUN="length", drop=F)
+    names(date_hour_count)[names(date_hour_count)=="IR_Value"]="SampleCount"
+    table(date_hour_count$SampleCount, exclude=NULL)
+    head(date_hour_count[is.na(date_hour_count$SampleCount),])
+    head(date_hour_count[!is.na(date_hour_count$SampleCount),])
+    
+    date_hour_count=within(date_hour_count,{
+      complete_hour=SampleCount
+      complete_hour[is.na(complete_hour)]=0
+      complete_hour[complete_hour>=1]=1
+    })
+    head(date_hour_count[is.na(date_hour_count$SampleCount),])
+    head(date_hour_count[!is.na(date_hour_count$SampleCount),])
+    
+    # Count hours w/ sample per date
+    hour_count=aggregate(complete_hour~ActivityStartDate+IR_MLID, date_hour_count, FUN='sum')
+    names(hour_count)[names(hour_count)=="complete_hour"]="complete_hours"
+    head(hour_count)
+    
+    # ID complete days (those w/ 24 complete_hours)
+    complete_days=hour_count[hour_count$complete_hours==24,]
+    complete_days=complete_days[order(complete_days$ActivityStartDate),]
+    
+    #Subset data to complete days
+    y=x[x$ActivityStartDate %in% complete_days$ActivityStartDate,]
+    
+    #Generate daily means or mins
+    daily_aggs=aggregate(IR_Value~ActivityStartDate, y, FUN=x$DailyAggFun[1])
+    return(daily_aggs)
+  }
+  
+  # Aggregate to daily means/mins for complete days of MLID/Use/Assessment Type....
+  
+  daily_values <- plyr::ddply(.data=data,.(IR_MLID,BeneficialUse,R3172ParameterName, ss_R317Descrp,BEN_CLASS,ASSESS_ID,CriterionType,CriterionLabel,DailyAggFun, AsmntAggPeriod,AsmntAggPeriodUnit,AsmntAggFun,NumericCriterion, CriterionUnits),.fun=full_days)
+  
+  # Split off daily mins
+  
+  daily_values_min <- daily_values[daily_values$AsmntAggPeriod==1,]
+  
+  ## Assess daily minima for 
+  min.do <- function(x){
+    out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","NumericCriterion","CriterionLabel")]
+    if(length(x$ActivityStartDate)<10){
+      out$SampleCount = length(x$ActivityStartDate)
+      out$ExcCount = NA
+      out$IR_Cat = "Not assessed : insufficient data"
+    }else{
+      x$Exc = ifelse(x$IR_Value<x$NumericCriterion,1,0)
+      tenpct = ceiling(dim(x)[1]*.1)
+      out$SampleCount = dim(x)[1]
+      out$ExcCount = sum(x$Exc)
+      out$IR_Cat = ifelse(sum(x$Exc)>tenpct,"NS","FS")
+      
+    }
+    return(out) 
+  }
+  
+  min.do.assessed <- plyr::ddply(.data=daily_values_min, .(IR_MLID,BeneficialUse,NumericCriterion), .fun=min.do)
+  min.do.assessed$CriterionLabel = "MinDO"
+  
+
+  adeq_space <- function(x){
+    
+    # ID groups of complete days
+    groups=rle(as.vector(diff(append(1,x$ActivityStartDate),1)))
+    groups=data.frame(groups$lengths)
+    groups=within(groups,{
+      end_index=cumsum(groups.lengths)
+      start_index=end_index-groups.lengths+1
+      end_date=x$ActivityStartDate[end_index]
+      start_date=x$ActivityStartDate[start_index]
+    })
+    
+    # Max consecutive days
+    max(groups$groups.lengths)
+    
+    groups$group=seq(1, dim(groups)[1], 1)
+    groups$group[groups$groups.length<consecday]=NA
+    head(groups)
+    
+    
+    # Tag daily means with groups for assessment
+    ## Flatten grouping keys
+    asmnt_group=vector()
+    for(n in 1:dim(groups)[1]){
+      group_n=groups[n,]
+      key_n=rep(group_n$group, group_n$groups.lengths)
+      asmnt_group=append(asmnt_group, key_n)
+    }
+    
+    length(asmnt_group)==dim(daily_means)[1]
+    
+    ## Assign group
+    daily_means$asmnt_group=asmnt_group
+    
+    ## Drop NA groups
+    daily_means=daily_means[!is.na(daily_means$asmnt_group),]
+    daily_means[daily_means$asmnt_group==2,]
+    
+  }
+ 
+
 
 # Remove NA IR_Values
 data = data[!is.na(data$IR_Value),]
