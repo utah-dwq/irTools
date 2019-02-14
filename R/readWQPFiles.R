@@ -24,6 +24,8 @@
 readWQPFiles <- function(file_select,narrowresult_file, sites_file, activity_file, detquantlim_file, orph_check=TRUE){
 
 ## Testing setup ##
+# file_select = FALSE
+# orph_check = FALSE
 # sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\sites061001-080930.csv"
 # narrowresult_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\narrowresult061001-080930.csv"
 # activity_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\01raw_data\\activity061001-080930.csv"
@@ -134,7 +136,12 @@ if(orph_check){
   }
 }
 
-# Check for non-numeric data in numeric columns
+## Check for non-numeric data in numeric columns ##
+
+# Replace Common E.coli notation for ND and OD.
+wqpdat$merged_results$ResultMeasureValue[wqpdat$merged_results$ResultMeasureValue=="<1" & wqpdat$merged_results$ResultMeasure.MeasureUnitCode=="MPN/100ml"] = 1
+wqpdat$merged_results$ResultMeasureValue[wqpdat$merged_results$ResultMeasureValue==">2419.6" & wqpdat$merged_results$ResultMeasure.MeasureUnitCode=="MPN/100ml"] = 2420
+
 print("Need to figure out non-numeric data in numeric columns conundrum.")
 # if(num_check){
 #   print("----NON-NUMERIC CHARACTERS IN NUMERIC COLUMN CHECK----")

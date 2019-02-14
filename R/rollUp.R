@@ -33,8 +33,9 @@ if(expand_uses & !"BEN_CLASS" %in% group_vars){group_vars=append(group_vars, "BE
 dat_all$AssessCat[dat_all$IR_Cat=="NS"]<-5
 #dat_all$AssessCat[dat_all$IR_Cat=="TMDLa"]<- 4 - (JV) turning off TMDL approved for now. Not sure if we want to include this here yet or as a sort of "secondary review" type step
 dat_all$AssessCat[dat_all$IR_Cat=="idE"]<-3
-dat_all$AssessCat[dat_all$IR_Cat=="idNE"]<-2
-dat_all$AssessCat[dat_all$IR_Cat=="FS"]<-1
+dat_all$AssessCat[dat_all$IR_Cat=="FS"]<-2
+dat_all$AssessCat[dat_all$IR_Cat=="idNE"]<-1
+
 
 # Turn group_vars into a formula argument
 subs_eq <- paste(group_vars, collapse="+")
@@ -56,10 +57,10 @@ rollup=within(rollup,{
 	AssessCat[AssessCat=="1"]="FS"
 })
 
-rollup[rollup$ASSESS_ID=="UT14070003-001_00",]
-rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4925218",]
-rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4925440",]
-rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4901100",]
+# rollup[rollup$ASSESS_ID=="UT14070003-001_00",]
+# rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4925218",]
+# rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4925440",]
+# rollup[rollup$IR_MLID=="UTAHDWQ_WQX-4901100",]
 
 if(expand_uses){
 	#Expand comma separated uses (BEN_CLASS)
@@ -74,17 +75,18 @@ if(expand_uses){
 	uses_flat=reshape2::melt(uses_mat, id.vars="BEN_CLASS", value.name = "BeneficialUse")
 	uses_flat=uses_flat[,!names(uses_flat)=="variable"]
 	uses_flat=uses_flat[uses_flat$BeneficialUse!="" & !is.na(uses_flat$BeneficialUse),]
-	
+
 
 	uses=unique(uses[,!names(uses) %in% "BeneficialUse"])
 	uses_expanded=merge(uses,uses_flat, all.x=T, by="BEN_CLASS")
-	
+
 	#Need criterion table to subset to just those parameters w/ criteria for each use...
-		
+
 	rollup=merge(uses_expanded, rollup, all.x=T)
 	rollup$AssessCat[is.na(rollup$AssessCat)]="NA"
 
 }
+
 
 if(print){
 
@@ -105,6 +107,3 @@ if("R3172ParameterName" %in% group_vars){
 return(rollup)
 
 }
-
-
-

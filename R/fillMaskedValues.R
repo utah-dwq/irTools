@@ -241,6 +241,9 @@ table(results_dql$IR_DetCond)
 twolim <- length(results_dql[is.na(results_dql$ResultMeasureValue)&
             !is.na(results_dql$IR_LowerLimitType)&
             !is.na(results_dql$IR_UpperLimitType),1])
+
+
+#### Consider incorporating ResultDetectionConditionText for this decision.
 if(twolim>0){
   warning(paste("FYI: There are",twolim,"records with both upper and lower quantitation limits and is.na(result values). These records have been assigned as 'ND's"))
 }
