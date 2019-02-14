@@ -87,10 +87,6 @@ if(expand_uses){
 
 }
 
-# head(rollup[rollup$SampleCount>=10,])
-# rollup[rollup$R3172ParameterName=="Aluminum" & rollup$AssessCat=="NS",]
-# toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929010" & toxics$R3172ParameterName=="Aluminum",]
-# toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929100" & toxics$R3172ParameterName=="Aluminum",]
 
 if(print){
 

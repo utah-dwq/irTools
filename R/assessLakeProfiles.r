@@ -15,13 +15,13 @@
 #' @importFrom plyr ddply
 
 #' @export
-assessLakeProfiles <- function(data, do_crit=list("3A"=5, "3B"=3), temp_crit=list("3A"=20, "3B"=27), uses_assessed=c("3A","3B")){
+assessLakeProfiles <- function(data, do_crit=list("3A"=4, "3B"=3), temp_crit=list("3A"=20, "3B"=27), uses_assessed=c("3A","3B")){
 
 ##### Testing setup
 #load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
 #data=prepped_data$lake_profiles
 #uses_assessed=c("3A","3B")
-#do_crit=list("3A"=5, "3B"=3)
+#do_crit=list("3A"=4, "3B"=3)
 #temp_crit=list("3A"=20, "3B"=27)
 #####
 
@@ -60,11 +60,13 @@ data_exc=within(data_exc, {
 	})
 
 # Cast to wide (note - values averaged when more than 1 value per line recorded)
-profs_long=unique(data_exc[,c("DataLoggerLine","ActivityIdentifier","ActivityStartDate","IR_MLID","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS","R3172ParameterName","IR_Value","NumericCriterion","exc")])
-profs_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+R317Descrp+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse+BEN_CLASS~R3172ParameterName,
+profs_long=unique(data_exc[,c("DataLoggerLine","ActivityIdentifier","ActivityStartDate","IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","AU_Type",
+							  "BeneficialUse","BEN_CLASS","R3172ParameterName","IR_Value","IR_Unit","NumericCriterion","exc")])
+profs_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+IR_MLNAME+R317Descrp+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse+BEN_CLASS~R3172ParameterName,
 					data=profs_long, value.var="IR_Value", fun.aggregate=mean, na.rm=T)
-exc_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+R317Descrp+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse+BEN_CLASS~R3172ParameterName,
-					data=profs_long, value.var="exc", fun.aggregate=max, fill=0)
+exc_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+IR_MLNAME+R317Descrp+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse+BEN_CLASS~R3172ParameterName,
+					data=profs_long, value.var="exc", fun.aggregate=max, fill=NaN)
+
 exc_wide=exc_wide[,names(exc_wide)!="Profile depth"]
 exc_wide=dplyr::rename(exc_wide,do_exc="Minimum Dissolved Oxygen", pH_exc=pH, temp_exc="Temperature, water")
 
@@ -95,18 +97,23 @@ profs_exc=merge(profs_exc,thermo_depths, all.x=T)
 
 # Determine DO + temp exc
 profs_exc$do_temp_exc=0
-profs_exc$do_temp_exc[profs_exc$do_exc==1 & profs_exc$temp_exc==1]=1
+profs_exc$do_temp_exc[profs_exc$do_exc==1 | profs_exc$temp_exc==1]=1
+
+#######
+#x=profs_exc[profs_exc$ActivityIdentifier=="UTAHDWQ_WQX-BORFG061615-4938550-0617-Pr-F",]
+#######
 
 assessOneProfile=function(x){
 	x=x[order(x$Profile.depth),]
-	
+	x$Profile.depth[x$DataLoggerLine=="1-Line 1"]=0
 	samp_count=dim(x)[1]
 	pct10=ceiling(dim(x)[1] *0.1)
 	do_exc_cnt=sum(x$do_exc)
 	temp_exc_cnt=sum(x$temp_exc)
 	pH_exc_cnt=sum(x$pH_exc)
 	pH_asmnt=ifelse(pH_exc_cnt<=pct10,"FS","NS")
-
+	profile_depth=max(x$Profile.depth)
+	
 	rles=rle(x$do_temp_exc)
 	strat=data.frame(rles$lengths, rles$values)
 	strat=within(strat,{
@@ -117,9 +124,9 @@ assessOneProfile=function(x){
 		layer_width=bottom_depth-top_depth
 	})
 	
-	strat		
-	max_hab_width=max(strat$layer_width[strat$rles.values==0])
-
+	if(any(strat$rles.values==0)){
+		max_hab_width=max(strat$layer_width[strat$rles.values==0])
+	}else{max_hab_width=0}
 	if(x$stratified[1]==1 & max(x$Profile.depth)>3){ #stratified
 		do_temp_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
 		do_asmnt=as.factor(NA)
@@ -131,14 +138,13 @@ assessOneProfile=function(x){
 		do_asmnt=ifelse(do_exc_cnt>pct10 & do_exc_cnt>=2,"NS","FS")
 	}
 
-	asmnt=data.frame(max_hab_width,do_temp_asmnt,do_exc_cnt,do_asmnt,temp_exc_cnt,temp_asmnt,pH_exc_cnt,pH_asmnt,samp_count,pct10)
+	asmnt=data.frame(max_hab_width,do_temp_asmnt,do_exc_cnt,do_asmnt,temp_exc_cnt,temp_asmnt,pH_exc_cnt,pH_asmnt,samp_count,pct10,profile_depth)
 	
 	return(asmnt)
 }
 
-
 profile_asmnts=plyr::ddply(profs_exc,
-						  c("BeneficialUse","BEN_CLASS","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","AU_NAME","R317Descrp","IR_Lat","IR_Long"),
+						  c("BeneficialUse","BEN_CLASS","ActivityIdentifier","ActivityStartDate","IR_MLID","IR_MLNAME","ASSESS_ID","AU_NAME","R317Descrp","IR_Lat","IR_Long"),
 						  .fun=assessOneProfile)
 
 profile_asmnts=merge(profile_asmnts, thermo_depths)
@@ -148,7 +154,7 @@ profile_asmnts[c("do_temp_asmnt","do_asmnt","temp_asmnt","pH_asmnt")]=lapply(pro
 
 # Flatten assessments
 profile_asmnts_flat=reshape2::melt(profile_asmnts,nar.rm=T,value.name="IR_Cat",
-								   id.vars=c("BeneficialUse","BEN_CLASS","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","AU_NAME","R317Descrp","IR_Lat","IR_Long"),
+								   id.vars=c("BeneficialUse","BEN_CLASS","ActivityIdentifier","ActivityStartDate","IR_MLID","IR_MLNAME","ASSESS_ID","AU_NAME","R317Descrp","IR_Lat","IR_Long"),
 								   measure.vars=c("do_temp_asmnt","do_asmnt","temp_asmnt","pH_asmnt"))
 
 
@@ -164,7 +170,7 @@ profile_asmnts_flat=profile_asmnts_flat[,names(profile_asmnts_flat)!="variable"]
 
 
 # Roll up to site level (MLID, use, param), removing ActivityIdentifier & date
-profile_asmnts_rolledUp=irTools::rollUp(data=list(profile_asmnts_flat), group_vars=c("ASSESS_ID","AU_NAME","R317Descrp","BEN_CLASS","IR_MLID","IR_Lat","IR_Long","BeneficialUse","R3172ParameterName"), expand_uses=F, print=F)
+profile_asmnts_rolledUp=irTools::rollUp(data=list(profile_asmnts_flat), group_vars=c("ASSESS_ID","AU_NAME","R317Descrp","BEN_CLASS","IR_MLID","IR_MLNAME","IR_Lat","IR_Long","BeneficialUse","R3172ParameterName"), expand_uses=F, print=F)
 names(profile_asmnts_rolledUp)[names(profile_asmnts_rolledUp)=="AssessCat"]="IR_Cat"
 
 # Gather objects to return
