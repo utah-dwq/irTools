@@ -15,24 +15,22 @@
  library(plyr)
  library(data.table)
  load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\hfdo_data.Rdata")
+ hfdo_data$DailyAggFun[hfdo_data$AsmntAggPeriod>1]="mean" #These should be means in the standards table
+ head(hfdo_data)
  data = hfdo_data
  consecday = 39
 
-assessHFDO2 <- function(data, consecday=39){
+#assessHFDO2 <- function(data, consecday=39){
 
 
-hfdo_data$DailyAggFun[hfdo_data$AsmntAggPeriod>1]="mean" #These should be means in the standards table
-head(hfdo_data)
+data$time=lubridate::hm(data$ActivityStartTime.Time)
+data$hour=lubridate::hour(data$time)
+head(data)
 
-just_data=unique(hfdo_data[,c("IR_MLID","ActivityStartDate","ActivityStartTime.Time","IR_Value")])
-just_data$time=as.Date(lubridate::hm(just_data$ActivityStartTime.Time), origin=lubridate::origin)
-just_data$hour=lubridate::hour(just_data$time)
-head(just_data)
-just_data=droplevels(just_data)
-site1=just_data[just_data$IR_MLID=="UTAHDWQ_WQX-4991900",]
+test1=data[data$IR_MLID=="UTAHDWQ_WQX-4991900" & data$BeneficialUse=="3B" & data$AsmntAggPeriod==7 & data$NumericCriterion==5.5,]
 
 # Count samples per hr+date
-date_hour_count=aggregate(IR_Value~hour+ActivityStartDate+IR_MLID, site1, FUN="length", drop=F)
+date_hour_count=aggregate(IR_Value~hour+ActivityStartDate+IR_MLID, test1, FUN="length", drop=F)
 names(date_hour_count)[names(date_hour_count)=="IR_Value"]="SampleCount"
 table(date_hour_count$SampleCount, exclude=NULL)
 head(date_hour_count[is.na(date_hour_count$SampleCount),])
@@ -76,10 +74,10 @@ groups$group[groups$groups.length<16]=NA
 head(groups)
 
 #Subset data to complete days
-site1=site1[site1$ActivityStartDate %in% complete_days$ActivityStartDate,]
+test1=test1[test1$ActivityStartDate %in% complete_days$ActivityStartDate,]
 
 #Generate daily means
-daily_means=aggregate(IR_Value~IR_MLID+ActivityStartDate, site1, FUN='mean')
+daily_means=aggregate(IR_Value~IR_MLID+ActivityStartDate, test1, FUN='mean')
 
 # Tag daily means with groups for assessment
 ## Flatten grouping keys
@@ -97,7 +95,7 @@ daily_means$asmnt_group=asmnt_group
 
 ## Drop NA groups
 daily_means=daily_means[!is.na(daily_means$asmnt_group),]
-daily_means[daily_means$asmnt_group==2,]
+daily_means[daily_means$asmnt_group==4,]
 
 # Assess each group (depends on criterion) - ddply splitting on site, use, and asmnt_group
 # Each function should return min_date, max_date, ExcCount, SampleCount, & possibly assessment category (but that could also be done later based on exceedance and total counts).
@@ -127,25 +125,6 @@ daily_means[daily_means$asmnt_group==2,]
 
 #Steps 1-5 are a function
 #To complete assessment, ddply to hfdo_data grouping on everything except date, time, and IR value
-
-
-
-
-Time <- factor("08:01:01")
-
-# parese date
-a <- hms(as.character(Time))
-
-# get hours
-hour(a)
-
-
-
-
-
-
-
-
 
 
 }
