@@ -19,17 +19,17 @@
 #' @export
 autoValidateWQPsites=function(sites_object,master_site_file,waterbody_type_file,polygon_path,outfile_path,correct_longitude=FALSE){
 
-##########
-####TESTING SETUP
+#########
+###TESTING SETUP
 # library(sp)
 # library(sf)
-# sites_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo2\\sites081001-140930.csv"
-# master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\wqp_master_site_file.csv"
-# waterbody_type_file = "P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\waterbody_type_domain_table.csv"
+# sites_object=sites
+# master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\wqp_master_site_file.csv"
+# waterbody_type_file = "P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\waterbody_type_domain_table.csv"
 # polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-# outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\demo\\02site_validation\\"
+# outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\"
 # correct_longitude=FALSE
-#########
+########
 
 
 setwd(outfile_path)
@@ -38,6 +38,10 @@ print("Reading in sites_file and master_sites_file and checking for new waterbod
 stn = sites_object
 stn[stn==""]=NA #Make sure all blanks are NA
 stn=unique(stn)
+
+# Turn any factors to character vectors for merging w/ master sites
+i <- sapply(stn, is.factor)
+stn[i] <- lapply(stn[i], as.character)
 
 # Read in waterbody type domain table
 waterbody_table <- read.csv(waterbody_type_file, stringsAsFactors = FALSE)
@@ -86,6 +90,7 @@ suppressWarnings({class(master_site$HorizontalAccuracyMeasure.MeasureValue)="num
 #Identify any new sites (all review columns == NA) and move to new data frame (stn_new)
 stn2=stn[,!names(stn)%in%c("LatitudeMeasure","LongitudeMeasure","HorizontalCoordinateReferenceSystemDatumName")]
 stn2[stn2==""]=NA #Make sure all blanks are NA
+
 stn2=merge(stn2,master_site,all.x=TRUE)
 stn_new=stn2[is.na(stn2$UID),]
 dim(stn_new)

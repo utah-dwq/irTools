@@ -33,8 +33,9 @@ if(expand_uses & !"BEN_CLASS" %in% group_vars){group_vars=append(group_vars, "BE
 dat_all$AssessCat[dat_all$IR_Cat=="NS"]<-5
 #dat_all$AssessCat[dat_all$IR_Cat=="TMDLa"]<- 4 - (JV) turning off TMDL approved for now. Not sure if we want to include this here yet or as a sort of "secondary review" type step
 dat_all$AssessCat[dat_all$IR_Cat=="idE"]<-3
-dat_all$AssessCat[dat_all$IR_Cat=="idNE"]<-2
-dat_all$AssessCat[dat_all$IR_Cat=="FS"]<-1
+dat_all$AssessCat[dat_all$IR_Cat=="FS"]<-2
+dat_all$AssessCat[dat_all$IR_Cat=="idNE"]<-1
+
 
 # Turn group_vars into a formula argument
 subs_eq <- paste(group_vars, collapse="+")
@@ -74,22 +75,17 @@ if(expand_uses){
 	uses_flat=reshape2::melt(uses_mat, id.vars="BEN_CLASS", value.name = "BeneficialUse")
 	uses_flat=uses_flat[,!names(uses_flat)=="variable"]
 	uses_flat=uses_flat[uses_flat$BeneficialUse!="" & !is.na(uses_flat$BeneficialUse),]
-	
+
 
 	uses=unique(uses[,!names(uses) %in% "BeneficialUse"])
 	uses_expanded=merge(uses,uses_flat, all.x=T, by="BEN_CLASS")
-	
+
 	#Need criterion table to subset to just those parameters w/ criteria for each use...
-		
+
 	rollup=merge(uses_expanded, rollup, all.x=T)
 	rollup$AssessCat[is.na(rollup$AssessCat)]="NA"
 
 }
-
-# head(rollup[rollup$SampleCount>=10,])
-# rollup[rollup$R3172ParameterName=="Aluminum" & rollup$AssessCat=="NS",]
-# toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929010" & toxics$R3172ParameterName=="Aluminum",]
-# toxics[toxics$IR_MLID=="UTAHDWQ_WQX-4929100" & toxics$R3172ParameterName=="Aluminum",]
 
 if(print){
 
@@ -110,6 +106,3 @@ if("R3172ParameterName" %in% group_vars){
 return(rollup)
 
 }
-
-
-

@@ -31,7 +31,7 @@ fillMaskedValues = function(results, detquantlim, translation_wb, detsheetname="
 #####TESTING SETUP
 #####
 # 
-# results=merged_results
+# results=merged_result
 # detquantlim=detquantlim
 # translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
 # detsheetname="detLimitTypeTable"
@@ -96,7 +96,6 @@ dim(dql_lo)
 selectLim <- function(x) replace(logical(length(x)), which.min(x), TRUE)
 dql_lo=transform(dql_lo, keep=as.logical(ave(rank, ResultIdentifier, FUN=selectLim)))
 dim(dql_lo)
-dql_lo[dql_lo$ResultIdentifier=="STORET-550706589",]
 if(length(unique(dql_lo$ResultIdentifier))!=dim(dql_lo[dql_lo$keep==TRUE,])[1]){stop("Error: selected limits not unique to each RID...")}
 dql_lo=dql_lo[dql_lo$keep==TRUE,!names(dql_lo) %in% "keep"]
 head(dql_lo)
@@ -242,6 +241,9 @@ table(results_dql$IR_DetCond)
 twolim <- length(results_dql[is.na(results_dql$ResultMeasureValue)&
             !is.na(results_dql$IR_LowerLimitType)&
             !is.na(results_dql$IR_UpperLimitType),1])
+
+
+#### Consider incorporating ResultDetectionConditionText for this decision.
 if(twolim>0){
   warning(paste("FYI: There are",twolim,"records with both upper and lower quantitation limits and is.na(result values). These records have been assigned as 'ND's"))
 }
@@ -314,9 +316,11 @@ results_dql[!is.na(results_dql$ResultMeasureValue)&
 			is.na(results_dql$IR_LowerLimitType)&
 			results_dql$ResultMeasureValue>0
 			,"IR_DetCond"] = "DET"
+table(results_dql$IR_DetCond)
 
 # Allow zero values in profile depth measures
-results_dql[results_dql$ResultMeasureValue==0 & results_dql$CharacteristicName=="Depth, data-logger (ported)","IR_DetCond"] = "DET"
+results_dql[which(results_dql$ResultMeasureValue==0 & results_dql$CharacteristicName=="Depth, data-logger (ported)" & !is.na(results_dql$ResultMeasureValue)),"IR_DetCond"] = "DET"
+table(results_dql$IR_DetCond)
 
 print("Detection condition counts:")
 print(table(results_dql$IR_DetCond, exclude=NULL))
