@@ -93,7 +93,13 @@ assessHFDO <- function(data, consecday=39){
   min.do.assessed <- plyr::ddply(.data=daily_values_min, .(IR_MLID,BeneficialUse,NumericCriterion), .fun=min.do)
   min.do.assessed$CriterionLabel = "MinDO"
   
-
+  # Moving window (7- and 30-day) assessments - determine which data fit adequate spacing requirement
+  # EH NOTE: Have "MinContig" as column in standards table to specify spacing? Or could create input for it. Many options
+  
+  daily_values_mean <- daily_values[!daily_values$AsmntAggPeriod==1,]
+  daily_values_mean$MinContig = 16
+  daily_values_mean$MinContig[daily_values_mean$AsmntAggPeriod==30] = 39
+  
   adeq_space <- function(x){
     
     # ID groups of complete days
@@ -110,7 +116,7 @@ assessHFDO <- function(data, consecday=39){
     max(groups$groups.lengths)
     
     groups$group=seq(1, dim(groups)[1], 1)
-    groups$group[groups$groups.length<consecday]=NA
+    groups$group[groups$groups.length<x$MinContig[1]]=NA
     head(groups)
     
     
@@ -123,18 +129,17 @@ assessHFDO <- function(data, consecday=39){
       asmnt_group=append(asmnt_group, key_n)
     }
     
-    length(asmnt_group)==dim(daily_means)[1]
+    length(asmnt_group)==dim(x)[1]
     
     ## Assign group
-    daily_means$asmnt_group=asmnt_group
+    x$asmnt_group=asmnt_group
     
     ## Drop NA groups
-    daily_means=daily_means[!is.na(daily_means$asmnt_group),]
-    daily_means[daily_means$asmnt_group==2,]
-    
+    x=x[!is.na(x$asmnt_group),]
+    #x[x$asmnt_group==2,]
   }
  
-
+adeq_space_values <- plyr::ddply(.data=daily_values_mean, .(IR_MLID, BeneficialUse, CriterionLabel, AsmntAggPeriod), .fun=adeq_space)
 
 # Remove NA IR_Values
 data = data[!is.na(data$IR_Value),]
