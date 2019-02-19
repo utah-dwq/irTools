@@ -4,7 +4,6 @@
 #'
 #' @param data HFDO data--for the time being is a test dataset built by EH using "hfdo_prep.R".
 #' @return List object containing data used for minimum, 7-day, and 30-day assessments, full list of assessments by type, and a rollup to site-use assessments.
-#' @import data.table
 #' @importFrom plyr ddply
 #' @importFrom lubridate hour
 #' @export assessHFDO
@@ -12,7 +11,6 @@
 #### TESTING ####
 # library(lubridate)
 # library(plyr)
-# library(data.table)
 # load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\hfdo_data.Rdata")
 # data = hfdo_data
 # consecday = 39
@@ -109,7 +107,7 @@ assessHFDO <- function(data){
     x$diff = c(1,diff(x$ActivityStartDate)) # determine difference between value and the one before it--starts with number just greater than zero to ensure first record kept.
     x$diff_log <- x$diff==1 # create logical vector to "flag" when difference greater than the proportion of 1 hour (e.g. 1/24) between two values 
     rles <- rle(x$diff_log) # count consecutive numbers of TRUE and FALSE values
-    groups <- data.frame(rles$lengths)
+    groups <- data.frame(rles$lengths, rles$values)
     
     # Find rows where groups start and stop (e.g. where spacing becomes > 1 day)
     groups <- within(groups,{
@@ -117,31 +115,30 @@ assessHFDO <- function(data){
       index_lwr = index_upper-rles$lengths # determine where consecutive pattern starts (starts on FALSE value, which signifies that value is more than 1 day away from the sample value before it)
     })
     groups$index_lwr[groups$index_lwr==0]=1 # zero will throw off function because there is no zero position in data frame
-    groups$min_dat = x$ActivityStartDate[groups$index_lwr] # FOR TESTING CHECKS
-    groups$max_dat = x$ActivityStartDate[groups$index_upper] # FOR TESTING CHECKS
+    groups$rles.lengths = groups$rles.lengths + 1
+    groups$rles.lengths[1] = groups$rles.lengths[1] - 1
     
-    # Isolate groups that fit the minimum number of contiguous days 
-    groups$group=seq(1, dim(groups)[1], 1)
-    groups$group[groups$rles.lengths<x$MinContig[1]]=NA
-    head(groups)
+    groups$min_dat = x$ActivityStartDate[groups$index_lwr] 
+    groups$max_dat = x$ActivityStartDate[groups$index_upper] 
     
-    # Tag daily means with groups for assessment
-    ## Flatten grouping keys
-    asmnt_group=vector()
-    for(n in 1:dim(groups)[1]){
-      group_n=groups[n,]
-      key_n=rep(group_n$group, group_n$rles.lengths)
-      asmnt_group=append(asmnt_group, key_n)
-    }
+    # Subset to ranges that fit the minimum consecutive days
+    groups_fit = groups[groups$rles.lengths>=x$MinContig[1],]
     
-    length(asmnt_group)==dim(x)[1]
+    # Obtain data from original dataset falling within that date range
+    # EH NOTE: There might be a way to accurately do this with the grouping factor scheme, but I could not figure it out. I was getting incorrect groupings using the test code.
+    # I do not believe this for loop (nestled so deeply within ddply subsets) will take up much computing power. Let me know what you think. 
+    if(dim(groups_fit)[1]>0){
+      dat_list = list()
+      for(i in 1:dim(groups_fit)[1]){
+        chunk <- x$ActivityStartDate>=groups_fit$min_dat[i]&x$ActivityStartDate<=groups_fit$max_dat[i]
+        x1 = x[chunk==TRUE,]
+        x1$group = as.numeric(x1$ActivityStartDate[1])
+        dat_list[[i]] <- x1
+      }
+      out = do.call(rbind, dat_list)
+      return(out)
+    }else{return(NULL)}    
     
-    ## Assign group
-    x$asmnt_group=asmnt_group
-    
-    ## Drop NA groups
-    x=x[!is.na(x$asmnt_group),]
-    #x[x$asmnt_group==2,]
   }
  
 adeq_space_values <- plyr::ddply(.data=daily_values_mean, .(IR_MLID, BeneficialUse, NumericCriterion, AsmntAggPeriod), .fun=adeq_space)
@@ -169,7 +166,7 @@ movingwindow_assess <- function(x){
   return(out)
 }
 
-thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, .(IR_MLID, BeneficialUse, NumericCriterion, AsmntAggPeriod, asmnt_group), .fun=movingwindow_assess)
+thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, .(IR_MLID, BeneficialUse, NumericCriterion, AsmntAggPeriod, group), .fun=movingwindow_assess)
 
 ### COMBINE ASSESSMENTS ###
 allHFDO_asmnts = plyr::rbind.fill(min_do_assessed,thirty_seven_assessed)
@@ -185,3 +182,4 @@ HFDO_assessed$site_use_rollup = site_use_rollup
 
 return(HFDO_assessed)
 }
+
