@@ -17,7 +17,7 @@ assessEColi(data, rec_season = TRUE, SeasonStartDate = "05-01",
 \item{SeasonEndDate}{A string in the form "mm-dd" to define end of rec season over which to perform assessments.}
 }
 \value{
-Returns list with two objects: assessments from all Scenarios on all data, and ecoli assessments aggregated over scenario and year and rolled up to site level.
+Returns list with three objects: assessments from all Scenarios on all data, and ecoli assessments aggregated over scenario and year and rolled up to site level.
 }
 \description{
 Compares E.coli data to 30-day and max criterion standards using Scenarios A, B, and C, and assigns e. coli assessment categories to each site.

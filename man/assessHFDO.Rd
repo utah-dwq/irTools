@@ -4,12 +4,12 @@
 \alias{assessHFDO}
 \title{Run HFDO assessments}
 \usage{
-assessHFDO(data, consecday = 39)
+assessHFDO(data, min_n = 10)
 }
 \arguments{
 \item{data}{HFDO data--for the time being is a test dataset built by EH using "hfdo_prep.R".}
 
-\item{consecday}{Numeric. Minimum number of consecutive days needed to perform an assessment.}
+\item{min_n}{Minimum sample count for completing an assessment. This is used to generate the necessary number of consecutive days to calculate a moving average (averaging period length + min_n - 1).}
 }
 \value{
 List object containing data used for minimum, 7-day, and 30-day assessments, full list of assessments by type, and a rollup to site-use assessments.
