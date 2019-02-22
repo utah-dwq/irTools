@@ -87,7 +87,6 @@ if(expand_uses){
 
 }
 
-
 if(print){
 
 if("BeneficialUse" %in% group_vars){
