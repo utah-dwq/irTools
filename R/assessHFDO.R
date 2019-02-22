@@ -70,7 +70,7 @@ assessHFDO <- function(data, min_n=10){
   }
   
   # Aggregate to daily means/mins for complete days of MLID/Use/Assessment Type....
-  daily_values <- plyr::ddply(.data=data,.(IR_MLID,BEN_CLASS,ASSESS_ID, BeneficialUse,R3172ParameterName,IR_Unit, DailyAggFun, AsmntAggPeriod, AsmntAggPeriodUnit,NumericCriterion, CriterionUnits),.fun=agg_full_days)
+  daily_values <- plyr::ddply(.data=data,c("IR_MLID","BEN_CLASS","ASSESS_ID", "BeneficialUse","R3172ParameterName","IR_Unit", "DailyAggFun", "AsmntAggPeriod", "AsmntAggPeriodUnit","NumericCriterion", "CriterionUnits"),.fun=agg_full_days)
   
   # Split off daily mins
   daily_values_min <- daily_values[daily_values$AsmntAggPeriod==1,]
@@ -95,7 +95,7 @@ assessHFDO <- function(data, min_n=10){
     return(out) 
   }
   
-  min_do_assessed <- plyr::ddply(.data=daily_values_min, .(IR_MLID,BEN_CLASS, ASSESS_ID, BeneficialUse,R3172ParameterName,NumericCriterion), .fun=min.do)
+  min_do_assessed <- plyr::ddply(.data=daily_values_min, c("IR_MLID","BEN_CLASS", "ASSESS_ID", "BeneficialUse","R3172ParameterName","NumericCriterion"), .fun=min.do)
   
   # Moving window (7- and 30-day) assessments - determine which data fit adequate spacing requirement
   # EH NOTE: Have "MinContig" as column in standards table to specify spacing? Or could create input for it. Many options
@@ -153,7 +153,7 @@ assessHFDO <- function(data, min_n=10){
     
   }
  
-adeq_space_values <- plyr::ddply(.data=daily_values_mean, .(IR_MLID, BeneficialUse, IR_Unit, NumericCriterion, CriterionUnits, AsmntAggPeriod, AsmntAggPeriodUnit), .fun=adeq_space)
+adeq_space_values <- plyr::ddply(.data=daily_values_mean, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit"), .fun=adeq_space)
 
 # Moving window assessments function - 7 and 30 day 
 movingwindow_assess <- function(x){
@@ -178,7 +178,7 @@ movingwindow_assess <- function(x){
   return(out)
 }
 
-thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, .(IR_MLID, BeneficialUse, IR_Unit, NumericCriterion, CriterionUnits, AsmntAggPeriod, AsmntAggPeriodUnit, group), .fun=movingwindow_assess)
+thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit", "group"), .fun=movingwindow_assess)
 
 ### COMBINE ASSESSMENTS ###
 allHFDO_asmnts = plyr::rbind.fill(min_do_assessed,thirty_seven_assessed)
