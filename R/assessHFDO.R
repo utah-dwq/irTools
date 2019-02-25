@@ -155,6 +155,8 @@ assessHFDO <- function(data, min_n=10){
  
 adeq_space_values <- plyr::ddply(.data=daily_values_mean, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit"), .fun=adeq_space)
 
+x=adeq_space_values[adeq_space_values$IR_MLID=="UTAHDWQ_WQX-4991900" & adeq_space_values$BeneficialUse=="3B" & adeq_space_values$NumericCriterion=="5.5" & adeq_space_values$AsmntAggPeriod=="7",]
+
 # Moving window assessments function - 7 and 30 day 
 movingwindow_assess <- function(x){
   out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","NumericCriterion","AsmntAggPeriod")]
@@ -171,6 +173,7 @@ movingwindow_assess <- function(x){
     datmean[m] <- mean(datrange$IR_Value)
     m = m+1
   }
+  out$means=list(datmean)
   tenpct = ceiling(length(datmean)*.1) 
   out$SampleCount = length(datmean)
   out$ExcCount = length(datmean[datmean<out$NumericCriterion])
