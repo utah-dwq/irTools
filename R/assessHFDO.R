@@ -70,7 +70,7 @@ assessHFDO <- function(data, min_n=10){
   }
   
   # Aggregate to daily means/mins for complete days of MLID/Use/Assessment Type....
-  daily_values <- plyr::ddply(.data=data,c("IR_MLID","BEN_CLASS","ASSESS_ID", "BeneficialUse","R3172ParameterName","IR_Unit", "DailyAggFun", "AsmntAggPeriod", "AsmntAggPeriodUnit","NumericCriterion", "CriterionUnits"),.fun=agg_full_days)
+  daily_values <- plyr::ddply(.data=data,c("IR_MLID","BEN_CLASS","ASSESS_ID", "BeneficialUse","R3172ParameterName","IR_Unit", "DailyAggFun", "AsmntAggPeriod","AsmntAggFun", "AsmntAggPeriodUnit","NumericCriterion", "CriterionUnits"),.fun=agg_full_days)
   
   # Split off daily mins
   daily_values_min <- daily_values[daily_values$AsmntAggPeriod==1,]
@@ -153,9 +153,7 @@ assessHFDO <- function(data, min_n=10){
     
   }
  
-adeq_space_values <- plyr::ddply(.data=daily_values_mean, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit"), .fun=adeq_space)
-
-x=adeq_space_values[adeq_space_values$IR_MLID=="UTAHDWQ_WQX-4991900" & adeq_space_values$BeneficialUse=="3B" & adeq_space_values$NumericCriterion=="5.5" & adeq_space_values$AsmntAggPeriod=="7",]
+adeq_space_values <- plyr::ddply(.data=daily_values_mean, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit","AsmntAggFun"), .fun=adeq_space)
 
 # Moving window assessments function - 7 and 30 day 
 movingwindow_assess <- function(x){
@@ -174,6 +172,7 @@ movingwindow_assess <- function(x){
     m = m+1
   }
   out$means=list(datmean)
+  out$dates=list(seq(out$Min_Date[1], out$Min_Date[1]+length(datmean)-1,1))
   tenpct = ceiling(length(datmean)*.1) 
   out$SampleCount = length(datmean)
   out$ExcCount = length(datmean[datmean<out$NumericCriterion])
@@ -181,7 +180,15 @@ movingwindow_assess <- function(x){
   return(out)
 }
 
-thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit", "group"), .fun=movingwindow_assess)
+thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit", "group","AsmntAggFun"), .fun=movingwindow_assess)
+
+#Extract 30 & 7 d means
+thirty_seven_means=tidyr::unnest(thirty_seven_assessed,.drop=FALSE)
+names(thirty_seven_means)[names(thirty_seven_means)=="means"]="mean"
+names(thirty_seven_means)[names(thirty_seven_means)=="dates"]="start_date"
+
+#Drop extra cols
+thirty_seven_assessed=thirty_seven_assessed[,!names(thirty_seven_assessed) %in% c("means","dates","group")]
 
 ### COMBINE ASSESSMENTS ###
 allHFDO_asmnts = plyr::rbind.fill(min_do_assessed,thirty_seven_assessed)
@@ -196,6 +203,7 @@ HFDO_assessed$site_use_rollup = site_use_rollup
 #Value added outputs (potentially for use in visualization tools):
 HFDO_assessed$data=data
 HFDO_assessed$daily_values=daily_values
+HFDO_assessed$thirty_seven_means=thirty_seven_means
 
 #save(file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\assessments\\HFDO_assessed_example.Rdata", HFDO_assessed)
 #save(file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\assessments\\HFDO_assessed_example_JV.Rdata", HFDO_assessed)
