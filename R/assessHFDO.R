@@ -7,6 +7,7 @@
 #' @return List object containing data used for minimum, 7-day, and 30-day assessments, full list of assessments by type, and a rollup to site-use assessments.
 #' @importFrom plyr ddply
 #' @importFrom plyr rbind.fill
+#' @importFrom tidyr unnest
 #' @importFrom lubridate hour
 #' @importFrom lubridate hm
 #' @export assessHFDO
@@ -17,10 +18,13 @@
 # load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\hfdo_data.Rdata")
 # data = hfdo_data
 # data$DailyAggFun[data$AsmntAggPeriod>1]="mean" #These should be means in the standards table
+# data$AsmntAggFun=data$DailyAggFun #These should be means in the standards table
 # head(data)
 # min_n=10
- 
- #JV note - There's a few more factors I'd like to carry through the process for later use/interpretation. But we'll have to do that when we have more "real" data.
+# HFDO_assessed=assessHFDO(data)
+# #save(file="F:\\Shiny\\hfdo\\data\\assessed_hfdo.Rdata", HFDO_assessed)
+
+#JV note - There's a few more factors I'd like to carry through the process for later use/interpretation. But we'll have to do that when we have more "real" data.
 	#Units (IR & Criterion), site-specific info (descriptions, MLID, & time periods), maybe site/AU names (but these could also be stitched back later).
 	#We could specify our grouping keys in ddply in reverse if it's easier (include everything except date, time, etc as appropriate).
  
@@ -77,7 +81,7 @@ assessHFDO <- function(data, min_n=10){
   
   ## Assess daily minima
   min.do <- function(x){
-    out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","NumericCriterion","AsmntAggPeriod")]
+    out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","NumericCriterion","AsmntAggPeriod","AsmntAggFun","IR_Unit","CriterionUnits","AsmntAggPeriodUnit")]
     if(length(x$ActivityStartDate)<10){
       out$SampleCount = length(x$ActivityStartDate)
       out$ExcCount = NA
@@ -206,7 +210,6 @@ HFDO_assessed$daily_values=daily_values
 HFDO_assessed$thirty_seven_means=thirty_seven_means
 
 #save(file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\assessments\\HFDO_assessed_example.Rdata", HFDO_assessed)
-#save(file="P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\assessments\\HFDO_assessed_example_JV.Rdata", HFDO_assessed)
 
 return(HFDO_assessed)
 }
