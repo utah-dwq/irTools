@@ -254,7 +254,7 @@ table(data[data$IR_DataPrep_FLAG=="ACCEPT","IR_UnitConv_FLAG"])
 acc_data=data[data$IR_DataPrep_FLAG=="ACCEPT",]
 
 #Subset columns (note - col names may change w/ standards table, may want a cleaner way around this)
-acc_data=acc_data[,c("OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","ActivityStartTime.Time","IR_ActivityType","IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long",
+acc_data=acc_data[,c("OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","ActivityStartTime.Time","IR_ActivityType","IR_MLID","IR_MLNAME","MonitoringLocationType","R317Descrp","IR_Lat","IR_Long",
 													"ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS","CharacteristicName",
 													"R3172ParameterName","IR_Value","IR_Unit","IR_DetCond","IR_Fraction","CriterionUnits","TargetFraction",
 													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
@@ -268,8 +268,7 @@ result$lake_profiles=acc_data[!is.na(acc_data$DataLoggerLine) & acc_data$Benefic
 table(result$lake_profiles$R3172ParameterName)
 
 #Remove profiles from acc_data
-acc_data=acc_data[!acc_data$ActivityIdentifier %in% result$lake_profiles$ActivityIdentifier,]
-sum(table(acc_data$DataLoggerLine))
+acc_data=acc_data[is.na(acc_data$ActivityIdentifier),]
 
 
 #Return accepted data (minus lake profiles)
