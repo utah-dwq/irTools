@@ -6,6 +6,7 @@
 #' @param EndDate Query end date. "mm/dd/yyyy" format.
 #' @param retrieve Vector of data type names to retrieve from WQP. One or more of: "result","narrowresult","activity","activitymetric","sites","detquantlim". Defaults to query all.
 #' @return Exports .csv files for all selected data types during selected date period in specified output path.
+#' @importFrom wqTools readWQP
 #' @examples
 #' # Read 2018 download narrow result & sites
 #' downloadWQP(outfile_path='C:\\Your\\Folder\\Path', start_date="01/01/2018", end_date="12/31/2018", retrieve=c("narrowresult","sites"))
@@ -44,7 +45,7 @@ retvd_objects=list()
 
 for(n in 1:length(retrieve)){
 	file_name_n=paste0(outfile_path,retrieve[n],'-',Sys.Date(),'.csv')
-	url_n=readWQP(type=retrieve[n], start_date=start_date, end_date=end_date, statecode=statecode, siteType=siteType, url_only=T, ...)
+	url_n=wqTools::readWQP(type=retrieve[n], start_date=start_date, end_date=end_date, statecode=statecode, siteType=siteType, url_only=T, ...)
 	if(file.exists(file_name_n)){warning(paste('WARNING:', file_name_n, 'already exists and will not be downloaded and overwritten. Move, rename, or delete this file from outfile_path to re-download this file.'))}
 	i=1
 	while(!file.exists(file_name_n) & i <=10){
