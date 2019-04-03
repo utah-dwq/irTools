@@ -27,7 +27,7 @@ assessLakeProfiles <- function(data, do_crit=list("3A"=4, "3B"=3), temp_crit=lis
 
 # Make numeric criterion numeric
 if(class(data$NumericCriterion)=="character"){data$NumericCriterion=as.numeric(data$NumericCriterion)}
-if(class(data$NumericCriterion)=="factor"){data$NumericCriterion=facToNum(data$NumericCriterion)}
+if(class(data$NumericCriterion)=="factor"){data$NumericCriterion=wqTools::facToNum(data$NumericCriterion)}
 
 # Subset data to desired criteria & uses
 do_crit=data.frame(unlist(do_crit))

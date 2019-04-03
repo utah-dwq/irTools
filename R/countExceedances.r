@@ -36,7 +36,7 @@ addNA_fac=function(x){
 }
 
 	
-if(class(data$NumericCriterion)=="factor"){data$NumericCriterion=facToNum(data$NumericCriterion)}
+if(class(data$NumericCriterion)=="factor"){data$NumericCriterion=wqTools::facToNum(data$NumericCriterion)}
 
 
 #Generate sample counts (length of IR_Value in unique data_exc[,group_vars])
@@ -70,7 +70,7 @@ aggbyfun=function(x, value_var, drop_vars, agg_var){
 		agg=rbind(agg,agg_n)
 	}
 	
-	agg[num_names]=lapply(agg[num_names], facToNum) #Convert numeric cols back to numeric
+	agg[num_names]=lapply(agg[num_names], wqTools::facToNum) #Convert numeric cols back to numeric
 	
 	names(agg)[names(agg)=="val"]=value_var #Rename value_var
 	

@@ -164,8 +164,8 @@ print("Need to figure out non-numeric data in numeric columns conundrum.")
 # }
 
 # Convert numeric columns to numeric
-wqpdat$merged_results$ResultMeasureValue = facToNum(wqpdat$merged_results$ResultMeasureValue)
-wqpdat$detquantlim$DetectionQuantitationLimitMeasure.MeasureValue = facToNum(wqpdat$detquantlim$DetectionQuantitationLimitMeasure.MeasureValue)
+wqpdat$merged_results$ResultMeasureValue = wqTools::facToNum(wqpdat$merged_results$ResultMeasureValue)
+wqpdat$detquantlim$DetectionQuantitationLimitMeasure.MeasureValue = wqTools::facToNum(wqpdat$detquantlim$DetectionQuantitationLimitMeasure.MeasureValue)
 
 print("----FILES SUCCESSFULLY ADDED TO R OBJECT LIST----")
 return(wqpdat)

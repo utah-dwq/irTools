@@ -301,7 +301,7 @@ aggDVbyfun=function(x, value_var, drop_vars, agg_var){
 		daily=rbind(daily,daily_n)
 	}
 
-	daily[num_names]=lapply(daily[num_names], facToNum) #Convert numeric cols back to numeric
+	daily[num_names]=lapply(daily[num_names], wqTools::facToNum) #Convert numeric cols back to numeric
 
 	names(daily)[names(daily)=="val"]=value_var #Rename value_var
 
@@ -421,7 +421,7 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 		CriterionFormula=stringr::str_replace_all(CriterionFormula, "min_pH", as.character(cf_min_pH_NA))
 		CalculatedCrit=sapply(CriterionFormula, function(x) eval(parse(text=x)))
 		suppressWarnings({
-			NumericCriterion=facToNum(NumericCriterion)
+			NumericCriterion=wqTools::facToNum(NumericCriterion)
 		})
 		NumericCriterion[calc=="calc"]=CalculatedCrit[calc=="calc"]
 	})
@@ -452,7 +452,7 @@ if(any(acc_data$AssessmentType=="Conventional")){
 		#Lakes
 		#Select surface only results for lakes conventionals
 		suppressWarnings({
-			conv_lakes$ActivityDepthHeightMeasure.MeasureValue=facToNum(conv_lakes$ActivityDepthHeightMeasure.MeasureValue)
+			conv_lakes$ActivityDepthHeightMeasure.MeasureValue=wqTools::facToNum(conv_lakes$ActivityDepthHeightMeasure.MeasureValue)
 			})
 		conv_lakes=within(conv_lakes,{
 			ActivityDepthHeightMeasure.MeasureValue[which(ActivityDepthHeightMeasure.MeasureUnitCode=="ft" | ActivityDepthHeightMeasure.MeasureUnitCode=="feet")]=ActivityDepthHeightMeasure.MeasureValue*0.3048
