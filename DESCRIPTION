@@ -10,6 +10,12 @@ License: MIT + file LICENSE
 RoxygenNote: 6.1.1
 Encoding: UTF-8
 Imports:
+<<<<<<< HEAD
 	V8, scales, leaflet, mapedit, mapview, raster, rgdal, rhandsontable, sf, shiny, shinyjs, sp, jsonlite, openxlsx, classInt, wqTools
 
 Remotes: utah-dwq/wqTools
+=======
+	V8, scales, leaflet, mapedit, mapview, raster, rgdal, rhandsontable, sf, shiny, shinyjs, sp, jsonlite, openxlsx, classInt
+
+Remotes: github::utah-dwq/wqTools
+>>>>>>> parent of 5f2911a... Update DESCRIPTION
