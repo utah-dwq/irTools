@@ -2,25 +2,30 @@
 % Please edit documentation in R/downloadWQP.r
 \name{downloadWQP}
 \alias{downloadWQP}
-\title{Download water quality, station, and other data for Utah from USEPA WQP}
+\title{Download water quality, station, and other data for Utah from USEPA WQP (version 2.0)}
 \usage{
-downloadWQP(outfile_path, StartDate, EndDate,
+downloadWQP(outfile_path, start_date, end_date,
   retrieve = c("narrowresult", "activity", "sites", "detquantlim"),
-  retry = FALSE)
+  siteType = c("Aggregate surface-water-use",
+  "Lake, Reservoir, Impoundment", "Spring", "Stream"),
+  statecode = "US:49", ...)
 }
 \arguments{
 \item{outfile_path}{Path for file outputs.}
 
-\item{StartDate}{Query start date. "MM-DD-YYYY" format.}
-
-\item{EndDate}{Query end date. "MM-DD-YYYY" format.}
-
 \item{retrieve}{Vector of data type names to retrieve from WQP. One or more of: "result","narrowresult","activity","activitymetric","sites","detquantlim". Defaults to query all.}
+
+\item{StartDate}{Query start date. "mm/dd/yyyy" format.}
+
+\item{EndDate}{Query end date. "mm/dd/yyyy" format.}
 }
 \value{
 Exports .csv files for all selected data types during selected date period in specified output path.
 }
 \description{
-Download data from EPA's Water Quality Portal (WQP) as .csv to outfile_path folder.
-Prepared by C Shope 1/25/18, Adapted from Roop Guha-NJDEP 1/3/18. Updated, re-formated to function, & packaged by J VanderLaan.
+Download data from EPA's Water Quality Portal (WQP) as .csv files to outfile_path folder.
+}
+\examples{
+# Read 2018 download narrow result & sites
+downloadWQP(outfile_path='C:\\\\Your\\\\Folder\\\\Path', start_date="01/01/2018", end_date="12/31/2018", retrieve=c("narrowresult","sites"))
 }
