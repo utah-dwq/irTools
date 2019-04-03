@@ -12,4 +12,4 @@ Encoding: UTF-8
 Imports:
 	V8, scales, leaflet, mapedit, mapview, raster, rgdal, rhandsontable, sf, shiny, shinyjs, sp, jsonlite, openxlsx, classInt
 
-Remotes: utah-dwq/wqTools
+Remotes: github::utah-dwq/wqTools
