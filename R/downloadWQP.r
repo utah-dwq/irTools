@@ -8,7 +8,7 @@
 #' @return Exports .csv files for all selected data types during selected date period in specified output path.
 #' @examples 
 #' # Read 2018 download narrow result & sites
-#' downloadWQP2(outfile_path='C:\\Your\\Folder\\Path', start_date="01/01/2018", end_date="12/31/2018", retrieve=c("narrowresult","sites"))
+#' downloadWQP(outfile_path='C:\\Your\\Folder\\Path', start_date="01/01/2018", end_date="12/31/2018", retrieve=c("narrowresult","sites"))
 
 #' @export
 downloadWQP<-function(outfile_path,start_date,end_date,retrieve=c("narrowresult","activity","sites","detquantlim"),
