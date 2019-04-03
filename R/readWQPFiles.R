@@ -7,6 +7,7 @@
 #' @param narrowresult_file Full path and filename of narrowresult file queried from WQP to be reviewed (.csv).
 #' @param detquantlim_file Full path and filename of detquantlim file queried from WQP to be reviewed (.csv).
 #' @param orph_check Logical. Specifies whether function should perform orphan check between narrowresult and sites, activity, and detquantlim. If TRUE, produces list object containing orphan rows.
+#' @importFrom wqTools facToNum
 #' @return List containing dataframes needed to run irTools package, as well as orphan records and edited non-numeric data tables.
 
 # num_check Logical. Specifies whether function should perform checks for non-numeric values in numeric columns (ResultMeasureValue and DetectionQuantitationLimitMeasure.MeasureValue). Opens edit window to make changes to non-numeric values in the data.

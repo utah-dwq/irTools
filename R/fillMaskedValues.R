@@ -14,7 +14,7 @@
 #' @param unitstartCol Column to start reading the unitConvTable excel sheet from (in case headers have been added). Defaults to 1.
 #' @param lql_fac Numeric - factor by which to multiply lower quantitation limit type values when filling masked data or other non-detects (e.g. below lql values). Default = 0.5.
 #' @param uql_fac Numeric - factor by which to multiply upper quantitation limit type values when filling masked data or other over limit values. Default = 1.
-
+#' @importFrom wqTools facToNum
 #' @return Returns a data frame with new columns of selected limits, filled values, units, and detection condition appended to results input. In IR_DetCond column, "ND"=non-detect, "OD"=over detection, "NRV"=no result value & no ranked detection limit, "DET"=detection.
 
 #' @importFrom openxlsx loadWorkbook
@@ -22,7 +22,7 @@
 #' @importFrom openxlsx removeFilter
 #' @importFrom openxlsx getSheetNames
 #' @importFrom dplyr rename
-
+#' @importFrom wqTools facToNum
 
 #' @export
 fillMaskedValues = function(results, detquantlim, translation_wb, detsheetname="detLimitTypeTable", unitsheetname="unitConvTable", detstartRow=3, unitstartRow=1, unitstartCol=1, lql_fac=0.5, uql_fac=1){

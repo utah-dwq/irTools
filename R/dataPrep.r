@@ -19,6 +19,7 @@
 #' @importFrom openxlsx writeData
 #' @importFrom openxlsx removeFilter
 #' @importFrom plyr rbind.fill
+#' @importFrom wqTools facToNum
 
 #' @export
 dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb, cf_formulas_sheetname, startRow_unit=1, startRow_formulas=1, split_agg_tds=TRUE){

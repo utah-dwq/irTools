@@ -11,6 +11,7 @@
 #'  profiles_long contains profile data in long format including the numeric criterion associated with each parameter, profiles_wide contains profile data cast to wide format.
 #' @importFrom reshape2 dcast
 #' @importFrom dplyr rename
+#' @importFrom wqTools facToNum
 #' @importFrom rLakeAnalyzer thermo.depth
 #' @importFrom plyr ddply
 
