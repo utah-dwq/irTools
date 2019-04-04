@@ -21,18 +21,17 @@ autoValidateWQPsites=function(sites_object,master_site_file,waterbody_type_file,
 
 #########
 ###TESTING SETUP
-# library(sp)
-# library(sf)
-# sites_object=sites
-# master_site_file="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\wqp_master_site_file.csv"
-# waterbody_type_file = "P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\waterbody_type_domain_table.csv"
-# polygon_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\02site_validation\\polygons"
-# outfile_path="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\"
-# correct_longitude=FALSE
+#library(sp)
+#library(sf)
+#sites_object=irdata$sites
+#master_site_file="lookup-tables/IR_master_site_file.csv"
+#waterbody_type_file = "lookup-tables/waterbody_type_domain_table.csv"
+#polygon_path="02-site-validation/polygons"
+#outfile_path="02-site-validation"
+#correct_longitude=FALSE
 ########
 
 
-setwd(outfile_path)
 print("Reading in sites_file and master_sites_file and checking for new waterbody types...")
 # Read in WQP station and results data
 stn = sites_object
@@ -675,7 +674,6 @@ master_new=within(master_new,{
 })
 
 
-
 ####Sort by UID and re-order columns before writing
 master_new=master_new[order(master_new$UID),]
 master_new=master_new[,c("UID","OrganizationIdentifier","OrganizationFormalName","ProviderName","MonitoringLocationIdentifier","MonitoringLocationName","MonitoringLocationTypeName","MonitoringLocationDescriptionText",
@@ -700,14 +698,12 @@ if(dim(master_new)[2]!=orig_master[2]){
 print(paste("Updated master site list has",dim(master_new)[1],"sites, with", newsitesadded,"new sites added to original",orig_master[1],"sites in master list."))
 
 # Export the file with all FLAG, REJECT, and FINE data included as the marked-up master file			
-if(file.exists("wqp_master_site_file.csv")){
-	file.rename("wqp_master_site_file.csv", paste0("wqp_master_site_file_",Sys.Date(),".csv"))
-	file.copy(paste0("wqp_master_site_file_",Sys.Date(),".csv"),to="edit_logs")
-	file.remove(paste0("wqp_master_site_file_",Sys.Date(),".csv"))
-}
+file.rename(master_site_file, paste0(master_site_file,"_",Sys.Date(),".csv"))
+file.copy(paste0(master_site_file,"_",Sys.Date(),".csv"), to=paste0(outfile_path,"/edit_logs"))
+file.remove(paste0(master_site_file,"_",Sys.Date(),".csv"))
 
-write.csv(master_new, file="wqp_master_site_file.csv",row.names=F)
-write.csv(reasons_all,file="rev_rej_reasons.csv",row.names=F)
+write.csv(master_new, file=master_site_file,row.names=F)
+write.csv(reasons_all,file=paste0(outfile_path,"/rev_rej_reasons.csv"),row.names=F)
 
 
 print("Master site file updated and review/rejection reasons file created.")
@@ -715,30 +711,4 @@ print(paste0(outfile_path,"\\wqp_master_site_file.csv"))
 print(paste0(outfile_path,"\\rev_rej_reasons.csv"))
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#Reject sites with same MLIDs as other REJECT sites (JV no longer needed, using same approach for all rejections now)
-## This can happen when a site is rejected due to populated fields associated with demos, duplicates, well construction, etc., but a second record with a duplicate MLID does not have these same "flag" fields populated.
-## This steps errs on the side of caution so well/demo/qa/qc sites are not assessed.
-#mlid_rejects <- unique(stn_new$MonitoringLocationIdentifier[stn_new$IR_FLAG=="REJECT"])
-#stn_new$IR_REASON <- ifelse(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationIdentifier%in%mlid_rejects,"Site shares MLID with rejected site(s)", stn_new$IR_REASON)
-#stn_new$IR_FLAG <- ifelse(stn_new$IR_FLAG!="REJECT" & stn_new$MonitoringLocationIdentifier%in%mlid_rejects,"REJECT",stn_new$IR_FLAG)
-
-
-
-
-
 
