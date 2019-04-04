@@ -707,7 +707,7 @@ write.csv(reasons_all,file=paste0(outfile_path,"/rev_rej_reasons.csv"),row.names
 
 
 print("Master site file updated and review/rejection reasons file created.")
-print(paste0(outfile_path,"\\wqp_master_site_file.csv"))
+print(paste0(master_site_file))
 print(paste0(outfile_path,"\\rev_rej_reasons.csv"))
 
 }
