@@ -9,8 +9,8 @@ ui <-fluidPage(bsCollapse(multiple=T, open="Import files",
 	bsCollapsePanel("Review map",
 		fluidRow(
 			column(2, checkboxGroupInput("site_types","Site types to map:", choiceNames=c("Review needed","Accepted","Rejected"), choiceValues=c("REVIEW","ACCEPT","REJECT"))),
-			column(7, uiOutput("review_reasons"))
-			#checkboxGroupInput("review_reasons", "Review reasons:", choices=unique(sites$IR_FLAG_REASONS), inline=T)
+			column(7, uiOutput("review_reasons")),
+			column(2, checkboxInput('auto_zoom', "Auto-zoom to sites", value=TRUE))
 		),
 
 		# Map
@@ -26,7 +26,7 @@ ui <-fluidPage(bsCollapse(multiple=T, open="Import files",
 			actionButton('reject', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'),
 			actionButton('add_reject_reason', 'Add rejection reason', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'),
 			actionButton('merge', 'Merge', style='color: #fff; background-color: #337ab7; border-color: #2e6da4'),
-			actionButton('comment', 'Comment',style='color: #fff; background-color: #337ab7; border-color: #2e6da4')
+			actionButton('flag_further', 'Comment & flag for further review',style='color: #fff; background-color: #337ab7; border-color: #2e6da4')
 		),
 	
 		# Table
@@ -35,7 +35,11 @@ ui <-fluidPage(bsCollapse(multiple=T, open="Import files",
 		br(),
 		br()
 	),
-	bsCollapsePanel("Export reviews")
+	bsCollapsePanel("Export reviews",
+		downloadButton('exp_rev', label = "Export reviews")
+	
+	
+	)
 
 ))
 	
