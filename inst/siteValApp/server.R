@@ -32,7 +32,6 @@ observeEvent(input$import_sites,{
 			color[IR_FLAG=="ACCEPT"]="green"
 			color[IR_FLAG=="REVIEW"]="orange"
 		})
-		#print(head(sites))
 		reactive_objects$sites_input=sites
 	}
 })
@@ -46,7 +45,6 @@ observeEvent(input$import_reasons,{
 	}else{
 		reasons=read.csv(reasons_file$datapath, stringsAsFactors=F)
 		reactive_objects$reasons_input=reasons
-		#print(head(reasons))
 	}
 })
 
@@ -93,10 +91,31 @@ output$review_reasons <- renderUI({
 	checkboxGroupInput("review_reasons", "Review reason", reactive_objects$review_reasons[order(reactive_objects$review_reasons)], inline=TRUE, selected=input$review_reasons)
 })
 
+# Select mlids in reasons
+observe({
+	reactive_objects$reason_mlids=unique(reactive_objects$reasons[reactive_objects$reasons$Reason %in% input$review_reasons,'MonitoringLocationIdentifier'])
+})
+
+# ML types checkbox
+observe({
+	reactive_objects$ml_types=unique(reactive_objects$sites$MonitoringLocationTypeName[reactive_objects$sites$MonitoringLocationIdentifier %in% reactive_objects$reason_mlids & reactive_objects$sites$IR_FLAG %in% input$site_types])
+})
+output$ml_types=renderUI({
+	checkboxGroupInput("ml_types", "Site types", reactive_objects$ml_types, inline=TRUE, selected=reactive_objects$ml_types)
+})
+
+# Select mlids in mltypes
+observe({
+	req(reactive_objects$sites)
+	reactive_objects$mltype_mlids=unique(sf::st_drop_geometry(reactive_objects$sites)[reactive_objects$sites$MonitoringLocationTypeName %in% input$ml_types,'MonitoringLocationIdentifier'])
+})
 
 observe({
-	reason_mlids=unique(reactive_objects$reasons[reactive_objects$reasons$Reason %in% input$review_reasons,'MonitoringLocationIdentifier'])
-	reactive_objects$map_sites=reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$site_types & reactive_objects$sites$MonitoringLocationIdentifier %in% reason_mlids,]
+	reactive_objects$map_sites=
+		reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$site_types & 
+		reactive_objects$sites$MonitoringLocationIdentifier %in% reactive_objects$reason_mlids &
+		reactive_objects$sites$MonitoringLocationIdentifier %in% reactive_objects$mltype_mlids
+		,]
 })
 
 # Map output
@@ -294,6 +313,8 @@ observeEvent(input$reject_ok, {
 	reject_mlids=reactive_objects$table_selected_mlids
 	reactive_objects$sites=within(reactive_objects$sites, {
 		IR_FLAG[MonitoringLocationIdentifier %in% reject_mlids] = "REJECT"
+		IR_MLID[MonitoringLocationIdentifier %in% reject_mlids] = "REJECT"
+		IR_MLNAME[MonitoringLocationIdentifier %in% reject_mlids] = "REJECT"
 		IR_COMMENT[MonitoringLocationIdentifier %in% reject_mlids] = "Manually rejected"
 		IR_FLAG_REASONS[MonitoringLocationIdentifier %in% reject_mlids]=paste(input$reject_reason)
 		ReviewComment[MonitoringLocationIdentifier %in% reject_mlids]=input$reject_comment

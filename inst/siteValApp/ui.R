@@ -18,7 +18,8 @@ bsCollapse(multiple=T, open="Import files",
 	bsCollapsePanel("Review map",
 		fluidRow(
 			column(2, checkboxGroupInput("site_types","Site types to map:", choiceNames=c("Review needed","Accepted","Rejected"), choiceValues=c("REVIEW","ACCEPT","REJECT"))),
-			column(7, uiOutput("review_reasons")),
+			column(5, uiOutput("review_reasons")),
+			column(3, uiOutput('ml_types')),
 			column(2, checkboxInput('auto_zoom', "Auto-zoom to sites", value=TRUE))
 		),
 
