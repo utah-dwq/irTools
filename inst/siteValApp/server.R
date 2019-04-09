@@ -112,10 +112,11 @@ session$onFlushed(once = T, function() {
 				"<br> Permit name: ", permits$locationName,
 				"<br> Permit type: ", permits$locationType)
 		) %>%
-		hideGroup('Permits') %>%	
+		addPolygons(data=wqTools::ut_poly,group="State boundary",smoothFactor=4,fillOpacity = 0.1,weight=3,color="purple", options = pathOptions(pane = "underlay_polygons"))  %>%
+		hideGroup('Permits') %>% hideGroup('State boundary') %>%	
 		addLayersControl(
 			position ="topleft",
-			baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites","Site labels", "Permits", "Assessment units","Beneficial uses", "Site-specific standards"),
+			baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites","Site labels", "Permits", "Assessment units","Beneficial uses", "Site-specific standards", "State boundary"),
 			options = layersControlOptions(collapsed = FALSE)
 		)
 	})
