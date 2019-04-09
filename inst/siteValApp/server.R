@@ -6,11 +6,11 @@ server <- function(input, output, session){
 #sites=read.csv(file='data/IR_master_site_file.csv', stringsAsFactors=F)
 #reasons=read.csv(file='data/rev_rej_reasons.csv', stringsAsFactors=F)
 
-
-library(wqTools)
 library(leaflet)
+library(wqTools)
 
 permits=read.csv(file='data/ut_facilities-04-09-2019.csv')
+
 
 # empty reactive objects list
 reactive_objects=reactiveValues()
@@ -101,7 +101,7 @@ observe({
 
 # Map output
 session$onFlushed(once = T, function() {
-	output$map=leaflet::renderLeaflet({
+	output$map=renderLeaflet({
 		wqTools::buildMap(search="aus") %>%
 		addMapPane("permits", zIndex = 417) %>%
 		addMapPane("highlight", zIndex = 418) %>%
@@ -116,12 +116,12 @@ session$onFlushed(once = T, function() {
 		addLayersControl(
 			position ="topleft",
 			baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites","Site labels", "Permits", "Assessment units","Beneficial uses", "Site-specific standards"),
-			options = leaflet::layersControlOptions(collapsed = FALSE)
+			options = layersControlOptions(collapsed = FALSE)
 		)
 	})
 })
 
-map_proxy=leaflet::leafletProxy("map")
+map_proxy=leafletProxy("map")
 
 # Add sites via proxy on site_types change
 observeEvent(reactive_objects$map_sites, ignoreNULL = F, ignoreInit=T, {
@@ -134,8 +134,8 @@ observeEvent(reactive_objects$map_sites, ignoreNULL = F, ignoreInit=T, {
 		
 		if(!is.null(input$site_types) & !is.null(input$review_reasons) & dim(reactive_objects$map_sites)[1]>0){
 			map_proxy %>% addLabelOnlyMarkers(data=reactive_objects$map_sites, group="Site labels", lat=~lat, lng=~long, options = pathOptions(pane = "labels"),
-				label=~MonitoringLocationIdentifier,labelOptions = leaflet::labelOptions(noHide = T, textsize = "15px"),
-				clusterOptions=leaflet::markerClusterOptions(spiderfyOnMaxZoom=T))
+				label=~MonitoringLocationIdentifier,labelOptions = labelOptions(noHide = T, textsize = "15px"),
+				clusterOptions=markerClusterOptions(spiderfyOnMaxZoom=T))
 		}
 })
 
@@ -379,7 +379,7 @@ observeEvent(input$merge_ok, {
 	
 	### Re-build reactive_objects$map_sites
 	reason_mlids=unique(reactive_objects$reasons[reactive_objects$reasons$Reason %in% input$review_reasons,'MonitoringLocationIdentifier'])
-	reactive_objects$sites=sf::st_as_sf(reactive_objects$sites, coords=c("long","lat"), crs=4326, remove=F)
+	reactive_objects$sites=sf::st_as_sf(sf::st_drop_geometry(reactive_objects$sites), coords=c("long","lat"), crs=4326, remove=F)
 	reactive_objects$map_sites=reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$site_types & reactive_objects$sites$MonitoringLocationIdentifier %in% reason_mlids,]
 	
 	### Clear table selection & update map highlights (via reactive_objects$selected_sites)
