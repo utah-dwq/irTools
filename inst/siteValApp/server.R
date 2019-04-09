@@ -90,7 +90,7 @@ observe({
 	reactive_objects$review_reasons=unique(reactive_objects$reasons[reactive_objects$reasons$FLAG %in% input$site_types,]$Reason)
 })
 output$review_reasons <- renderUI({
-	checkboxGroupInput("review_reasons", "Review reason", reactive_objects$review_reasons, inline=TRUE, selected=input$review_reasons)
+	checkboxGroupInput("review_reasons", "Review reason", reactive_objects$review_reasons[order(reactive_objects$review_reasons)], inline=TRUE, selected=input$review_reasons)
 })
 
 
@@ -278,7 +278,7 @@ observeEvent(input$reject, {
 			)
 		}),
 		br(),
-		selectInput("reject_reason", label="Reason for rejecting (applied to all selected sites)", choices=reactive_objects$reject_reasons),
+		selectInput("reject_reason", label="Reason for rejecting (applied to all selected sites)", choices=reactive_objects$reject_reasons[order(reactive_objects$reject_reasons)]),
 		textInput('reject_comment', 'Additional comments (optional)'),
 		actionButton('reject_ok', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%'),
 		actionButton('reject_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%')
