@@ -34,23 +34,29 @@ reasons=plyr::rbind.fill(reasons, accepted)
 sites=sf::st_as_sf(sites, coords=c("long","lat"), crs=4326, remove=F)
 
 
-# Reasons checkbox
-output$review_reasons <- renderUI({
-	req(input$site_types)
-	reasons=unique(reasons[reasons$FLAG %in% input$site_types,]$Reason)
-	checkboxGroupInput("review_reasons", "Review reason", reasons, inline=TRUE, selected=input$review_reasons)
-})
-
 
 # empty reactive objects list
 reactive_objects=reactiveValues()
-
+reactive_objects$reasons=reasons
 reactive_objects$selected_sites=vector()
-
 reactive_objects$sites=sites
 
-observeEvent(input$review_reasons, ignoreNULL=F, {
-	reason_mlids=unique(reasons[reasons$Reason %in% input$review_reasons,'MonitoringLocationIdentifier'])
+observe({
+	reactive_objects$reject_reasons=unique(reactive_objects$reasons$Reason[reactive_objects$reasons$FLAG=="REJECT"])
+})
+
+
+# Reasons checkbox
+observe({
+	reactive_objects$review_reasons=unique(reactive_objects$reasons[reactive_objects$reasons$FLAG %in% input$site_types,]$Reason)
+})
+output$review_reasons <- renderUI({
+	checkboxGroupInput("review_reasons", "Review reason", reactive_objects$review_reasons, inline=TRUE, selected=input$review_reasons)
+})
+
+
+observe({
+	reason_mlids=unique(reactive_objects$reasons[reactive_objects$reasons$Reason %in% input$review_reasons,'MonitoringLocationIdentifier'])
 	reactive_objects$map_sites=reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$site_types & reactive_objects$sites$MonitoringLocationIdentifier %in% reason_mlids,]
 })
 
@@ -119,7 +125,7 @@ output$selected_sites_table=DT::renderDT({
 		c("MonitoringLocationIdentifier","OrganizationIdentifier","MonitoringLocationName","MonitoringLocationTypeName",
 		  "IR_FLAG_REASONS","IR_FLAG", "OrganizationFormalName","ProviderName","IR_MLID","IR_MLNAME","ASSESS_ID",
 		  "AU_NAME","AU_Type","Water_Type","R317Descrp","ss_R317Descrp",
-		  "BEN_CLASS","LatitudeMeasure","LongitudeMeasure","IR_Lat","IR_Long","IR_COMMENT")])
+		  "BEN_CLASS","LatitudeMeasure","LongitudeMeasure","IR_Lat","IR_Long","IR_COMMENT", "ReviewComment")])
 	DT::datatable(reactive_objects$selected_sites_table,
 		selection='multiple', rownames=FALSE, filter="top",
 		options = list(scrollY = TRUE, paging = FALSE, scrollX=TRUE, dom="ltipr")
@@ -174,16 +180,70 @@ observeEvent(input$accept_ok, {
 	accept_mlids=reactive_objects$table_selected_mlids
 	reactive_objects$sites=within(reactive_objects$sites, {
 		IR_FLAG[MonitoringLocationIdentifier %in% accept_mlids] = "ACCEPT"
+		IR_FLAG_REASONS[MonitoringLocationIdentifier %in% accept_mlids] = "Accept"
 		IR_COMMENT[MonitoringLocationIdentifier %in% accept_mlids] = "Manually accepted"
-		IR_FLAG[MonitoringLocationIdentifier %in% accept_mlids] = "ACCEPT"
 		IR_MLID[MonitoringLocationIdentifier %in% accept_mlids] = MonitoringLocationIdentifier[MonitoringLocationIdentifier %in% accept_mlids]
 		IR_MLNAME[MonitoringLocationIdentifier %in% accept_mlids] = MonitoringLocationName[MonitoringLocationIdentifier %in% accept_mlids]
 		IR_Lat[MonitoringLocationIdentifier %in% accept_mlids] = LatitudeMeasure[MonitoringLocationIdentifier %in% accept_mlids]
-		IR_Long[MonitoringLocationIdentifier %in% accept_mlids] = LongitudeMeasure[MonitoringLocationIdentifier %in% accept_mlids]	
+		IR_Long[MonitoringLocationIdentifier %in% accept_mlids] = LongitudeMeasure[MonitoringLocationIdentifier %in% accept_mlids]
+		color[MonitoringLocationIdentifier %in% accept_mlids]='green'
 	})
 
 	### Re-build reactive_objects$map_sites
-	reason_mlids=unique(reasons[reasons$Reason %in% input$review_reasons,'MonitoringLocationIdentifier'])
+	reason_mlids=unique(reactive_objects$reasons[reactive_objects$reasons$Reason %in% input$review_reasons,'MonitoringLocationIdentifier'])
+	reactive_objects$map_sites=reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$site_types & reactive_objects$sites$MonitoringLocationIdentifier %in% reason_mlids,]
+	
+	### Clear table selection & update map highlights (via reactive_objects$selected_sites)
+	reactive_objects$selected_sites=reactive_objects$selected_sites[!reactive_objects$selected_sites %in% reactive_objects$table_selected_mlids]
+	
+	### Clear modal
+	removeModal()
+
+})
+
+
+## Reject selected sites
+observeEvent(input$reject, {
+	if(length(reactive_objects$table_selected_mlids)==0){
+		showModal(modalDialog(title="Error.",size="l",easyClose=T,
+			"Select site(s) in map & table to make a review.")
+	)}else{
+		showModal(modalDialog(title="OK to REJECT site(s)?",size="l", footer=NULL,
+		DT::renderDT({
+			DT::datatable(reactive_objects$table_selected_table,
+				selection='none', rownames=FALSE, filter="none",
+				options = list(scrollY = TRUE, paging = FALSE, scrollX=TRUE, dom="t")
+			)
+		}),
+		br(),
+		selectInput("reject_reason", label="Reason for rejecting (applied to all selected sites)", choices=reactive_objects$reject_reasons),
+		textInput('reject_comment', 'Additional comments (optional)'),
+		actionButton('reject_ok', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%'),
+		actionButton('reject_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%')
+		))
+	}
+})
+
+
+### Update attributes
+observeEvent(input$reject_cancel, {removeModal()})
+observeEvent(input$reject_ok, {
+	reject_mlids=reactive_objects$table_selected_mlids
+	reactive_objects$sites=within(reactive_objects$sites, {
+		IR_FLAG[MonitoringLocationIdentifier %in% reject_mlids] = "REJECT"
+		IR_COMMENT[MonitoringLocationIdentifier %in% reject_mlids] = "Manually rejected"
+		IR_FLAG_REASONS[MonitoringLocationIdentifier %in% reject_mlids]=paste(input$reject_reason)
+		ReviewComment[MonitoringLocationIdentifier %in% reject_mlids]=input$reject_comment
+		color[MonitoringLocationIdentifier %in% reject_mlids]='red'
+	})
+	
+	reactive_objects$reasons=within(reactive_objects$reasons,{
+		Reason[MonitoringLocationIdentifier %in% reject_mlids] = paste(input$reject_reason)	
+		FLAG[MonitoringLocationIdentifier %in% reject_mlids]="REJECT"
+	})
+	
+	### Re-build reactive_objects$map_sites
+	reason_mlids=unique(reactive_objects$reasons[reactive_objects$reasons$Reason %in% input$review_reasons,'MonitoringLocationIdentifier'])
 	reactive_objects$map_sites=reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$site_types & reactive_objects$sites$MonitoringLocationIdentifier %in% reason_mlids,]
 	
 	### Clear table selection & update map highlights (via reactive_objects$selected_sites)
@@ -196,10 +256,27 @@ observeEvent(input$accept_ok, {
 
 
 
-
-#observeEvent(input$reject, {})
 #observeEvent(input$merge, {})
 #observeEvent(input$comment, {})
+
+## Add rejection reason
+observeEvent(input$add_reject_reason, {
+	showModal(modalDialog(title="Add rejection reason", size="l",
+		textInput('rej_reason_to_add', 'Add rejection reason'),
+		actionButton('add_reject_reason_add', 'Add', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'),
+		actionButton('add_reject_reason_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')
+	))
+})
+observeEvent(input$add_reject_reason_add, {
+	reactive_objects$reject_reasons=append(reactive_objects$reject_reasons, paste(input$rej_reason_to_add))
+	#reactive_objects$review_reasons=append(reactive_objects$review_reasons, paste(input$rej_reason_to_add))
+	removeModal()
+})
+observeEvent(input$add_reject_reason_cancel, {
+	removeModal()
+})
+
+
 
 
 

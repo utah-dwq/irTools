@@ -24,6 +24,7 @@ ui <-fluidPage(bsCollapse(multiple=T, open="Import files",
 			actionButton('clear_all', 'Clear all', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'),
 			actionButton('accept', 'Accept', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'),
 			actionButton('reject', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'),
+			actionButton('add_reject_reason', 'Add rejection reason', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'),
 			actionButton('merge', 'Merge', style='color: #fff; background-color: #337ab7; border-color: #2e6da4'),
 			actionButton('comment', 'Comment',style='color: #fff; background-color: #337ab7; border-color: #2e6da4')
 		),
