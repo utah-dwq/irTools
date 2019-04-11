@@ -17,13 +17,17 @@ reactive_objects=reactiveValues()
 
 
 # Read input files
-## Sites
 observeEvent(input$import_sites,{
 	sites_file=input$import_sites
 	if(is.null(sites_file)){
 		return(NULL)
 	}else{
-		sites=read.csv(sites_file$datapath, stringsAsFactors=F)
+		xlsx=openxlsx::loadWorkbook(sites_file$datapath)
+		sheetnames=openxlsx::getSheetNames(sites_file$datapath)
+		for(n in 1:length(sheetnames)){
+			openxlsx::removeFilter(xlsx, sheetnames[n])
+			}
+		sites=data.frame(openxlsx::readWorkbook(xlsx, sheet='sites',detectDates=TRUE), stringsAsFactors=F)
 		sites=within(sites,{
 			lat=ifelse(!is.na(IR_Lat), IR_Lat, LatitudeMeasure)
 			long=ifelse(!is.na(IR_Long), IR_Long, LongitudeMeasure)
@@ -33,25 +37,15 @@ observeEvent(input$import_sites,{
 			color[IR_FLAG=="REVIEW"]="orange"
 		})
 		reactive_objects$sites_input=sites
-	}
-})
-
-
-## Reasons
-observeEvent(input$import_reasons,{
-	reasons_file=input$import_reasons
-	if(is.null(reasons_file)){
-		return(NULL)
-	}else{
-		reasons=read.csv(reasons_file$datapath, stringsAsFactors=F)
+		
+		reasons=data.frame(openxlsx::readWorkbook(xlsx, sheet='reasons',detectDates=TRUE), stringsAsFactors=F)
 		reactive_objects$reasons_input=reasons
+		reactive_objects$xlsx=xlsx
 	}
 })
-
-
 
 observe({
-		req(reactive_objects$sites_input, reactive_objects$reasons_input)
+		req(reactive_objects$sites_input, reactive_objects$reasons_input, reactive_objects$xlsx)
 		isolate({
 			sites=reactive_objects$sites_input
 			reasons=reactive_objects$reasons_input
@@ -315,7 +309,7 @@ observeEvent(input$reject_ok, {
 		IR_FLAG[MonitoringLocationIdentifier %in% reject_mlids] = "REJECT"
 		IR_MLID[MonitoringLocationIdentifier %in% reject_mlids] = "REJECT"
 		IR_MLNAME[MonitoringLocationIdentifier %in% reject_mlids] = "REJECT"
-		IR_COMMENT[MonitoringLocationIdentifier %in% reject_mlids] = "Manually rejected"
+		IR_COMMENT[MonitoringLocationIdentifier %in% reject_mlids] = paste("Manually rejected,",paste(input$reject_reason))
 		IR_FLAG_REASONS[MonitoringLocationIdentifier %in% reject_mlids]=paste(input$reject_reason)
 		ReviewComment[MonitoringLocationIdentifier %in% reject_mlids]=input$reject_comment
 		color[MonitoringLocationIdentifier %in% reject_mlids]='red'
@@ -481,18 +475,29 @@ observeEvent(input$add_reject_reason_cancel, {
 
 
 # Export reviews
-review_download=reactive({
-	as.data.frame(sf::st_drop_geometry(reactive_objects$sites)[,!names(reactive_objects$sites) %in% c('long','lat','IR_FLAG_REASONS','color','geometry')])
-})
+#observe({
+#	req(reactive_objects$sites, reactive_objects$reasons)
+#	isolate({
+#		req(reactive_objects$xlsx)
+#		sites=sf::st_drop_geometry(reactive_objects$sites)
+#		xlsx=reactive_objects$xlsx
+#		openxlsx::removeWorksheet(xlsx, sheet='sites')
+#		openxlsx::removeWorksheet(xlsx, sheet='reasons')
+#		openxlsx::addWorksheet(xlsx, 'sites')
+#		openxlsx::addWorksheet(xlsx, 'reasons')
+#		openxlsx::writeData(xlsx, 'sites', sites)
+#		openxlsx::writeData(xlsx, 'reasons', reactive_objects$reasons)
+#		reactive_objects$xlsx=xlsx
+#		
+#	})
+#})
 
 output$exp_rev <- downloadHandler(
-	filename = paste("site-reviews-", Sys.Date(), ".csv", sep=""),
-	content = function(file) {
-		write.csv(review_download(), row.names=FALSE, file)
-	}
+	filename=paste0('master-site-reviews-', Sys.Date(),'.xlsx'),
+	content = function(file) {writexl::write_xlsx(
+		list(sites=as.data.frame(sf::st_drop_geometry(reactive_objects$sites)[,!names(reactive_objects$sites) %in% c('long','lat','IR_FLAG_REASONS','color','geometry')]), reasons=reactive_objects$reasons),
+		path = file, format_headers=F)}
 )
-
-
 
 }
 

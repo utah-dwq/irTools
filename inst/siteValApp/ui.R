@@ -10,10 +10,10 @@ headerPanel(
 ),
 
 mainPanel(width=10,
-bsCollapse(multiple=T, open="Import files",
-	bsCollapsePanel("Import files",
-		fileInput("import_sites", "Import site file", accept=".csv"),
-		fileInput("import_reasons", "Import review reasons file", accept=".csv")
+bsCollapse(multiple=T, open="Import sites file",
+	bsCollapsePanel("Import sites file",
+		fileInput("import_sites", "Import site file", accept=".xlsx")#,
+		#fileInput("import_reasons", "Import review reasons file", accept=".csv")
 	),
 	bsCollapsePanel("Review map",
 		fluidRow(
