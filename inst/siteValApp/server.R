@@ -18,34 +18,34 @@ reactive_objects=reactiveValues()
 
 # Read input files
 observeEvent(input$import_sites,{
-	sites_file=input$import_sites
+	sites_file=input$import_sites$datapath
 	if(is.null(sites_file)){
 		return(NULL)
 	}else{
-		xlsx=openxlsx::loadWorkbook(sites_file$datapath)
-		sheetnames=openxlsx::getSheetNames(sites_file$datapath)
-		for(n in 1:length(sheetnames)){
-			openxlsx::removeFilter(xlsx, sheetnames[n])
-			}
-		sites=data.frame(openxlsx::readWorkbook(xlsx, sheet='sites',detectDates=TRUE), stringsAsFactors=F)
+		sites=as.data.frame(readxl::read_excel(sites_file, 'sites'))
+		suppressWarnings({sites$IR_Lat=as.numeric(sites$IR_Lat)
+		sites$IR_Long=as.numeric(sites$IR_Long)})
 		sites=within(sites,{
-			lat=ifelse(!is.na(IR_Lat), IR_Lat, LatitudeMeasure)
-			long=ifelse(!is.na(IR_Long), IR_Long, LongitudeMeasure)
+			lat=ifelse(!is.na(IR_Lat), as.numeric(IR_Lat), LatitudeMeasure)
+			long=ifelse(!is.na(IR_Long), as.numeric(IR_Long), LongitudeMeasure)
 			color=NA
 			color[IR_FLAG=="REJECT"]="red"
 			color[IR_FLAG=="ACCEPT"]="green"
 			color[IR_FLAG=="REVIEW"]="orange"
 		})
+		#sitestest<<-sites
 		reactive_objects$sites_input=sites
-		
-		reasons=data.frame(openxlsx::readWorkbook(xlsx, sheet='reasons',detectDates=TRUE), stringsAsFactors=F)
+		reasons=as.data.frame(readxl::read_excel(sites_file, 'reasons'))
+		#reasonstest<<-reasons
+
+
 		reactive_objects$reasons_input=reasons
-		reactive_objects$xlsx=xlsx
+			
 	}
 })
 
 observe({
-		req(reactive_objects$sites_input, reactive_objects$reasons_input, reactive_objects$xlsx)
+		req(reactive_objects$sites_input, reactive_objects$reasons_input)
 		isolate({
 			sites=reactive_objects$sites_input
 			reasons=reactive_objects$reasons_input
@@ -82,6 +82,7 @@ observe({
 	reactive_objects$review_reasons=unique(reactive_objects$reasons[reactive_objects$reasons$FLAG %in% input$site_types,]$Reason)
 })
 output$review_reasons <- renderUI({
+	
 	checkboxGroupInput("review_reasons", "Review reason", reactive_objects$review_reasons[order(reactive_objects$review_reasons)], inline=TRUE, selected=input$review_reasons)
 })
 
@@ -475,28 +476,12 @@ observeEvent(input$add_reject_reason_cancel, {
 
 
 # Export reviews
-#observe({
-#	req(reactive_objects$sites, reactive_objects$reasons)
-#	isolate({
-#		req(reactive_objects$xlsx)
-#		sites=sf::st_drop_geometry(reactive_objects$sites)
-#		xlsx=reactive_objects$xlsx
-#		openxlsx::removeWorksheet(xlsx, sheet='sites')
-#		openxlsx::removeWorksheet(xlsx, sheet='reasons')
-#		openxlsx::addWorksheet(xlsx, 'sites')
-#		openxlsx::addWorksheet(xlsx, 'reasons')
-#		openxlsx::writeData(xlsx, 'sites', sites)
-#		openxlsx::writeData(xlsx, 'reasons', reactive_objects$reasons)
-#		reactive_objects$xlsx=xlsx
-#		
-#	})
-#})
 
 output$exp_rev <- downloadHandler(
 	filename=paste0('master-site-reviews-', Sys.Date(),'.xlsx'),
 	content = function(file) {writexl::write_xlsx(
-		list(sites=as.data.frame(sf::st_drop_geometry(reactive_objects$sites)[,!names(reactive_objects$sites) %in% c('long','lat','IR_FLAG_REASONS','color','geometry')]), reasons=reactive_objects$reasons),
-		path = file, format_headers=F)}
+		list(sites=as.data.frame(sf::st_drop_geometry(reactive_objects$sites)[,!names(reactive_objects$sites) %in% c('long','lat','IR_FLAG_REASONS','color','geometry')]), reasons=reactive_objects$reasons[reactive_objects$reasons$FLAG!="ACCEPT",]),
+		path = file, format_headers=F, col_names=T)}
 )
 
 }
