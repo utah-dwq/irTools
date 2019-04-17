@@ -24,7 +24,8 @@ observeEvent(input$import_sites,{
 	}else{
 		sites=as.data.frame(readxl::read_excel(sites_file, 'sites'))
 		suppressWarnings({sites$IR_Lat=as.numeric(sites$IR_Lat)
-		sites$IR_Long=as.numeric(sites$IR_Long)})
+		sites$IR_Long=as.numeric(sites$IR_Long)
+		sites$ReviewComment=as.character(sites$ReviewComment)})
 		sites=within(sites,{
 			lat=ifelse(!is.na(IR_Lat), as.numeric(IR_Lat), LatitudeMeasure)
 			long=ifelse(!is.na(IR_Long), as.numeric(IR_Long), LongitudeMeasure)
