@@ -7,11 +7,11 @@
 #' @param detquantlim A WQP detection/quantitation limit file R-object. Should be matching complement to WQP results input.
 #' @param translation_wb Full path and filename for IR translation workbook (.xlsx).
 
-#' @param detsheetname  Name of sheet in workbook holding detection limit type names and ranked prioritizations table. Defaults to "detLimitTypeTable".
-#' @param unitsheetname Name of sheet in workbook holding unit conversion table. Defaults to "unitConvTable".
-#' @param detstartRow Row to start reading the detLimitTypeTable excel sheet from (in case headers have been added). Defaults to 3.
-#' @param unitstartRow Row to start reading the unitConvTable excel sheet from (in case headers have been added). Defaults to 1.
-#' @param unitstartCol Column to start reading the unitConvTable excel sheet from (in case headers have been added). Defaults to 1.
+#' @param detLimitTypeTable_sheetname  Name of sheet in workbook holding detection limit type names and ranked prioritizations table. Defaults to "detLimitTypeTable".
+#' @param unitConvTable_sheetname Name of sheet in workbook holding unit conversion table. Defaults to "unitConvTable".
+#' @param detLimitTypeTable_startRow Row to start reading the detLimitTypeTable excel sheet from (in case headers have been added). Defaults to 2.
+#' @param unitConvTable_startRow Row to start reading the unitConvTable excel sheet from (in case headers have been added). Defaults to 1.
+#' @param unitConvTable_startCol Column to start reading the unitConvTable excel sheet from (in case headers have been added). Defaults to 1.
 #' @param lql_fac Numeric - factor by which to multiply lower quantitation limit type values when filling masked data or other non-detects (e.g. below lql values). Default = 0.5.
 #' @param uql_fac Numeric - factor by which to multiply upper quantitation limit type values when filling masked data or other over limit values. Default = 1.
 #' @importFrom wqTools facToNum
@@ -25,22 +25,22 @@
 #' @importFrom wqTools facToNum
 
 #' @export
-fillMaskedValues = function(results, detquantlim, translation_wb, detsheetname="detLimitTypeTable", unitsheetname="unitConvTable", detstartRow=3, unitstartRow=1, unitstartCol=1, lql_fac=0.5, uql_fac=1){
+fillMaskedValues = function(results, detquantlim, translation_wb, detLimitTypeTable_sheetname="detLimitTypeTable", unitConvTable_sheetname="unitConvTable", detLimitTypeTable_startRow=2, unitConvTable_startRow=1, unitConvTable_startCol=1, lql_fac=0.5, uql_fac=1){
 
 
 #####TESTING SETUP
 #####
 # 
-# results=merged_result
+# results=merged_results
 # detquantlim=detquantlim
-# translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
-# detsheetname="detLimitTypeTable"
-# unitsheetname="unitConvTable"
+# translation_wb="C:\\Users\\jvander\\Documents\\R\\irTools-test-16\\lookup-tables\\ir_translation_workbook.xlsx"
+# detLimitTypeTable_sheetname="detLimitTypeTable"
+# unitConvTable_sheetname="unitConvTable"
 # lql_fac=0.5
 # uql_fac=1
-# detstartRow=3
-# unitstartRow=1
-# unitstartCol=1
+# detLimitTypeTable_startRow=2
+# unitConvTable_startRow=1
+# unitConvTable_startCol=1
 ########
 ########
 
@@ -58,7 +58,7 @@ for(n in 1:length(sheetnames)){
 
 
 #Join rankings from detLimitTypeTable to dql
-detLimitTypeTable=data.frame(openxlsx::readWorkbook(trans_wb, sheet=detsheetname, startRow=detstartRow, detectDates=TRUE))
+detLimitTypeTable=data.frame(openxlsx::readWorkbook(trans_wb, sheet=detLimitTypeTable_sheetname, startRow=detLimitTypeTable_startRow, detectDates=TRUE))
 detLimitTypeTable=detLimitTypeTable[,c("DetectionQuantitationLimitTypeName","IRLimitPriorityRanking_lower","IRLimitPriorityRanking_upper")]
 
 dql=merge(detquantlim,detLimitTypeTable,all.x=T)
@@ -164,14 +164,14 @@ if(dim(r_lu_units)[1]>0){
   print("Unit conversion(s) needed between detection limit unit(s) and result unit(s). Checking for new unit conversions...")
   r_lu_units$InData = "Y"
   ##Merge to unitConvTable##
-  unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=unitsheetname, startRow=unitstartRow, detectDates=TRUE))
+  unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=unitConvTable_sheetname, startRow=unitConvTable_startRow, detectDates=TRUE))
   unitconv_table=unitconv_table[,!names(unitconv_table)%in%"InData"] # Refresh InData column 
   unitmerge <- merge(r_lu_units,unitconv_table, all=TRUE)
   
   ##Close out of function if new unit conversions added##
   if(!dim(unitmerge)[1]==dim(unitconv_table)[1]){
     unitmerge$DateAdded[is.na(unitmerge$DateAdded)]=Sys.Date() # this does not work with an empty dataframe
-    openxlsx::writeData(trans_wb, "unitConvTable", unitmerge, startRow=unitstartRow, startCol=unitstartCol)
+    openxlsx::writeData(trans_wb, "unitConvTable", unitmerge, startRow=unitConvTable_startRow, startCol=unitConvTable_startCol)
     #Save translation workbook
     openxlsx::saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
     newunit <- dim(unitmerge)[1]-dim(unitconv_table)[1]
@@ -180,7 +180,7 @@ if(dim(r_lu_units)[1]>0){
   
   
   ##Attach unit conversion factors##
-  unitconv <- subset(unitmerge, unitmerge$InData=="Y")
+  unitconv <- subset(unitmerge, InData=="Y")
   unitconv <- unitconv[,names(unitconv)%in%c("IR_Unit","CriterionUnits","UnitConversionFactor")]
   
   #Check that UnitConversionFactor if filled in for all in unitconv
