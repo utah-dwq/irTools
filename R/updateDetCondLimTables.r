@@ -8,11 +8,11 @@
 #' @param translation_wb Full path and filename for IR translation workbook (.xlsx). 
 
 #' @param detConditionTable_sheetname Name of sheet in workbook holding result detection condition names table. Defaults to "detConditionTable".
-#' @param detConditionTable_startRow Row to start reading the detConditionTable excel sheet from (in case headers have been added). Defaults to 3.
+#' @param detConditionTable_startRow Row to start reading the detConditionTable excel sheet from (in case headers have been added). Defaults to 2.
 #' @param detConditionTable_startCol Col to start writing the detConditionTable excel sheet to (to the right of all formula based columns). Defaults to 1.
 
 #' @param detLimitTypeTable_sheetname  Name of sheet in workbook holding detection limit type names and ranked prioritizations table. Defaults to "detLimitTypeTable".
-#' @param detLimitTypeTable_startRow Row to start reading the detLimitTypeTable excel sheet from (in case headers have been added). Defaults to 3.
+#' @param detLimitTypeTable_startRow Row to start reading the detLimitTypeTable excel sheet from (in case headers have been added). Defaults to 2.
 #' @param detLimitTypeTable_startCol Col to start writing the detLimitTypeTable excel sheet to (to the right of all formula based columns). Defaults to 1.
 
 #' @return Appends any new values in WQP data to translation_wb for review. This updates the input translation_wb with those new rows.
@@ -27,33 +27,33 @@
 
 #' @export
 updateDetCondLimTables=function(results,detquantlim,translation_wb,
-								detConditionTable_sheetname="detConditionTable", detConditionTable_startRow=3, detConditionTable_startCol=1,
-								detLimitTypeTable_sheetname="detLimitTypeTable", detLimitTypeTable_startRow=3, detLimitTypeTable_startCol=1
+								detConditionTable_sheetname="detConditionTable", detConditionTable_startRow=2, detConditionTable_startCol=1,
+								detLimitTypeTable_sheetname="detLimitTypeTable", detLimitTypeTable_startRow=2, detLimitTypeTable_startCol=1
 								){
 
-####TESTING SETUP
-####
-#
+#####TESTING SETUP
+#####
+##
 #results=merged_results
 #detquantlim=detquantlim
-#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\jake\\translationWorkbook\\ir_translation_workbook.xlsx"
+#translation_wb="C:\\Users\\jvander\\Documents\\R\\irTools-test-16\\lookup-tables\\ir_translation_workbook.xlsx"
 #detConditionTable_sheetname="detConditionTable"
-#detConditionTable_startRow=3
+#detConditionTable_startRow=2
 #detConditionTable_startCol=1
 #detLimitTypeTable_sheetname="detLimitTypeTable"
-#detLimitTypeTable_startRow=3
+#detLimitTypeTable_startRow=2
 #detLimitTypeTable_startCol=1
-#######
-#######
+########
+########
 
 
 #Load translation workbook
-trans_wb=loadWorkbook(translation_wb)
+trans_wb=openxlsx::loadWorkbook(translation_wb)
 
 #Remove filters from all sheets in trans_wb (filtering seems to cause file corruption occassionally...)
-sheetnames=getSheetNames(translation_wb)
+sheetnames=openxlsx::getSheetNames(translation_wb)
 for(n in 1:length(sheetnames)){
-	removeFilter(trans_wb, sheetnames[n])
+	openxlsx::removeFilter(trans_wb, sheetnames[n])
 	}
 
 
@@ -68,7 +68,7 @@ names(detconds)="ResultDetectionConditionText"
 detconds[detconds==""]=NA
 detconds$InData="Y"
 
-detConditionTable=data.frame(readWorkbook(trans_wb, sheet=detConditionTable_sheetname, startRow=detConditionTable_startRow, detectDates=TRUE))
+detConditionTable=data.frame(openxlsx::readWorkbook(trans_wb, sheet=detConditionTable_sheetname, startRow=detConditionTable_startRow, detectDates=TRUE))
 detConditionTable_names=names(detConditionTable)
 detConditionTable=detConditionTable[,!names(detConditionTable)%in%"InData"]
 
@@ -76,7 +76,7 @@ detcond_merge=merge(detconds, detConditionTable, all=T)
 
 detcond_merge=detcond_merge[,detConditionTable_names]
 
-writeData(trans_wb, detConditionTable_sheetname, detcond_merge, startRow=detConditionTable_startRow+1, startCol=detConditionTable_startCol,colNames=F)
+openxlsx::writeData(trans_wb, detConditionTable_sheetname, detcond_merge, startRow=detConditionTable_startRow+1, startCol=detConditionTable_startCol,colNames=F)
 
 # Check for new detection condition text
 detcondstext <- detconds$ResultDetectionConditionText
@@ -96,7 +96,7 @@ names(detlims)="DetectionQuantitationLimitTypeName"
 detlims[detlims==""]=NA
 detlims$InData="Y"
 
-detLimitTypeTable=data.frame(readWorkbook(trans_wb, sheet=detLimitTypeTable_sheetname, startRow=detLimitTypeTable_startRow, detectDates=TRUE))
+detLimitTypeTable=data.frame(openxlsx::readWorkbook(trans_wb, sheet=detLimitTypeTable_sheetname, startRow=detLimitTypeTable_startRow, detectDates=TRUE))
 detLimitTypeTable_names=names(detLimitTypeTable)
 detLimitTypeTable=detLimitTypeTable[,!names(detLimitTypeTable)%in%"InData"]
 
@@ -104,7 +104,7 @@ detlim_merge=merge(detlims, detLimitTypeTable, all=T)
 
 detlim_merge=detlim_merge[,detLimitTypeTable_names]
 
-writeData(trans_wb, detLimitTypeTable_sheetname, detlim_merge, startRow=detLimitTypeTable_startRow+1, startCol=detLimitTypeTable_startCol,colNames=F)
+openxlsx::writeData(trans_wb, detLimitTypeTable_sheetname, detlim_merge, startRow=detLimitTypeTable_startRow+1, startCol=detLimitTypeTable_startCol,colNames=F)
 
 # Check for new detection limit types
 detlimtypes <- detlims$DetectionQuantitationLimitTypeName
@@ -118,7 +118,7 @@ if(length(new_det_lim_types)>0){
   print("detLimitTypeTable updated.")} else{print("No new DetectionQuantitationLimitTypeName value(s) identified.")}
 
 #Save translation wb
-saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
+openxlsx::saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
 print("Translation workbook updated & saved.")
 
 
