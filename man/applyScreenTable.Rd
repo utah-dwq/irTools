@@ -4,13 +4,13 @@
 \alias{applyScreenTable}
 \title{Apply screens to WQP data by selected table}
 \usage{
-applyScreenTable(data, translation_wb, sheetname, flag_col_name,
-  com_col_name, startRow = 1, na_dup_err = TRUE)
+applyScreenTable(data, wb, sheetname, flag_col_name, com_col_name,
+  startRow = 1, na_dup_err = TRUE)
 }
 \arguments{
 \item{data}{A merged WQP result object. Must include both narrowresult & activity files. May also be a post-fillMaskedValues() results object. Note: re-application of edited domain tables to an already screened dataset is not advised, and changes to the domain table likely will not be reflected in a re-screened dataset due to merging conventions.}
 
-\item{translation_wb}{Full path and filename for IR translation workbook}
+\item{wb}{Full path and filename for Excel workbook containing screen table to be applied}
 
 \item{sheetname}{Name of sheet in workbook holding desired screening decisions}
 

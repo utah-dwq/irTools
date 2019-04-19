@@ -6,9 +6,9 @@
 \usage{
 updateDetCondLimTables(results, detquantlim, translation_wb,
   detConditionTable_sheetname = "detConditionTable",
-  detConditionTable_startRow = 3, detConditionTable_startCol = 1,
+  detConditionTable_startRow = 2, detConditionTable_startCol = 1,
   detLimitTypeTable_sheetname = "detLimitTypeTable",
-  detLimitTypeTable_startRow = 3, detLimitTypeTable_startCol = 1)
+  detLimitTypeTable_startRow = 2, detLimitTypeTable_startCol = 1)
 }
 \arguments{
 \item{results}{A WQP results (must include narrow result, merged, wide objects OK) R-object name.}
@@ -19,13 +19,13 @@ updateDetCondLimTables(results, detquantlim, translation_wb,
 
 \item{detConditionTable_sheetname}{Name of sheet in workbook holding result detection condition names table. Defaults to "detConditionTable".}
 
-\item{detConditionTable_startRow}{Row to start reading the detConditionTable excel sheet from (in case headers have been added). Defaults to 3.}
+\item{detConditionTable_startRow}{Row to start reading the detConditionTable excel sheet from (in case headers have been added). Defaults to 2.}
 
 \item{detConditionTable_startCol}{Col to start writing the detConditionTable excel sheet to (to the right of all formula based columns). Defaults to 1.}
 
 \item{detLimitTypeTable_sheetname}{Name of sheet in workbook holding detection limit type names and ranked prioritizations table. Defaults to "detLimitTypeTable".}
 
-\item{detLimitTypeTable_startRow}{Row to start reading the detLimitTypeTable excel sheet from (in case headers have been added). Defaults to 3.}
+\item{detLimitTypeTable_startRow}{Row to start reading the detLimitTypeTable excel sheet from (in case headers have been added). Defaults to 2.}
 
 \item{detLimitTypeTable_startCol}{Col to start writing the detLimitTypeTable excel sheet to (to the right of all formula based columns). Defaults to 1.}
 }
