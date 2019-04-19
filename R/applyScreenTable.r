@@ -24,10 +24,10 @@ applyScreenTable=function(data, wb, sheetname, flag_col_name, com_col_name, star
 # na_dup_err=FALSE
 
 #Load workbook
-trans_wb=openxlsx::loadWorkbook(translation_wb)
+trans_wb=openxlsx::loadWorkbook(wb)
 
 #Read selected sheet in workbook table
-screen_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=sheetname, startRow=startRow, detectDates=TRUE))
+screen_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=sheetname, startRow=startRow, detectDates=TRUE), stringsAsFactors=FALSE)
 
 #Check for blanks/NAs and duplicates in screen_table combinations present in data, exit w/ error if present (if na_err==TRUE) 
 if(na_dup_err==TRUE){
