@@ -5,8 +5,7 @@
 \title{Run site validation shiny app
 Runs site validation shiny app embedded in UT IR tools package.}
 \usage{
-runSiteValApp(master_site_file, polygon_path, edit_log_path,
-  reasons_flat_file)
+runSiteValApp()
 }
 \description{
 Run site validation shiny app
