@@ -2,7 +2,7 @@
 #'
 #' Joins activity review inputs (detConditionTable, labNameActivityTable, activityMediaNameTable, masterSiteTable, paramTransTable, & activityCommentTable) to WQP data to apply decisions from input files to data.
 #' @param data A merged WQP result object. Must include both narrowresult & activity files. May also be a post-fillMaskedValues() results object. Note: re-application of edited domain tables to an already screened dataset is not advised, and changes to the domain table likely will not be reflected in a re-screened dataset due to merging conventions.
-#' @param translation_wb Full path and filename for IR translation workbook
+#' @param wb Full path and filename for Excel workbook containing screen table to be applied
 #' @param sheetname Name of sheet in workbook holding desired screening decisions
 #' @param flag_col_name Name to rename IR_FLAG column to.
 #' @param com_col_name Name to rename IR_COMMENT column to.
@@ -12,7 +12,7 @@
 #' @importFrom openxlsx loadWorkbook
 #' @importFrom openxlsx readWorkbook
 #' @export
-applyScreenTable=function(data, translation_wb, sheetname, flag_col_name, com_col_name, startRow=1, na_dup_err=TRUE){ 
+applyScreenTable=function(data, wb, sheetname, flag_col_name, com_col_name, startRow=1, na_dup_err=TRUE){ 
 
 ##Testing setup
 # data=merged_results_filled
