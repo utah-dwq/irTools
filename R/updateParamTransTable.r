@@ -30,20 +30,20 @@
 #' @export
 updateParamTrans=function(data, detquantlim=detquantlim, translation_wb,
 						  paramTransTable_sheetname="paramTransTable", paramTransTable_startRow=4, paramTransTable_startCol=16,
-						  WQPParamCASID_sheetname="WQPParamCASID", WQPParamCASID_startRow=4, WQPParamCASID_startCol=1,
-						  paramFractionGroup_sheetname="paramFractionGroup", paramFractionGroup_startRow=3, paramFractionGroup_startCol=3
+						  WQPParamCASID_sheetname="WQPParamCASID", WQPParamCASID_startRow=2, WQPParamCASID_startCol=1,
+						  paramFractionGroup_sheetname="paramFractionGroup", paramFractionGroup_startRow=3, paramFractionGroup_startCol=2
 						){
 
 ###################						  
 ####TESTING SETUP
-#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\IR_translation_workbook.xlsx"
+##translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\IR_translation_workbook.xlsx"
 #data=mrf_sub
 #datatype="object"
 #paramTransTable_sheetname="paramTransTable"
 #paramTransTable_startRow=4
 #paramTransTable_startCol=16
 #WQPParamCASID_sheetname="WQPParamCASID"
-#WQPParamCASID_startRow=4
+#WQPParamCASID_startRow=2
 #WQPParamCASID_startCol=1
 #paramFractionGroup_sheetname="paramFractionGroup"
 #paramFractionGroup_startRow=3
@@ -55,16 +55,16 @@ updateParamTrans=function(data, detquantlim=detquantlim, translation_wb,
 
 
 #Reading translation workbook and table
-trans_wb=loadWorkbook(translation_wb)
-sheetnames=getSheetNames(translation_wb)
+trans_wb=openxlsx::loadWorkbook(translation_wb)
+sheetnames=openxlsx::getSheetNames(translation_wb)
 for(n in 1:length(sheetnames)){
-	removeFilter(trans_wb, sheetnames[n])
+	openxlsx::removeFilter(trans_wb, sheetnames[n])
 	}
 
-param_translation=data.frame(readWorkbook(trans_wb, sheet=paramTransTable_sheetname, startRow=paramTransTable_startRow, detectDates=TRUE))
+param_translation=data.frame(openxlsx::readWorkbook(trans_wb, sheet=paramTransTable_sheetname, startRow=paramTransTable_startRow, detectDates=TRUE))
 param_translation=param_translation[,paramTransTable_startCol:dim(param_translation)[2]]
 
-param_cas=data.frame(readWorkbook(trans_wb, sheet=WQPParamCASID_sheetname, startRow=WQPParamCASID_startRow, detectDates=TRUE))
+param_cas=data.frame(openxlsx::readWorkbook(trans_wb, sheet=WQPParamCASID_sheetname, startRow=WQPParamCASID_startRow, detectDates=TRUE))
 param_cas=param_cas[,WQPParamCASID_startCol:dim(param_cas)[2]]
 
 
@@ -89,7 +89,7 @@ parameters$InData="Y"
 parameters[parameters==""]=NA #Set blanks to NA for merge
 
 parameters_unique=data.frame(unique(data_dql[,"CharacteristicName"]))
-names(parameters_unique)="DATACharacteristicName"
+names(parameters_unique)="CharacteristicName"
 parameters_unique$InData="Y"
 parameters_unique[parameters_unique==""]=NA #Set blanks to NA for merge
 
@@ -101,15 +101,13 @@ parameters_unique_trans_merge=merge(parameters_unique,param_cas,all=T)
 params_trans_merge=params_trans_merge[,cnames] #Reorder columns by translation table input
 parameters_unique_trans_merge=parameters_unique_trans_merge[,cnames_u] #Reorder columns by translation table input
 
-
 #Generate fractions table
 fractions=data.frame(unique(data_dql$ResultSampleFractionText))
-fraction_table=data.frame(readWorkbook(trans_wb, sheet=paramFractionGroup_sheetname, startRow=paramFractionGroup_startRow, detectDates=TRUE))
+fraction_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=paramFractionGroup_sheetname, startRow=paramFractionGroup_startRow, detectDates=TRUE))
 fraction_table=fraction_table[,paramFractionGroup_startCol:dim(fraction_table)[2]]
 names(fractions)[1]=names(fraction_table)[1]
 fractions_merge=merge(fractions,fraction_table,all=T)
 new_fractions_count=dim(fractions_merge)[1]-dim(fraction_table)[1]
-
 
 new_params_count=dim(params_trans_merge)[1]-dim(param_translation)[1]
 new_params_cas_count=dim(parameters_unique_trans_merge)[1]-dim(param_cas)[1]
