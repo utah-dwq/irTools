@@ -17,7 +17,7 @@
 #' @importFrom plyr rbind.fill
 #' @importFrom lubridate month
 #' @export
-assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startRow=1, ss_startRow=1, rm_nocrit=TRUE){
+assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startRow=1, ss_startRow=1, rm_nocrit=TRUE, print=TRUE){
 
 
 ###Assign numeric criteria to WQP data
@@ -156,13 +156,14 @@ if(rm_nocrit==TRUE){
 # Show user table of parameters and the number of records with (and without) standards criteria for each use.
 temp <- data_uses_flat_crit[!is.na(data_uses_flat_crit$NumericCriterion) | data_uses_flat_crit$BeneficialUse=="CF",]
 temp1 <- data_uses_flat_crit[is.na(data_uses_flat_crit$NumericCriterion)&!data_uses_flat_crit$BeneficialUse=="CF",]
-print("Data record counts for each parameter with standards criteria and associated beneficial use:")
-print(table(temp$R3172ParameterName, temp$BeneficialUse))
-if(length(temp1[,1])>0){
-  print("Data record counts for each parameter without standard criteria:")
-  print(table(temp1$R3172ParameterName, temp1$BeneficialUse))
+if(print){
+	print("Data record counts for each parameter with standards criteria and associated beneficial use:")
+	print(table(temp$R3172ParameterName, temp$BeneficialUse))
+	if(length(temp1[,1])>0){
+	print("Data record counts for each parameter without standard criteria:")
+	print(table(temp1$R3172ParameterName, temp1$BeneficialUse))
+	}
 }
-
 
 return(data_uses_flat_crit)
 
