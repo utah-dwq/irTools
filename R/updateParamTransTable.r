@@ -48,10 +48,7 @@ updateParamTrans=function(data, detquantlim=detquantlim, translation_wb,
 #paramFractionGroup_sheetname="paramFractionGroup"
 #paramFractionGroup_startRow=3
 #paramFractionGroup_startCol=2
-##fun_cols=c("CASLinked","R3172ParamAssessmentType","CASLinked","ParamAssessmentType","IR_ActivityType","AssessmentType","R3172ParameterStatus","R3172ParameterName",
-##			"KeytoPrevIRParamTble","IR_Fraction","ToLabHoldingTime","ToExtractHoldingTime","AfterExtractHoldingTime",
-##			"HoldingTimeFrozen","TotalHoldingTime","HoldingTimeUnit","Source")
-#################
+##################
 
 
 #Reading translation workbook and table
@@ -113,17 +110,17 @@ new_params_count=dim(params_trans_merge)[1]-dim(param_translation)[1]
 new_params_cas_count=dim(parameters_unique_trans_merge)[1]-dim(param_cas)[1]
 params_trans_merge$DateAdded[is.na(params_trans_merge$DateAdded)]=Sys.Date()
 
-writeData(trans_wb, paramTransTable_sheetname, params_trans_merge, startRow=(paramTransTable_startRow+1), startCol=paramTransTable_startCol,colNames=F)
+openxlsx::writeData(trans_wb, paramTransTable_sheetname, params_trans_merge, startRow=(paramTransTable_startRow+1), startCol=paramTransTable_startCol,colNames=F)
 print(paste("paramTransTable updated.", new_params_count,"new parameter/fraction/unit/method combinations identified."))
 
-writeData(trans_wb, paramFractionGroup_sheetname, fractions_merge, startRow=(paramFractionGroup_startRow+1), startCol=paramFractionGroup_startCol,colNames=F)
+openxlsx::writeData(trans_wb, paramFractionGroup_sheetname, fractions_merge, startRow=(paramFractionGroup_startRow+1), startCol=paramFractionGroup_startCol,colNames=F)
 print(paste("paramFractionGroup table updated.", new_fractions_count,"new fractions identified."))
 
-writeData(trans_wb, WQPParamCASID_sheetname, parameters_unique_trans_merge, startRow=(WQPParamCASID_startRow+1), startCol=WQPParamCASID_startCol,colNames=F)
+openxlsx::writeData(trans_wb, WQPParamCASID_sheetname, parameters_unique_trans_merge, startRow=(WQPParamCASID_startRow+1), startCol=WQPParamCASID_startCol,colNames=F)
 print(paste("WQPParamCASID table updated.", new_params_cas_count,"new parameters identified."))
 
 
-saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
+openxlsx::saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
 print("Translation workbook updated & saved.")
 
 
