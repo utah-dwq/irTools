@@ -41,14 +41,14 @@ assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startR
 
 
 
-####Testing setup
-#library(openxlsx)
-#library(reshape2)
-#library(plyr)
-#data=mrf_sub
-#crit_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\04standards\\IR_uses_standards.xlsx"
-#crit_sheetname="R317214DomesticRecAgCriteria_JV"
-#ss_sheetname="R317214SSCriteria_JV"
+#####Testing setup
+##library(openxlsx)
+##library(reshape2)
+##library(plyr)
+#data=accepted_data
+#crit_wb="C:\\Users\\jvander\\Documents\\R\\irTools-test-16\\lookup-tables\\IR_uses_standards.xlsx"
+#crit_sheetname="criteria"
+#ss_sheetname="ss_criteria"
 #crit_startRow=1
 #ss_startRow=1
 
@@ -70,12 +70,11 @@ ss_table=data.frame(openxlsx::readWorkbook(crit_wb, sheet=ss_sheetname, startRow
 #Identify correction factor (CF) parameters in crit_table, append ",CF" to BEN_CLASS for all of these parameters (note, this is so target units can be defined for correction factors)
 cf=crit_table[crit_table$BeneficialUse=="CF",]
 data$BEN_CLASS[data$R3172ParameterName %in% cf$R3172ParameterName]=paste0(data$BEN_CLASS[data$R3172ParameterName %in% cf$R3172ParameterName],",CF")
-table(is.na(data$BEN_CLASS))
 
 #Expand comma separated uses (BEN_CLASS)
 max_use_count=max(sapply(strsplit(data$BEN_CLASS,","),FUN="length"))
 use_colnames=paste0(rep("use",max_use_count),seq(1:max_use_count))
-uses_mat=unique(data.frame(data$BEN_CLASS,colsplit(data$BEN_CLASS,",",use_colnames)))
+uses_mat=unique(data.frame(data$BEN_CLASS,reshape2::colsplit(data$BEN_CLASS,",",use_colnames)))
 names(uses_mat)[names(uses_mat)=="data.BEN_CLASS"]="BEN_CLASS"
 
 #Flatten uses

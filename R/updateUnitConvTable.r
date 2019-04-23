@@ -71,7 +71,7 @@ rcunits=data.frame(unique(data[,c("IR_Unit", "CriterionUnits")]))
 
 ##Combine these unit conversions into one dataframe
 all_unit_combos <- rbind(dtunits,rcunits)
-all_unit_combos <- unique(all_unit_combos)
+all_unit_combos <- unique(all_unit_combos[!is.na(all_unit_combos$CriterionUnits),])
 all_unit_combos$InData="Y"
 all_unit_combos[all_unit_combos==""]<-NA
 
