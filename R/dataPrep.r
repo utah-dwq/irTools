@@ -24,18 +24,18 @@
 #' @export
 dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb, cf_formulas_sheetname, startRow_unit=1, startRow_formulas=1, split_agg_tds=TRUE){
 
-##SETUP#####
-#rm(list=ls(all=TRUE))
-#load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
+###SETUP#####
+##rm(list=ls(all=TRUE))
+##load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
 #data=data_crit
-#translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\ir_translation_workbook.xlsx"
+#translation_wb="00-lookup-tables\\ir_translation_workbook.xlsx"
 #split_agg_tds=TRUE
 #unit_sheetname="unitConvTable"
 #startRow_unit=1
-#crit_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\lookup_tables\\IR_uses_standards.xlsx"
+#crit_wb="00-lookup-tables\\IR_uses_standards.xlsx"
 #cf_formulas_sheetname="cf_formulas"
 #startRow_formulas=1
-#######
+########
 
 result=list()
 
@@ -43,7 +43,9 @@ reasons=data.frame(data[0,])
 reasons$reason=character(0)
 
 #Remove records w/o criteria (in case they have been optionally passed through assignCriteria - these cause errors in aggregation steps as they do not have aggregation functions specified)
-data=data[!is.na(data$NumericCriterion) | data$BeneficialUse=="CF" | data$R3172ParameterName=="Profile depth",]
+count=length(data$CriterionUnits[is.na(data$CriterionUnits)])
+if(count>0){warning(paste(count, 'records being removed due to lack of criteria & units in standards table. These may have been purposely passed through in assign criteria.'))}
+data=data[!is.na(data$CriterionUnits),]# | data$BeneficialUse=="CF" | data$R3172ParameterName=="Profile depth",]
 
 ####################################
 ######Activity type check###########
@@ -57,6 +59,21 @@ data_n=data_n[!is.na(data_n$reason),]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
 print(table(reasons$reason))
 rm(data_n)
+
+
+####################################
+######Result value present check####
+####################################
+data_n=data
+data_n$reason=NA
+data_n=within(data_n,{
+	reason[is.na(IR_Value)]="No result value or detection limit"
+	})
+data_n=data_n[!is.na(data_n$reason),]
+reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+print(table(reasons$reason))
+rm(data_n)
+
 
 
 ####################################
@@ -184,7 +201,7 @@ if(dim(diss_tot)[1]>0){
 #Double check that blanks are all NA in data (shouldn't really need this at this point)
 data[data==""]=NA
 
-#Merge conversion table to data (up through this point, same functionality as applyScreenTable)
+#Merge conversion table to data
 data=merge(data,unit_convs,all.x=T)
 dim(data)
 
@@ -219,7 +236,6 @@ data=within(data,{
 	IR_UpperLimitUnit = CriterionUnits
 })
 
-
 #Reject non-detect records where IR_LowerLimitValue > NumericCriterion
 data_n=data
 data_n$reason=NA
@@ -253,14 +269,20 @@ table(data[data$IR_DataPrep_FLAG=="ACCEPT","IR_UnitConv_FLAG"])
 
 ###Pull out accepted data
 acc_data=data[data$IR_DataPrep_FLAG=="ACCEPT",]
+dim(acc_data)
+table(is.na(acc_data$DataLoggerLine))
 
 #Subset columns (note - col names may change w/ standards table, may want a cleaner way around this)
-acc_data=acc_data[,c("OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","ActivityStartTime.Time","IR_ActivityType","IR_MLID","IR_MLNAME","MonitoringLocationType","R317Descrp","IR_Lat","IR_Long",
+col_names=c("OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","ActivityStartTime.Time","IR_ActivityType","IR_MLID","IR_MLNAME","MonitoringLocationTypeName","R317Descrp","IR_Lat","IR_Long",
 													"ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS","CharacteristicName",
 													"R3172ParameterName","IR_Value","IR_Unit","IR_DetCond","IR_Fraction","CriterionUnits","TargetFraction",
 													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
 													"AssessmentType","CriterionLabel","CriterionType","DailyAggFun","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","NumericCriterion","SSC_StartMon","SSC_EndMon","SSC_MLID"
-													)]
+													)
+
+
+acc_data=acc_data[, col_names]
+dim(acc_data)
 
 ######
 ###Extract lake profiles
@@ -269,8 +291,8 @@ result$lake_profiles=acc_data[!is.na(acc_data$DataLoggerLine) & acc_data$Benefic
 table(result$lake_profiles$R3172ParameterName)
 
 #Remove profiles from acc_data
-acc_data=acc_data[is.na(acc_data$ActivityIdentifier),]
-
+acc_data=acc_data[is.na(acc_data$DataLoggerLine),]
+dim(acc_data)
 
 #Return accepted data (minus lake profiles)
 result$accepted_data=acc_data
@@ -310,6 +332,7 @@ aggDVbyfun=function(x, value_var, drop_vars, agg_var){
 }
 
 drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode","IR_Fraction","IR_DetCond")
+
 
 #############
 #######Toxics & correction factors
@@ -386,13 +409,9 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 			hardness=100*(`cf_min_Calcium_mg/l`/40.08 + `cf_min_Magnesium_mg/l`/24.3)
 			#hardness[is.na(hardness)]=OTHER HARDNESS COLUMNS HERE...
 		})
-	
-	
-	
-	#Calculate CF dependent criterion values (need to do)
-	test=toxics[toxics$R3172ParameterName=="Cadmium" | toxics$R3172ParameterName=="Arsenic" | toxics$R3172ParameterName=="Aluminum",]
-	head(test)
-	
+
+
+	#Calculate CF dependent criterion values
 	
 	#Load criterion workbook
 	criterion_wb=openxlsx::loadWorkbook(crit_wb)
@@ -409,17 +428,21 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 	toxics=merge(toxics, cf_formulas, all.x=T)
 	
 	calc=toxics$NumericCriterion
+	
 	toxics=within(toxics, {
 		CF[!is.na(CF)]=paste0("(",CF[!is.na(CF)],")")
 		CriterionFormula=gsub("CF * ","",CriterionFormula, fixed=TRUE)
 		CriterionFormula[!is.na(CF)]=paste0("(",CriterionFormula[!is.na(CF)],")")
 		CriterionFormula[!is.na(CF)]=paste(CF[!is.na(CF)], "*", CriterionFormula[!is.na(CF)])
+		CriterionFormula=gsub("MIN", "min", CriterionFormula, fixed=TRUE)
 		CriterionFormula=gsub("ln", "log", CriterionFormula, fixed=TRUE)
 		CriterionFormula=gsub(") (", ")*(", CriterionFormula, fixed=TRUE)
 		CriterionFormula=gsub(")(",  ")*(", CriterionFormula, fixed=TRUE)
 		CriterionFormula=gsub("(e(",  "(exp(", CriterionFormula, fixed=TRUE)
 		CriterionFormula=stringr::str_replace_all(CriterionFormula, "hardness", as.character(hardness))
-		CriterionFormula=stringr::str_replace_all(CriterionFormula, "min_pH", as.character(cf_min_pH_NA))
+		CriterionFormula=stringr::str_replace_all(CriterionFormula, "min_pH", as.character(`cf_min_pH_pH units`))
+		CriterionFormula=stringr::str_replace_all(CriterionFormula, "max_pH", as.character(`cf_max_pH_pH units`))
+		CriterionFormula=stringr::str_replace_all(CriterionFormula, "T", as.character(`cf_max_Temperature, water_deg C`))
 		CalculatedCrit=sapply(CriterionFormula, function(x) eval(parse(text=x)))
 		suppressWarnings({
 			NumericCriterion=wqTools::facToNum(NumericCriterion)
@@ -427,8 +450,11 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 		NumericCriterion[calc=="calc"]=CalculatedCrit[calc=="calc"]
 	})
 	
+	head(toxics[toxics$R3172ParameterName=='Ammonia',])
+	#boxplot(toxics[toxics$R3172ParameterName=='Ammonia','CalculatedCrit'])
 	#Generate toxics result
 	result$toxics=toxics
+	
 }
 
 
@@ -505,7 +531,6 @@ objects(result)
 
 
 #Other possible return objects:
-#1. E coli
 #2. HF do
 
 
