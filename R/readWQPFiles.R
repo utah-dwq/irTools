@@ -77,7 +77,7 @@ if(orph_check){
     
     if(dat2name=="detquantlim"){
       print("NOTE: narrowresult will likely have many orphan records not represented in detquantlim. This occurs for a few reasons: (1) labs sometimes do not report detection quantitation limits, and (2) field measurements often do not report detection quantitation limits.")
-      readline(prompt="Press [enter] to continue")
+      #readline(prompt="Press [enter] to continue")
     }
     
     if("ActivityStartDate"%in%colkeep){
@@ -92,14 +92,14 @@ if(orph_check){
     orph1 <- orphmerge[is.na(orphmerge$In_access_file),]
     if(length(orph1[,1])>0){
       print(paste0(length(orph1[,1])," orphan records detected in ", dat1name," file with no match to ", dat2name,"."))
-      readline(prompt="Press [enter] to continue")
+      #readline(prompt="Press [enter] to continue")
     }
     
     # orphans in data2
     orph2 <- orphmerge[is.na(orphmerge$In_narrowresult),]
     if(length(orph2[,1])>0){
       print(paste0(length(orph2[,1])," orphan records detected in ", dat2name," file with no match to ", dat1name,"."))
-      readline(prompt="Press [enter] to continue")
+      #readline(prompt="Press [enter] to continue")
     }
     if(length(orphmerge1[,1])>0){
       name <- paste(dat1name,dat2name,"orphans", sep="_")
@@ -121,7 +121,7 @@ if(orph_check){
   print(head(narrowresult$ActivityStartDate))
   print("activity file:")
   print(head(activity$ActivityStartDate))
-  readline(prompt="Press [enter] to continue")
+  #readline(prompt="Press [enter] to continue")
   
   nr_act_orphans <- orph_check(narrowresult,activity)
   
