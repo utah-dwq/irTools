@@ -77,7 +77,7 @@ names(profs_exc)=make.names(names(profs_exc))
 
 # Calculate thermocline depths
 calcTdepth=function(x){
-	if(any(!is.na(x$Profile.depth))){
+	if(any(!is.na(x$Profile.depth)) & any(!is.na(x$Temperature..water))){
 		x_agg=aggregate(Temperature..water~Profile.depth, x, FUN='mean')
 		return(rLakeAnalyzer::thermo.depth(x_agg$Temperature..water, x_agg$Profile.depth))
 	}else{return("NaN")}
@@ -85,7 +85,14 @@ calcTdepth=function(x){
 
 t_profs=profs_exc[,c("BeneficialUse","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID","Profile.depth","Temperature..water")]
 
-thermo_depths=plyr::ddply(t_profs,
+charToFac=function(x){
+	if(class(x) == 'character'){
+		y=as.factor(x)
+	}else{y=x}
+	return(y)
+}
+
+thermo_depths=plyr::ddply(test,
 						  c("BeneficialUse","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID"),
 						  .fun=calcTdepth)
 thermo_depths=dplyr::rename(tc_depth_m="V1", thermo_depths)
