@@ -1,5 +1,7 @@
-# site validation app server
+options(warn=0)
 
+
+# site validation app server
 server <- function(input, output, session){
 
 #setwd('C:\\Users\\jvander\\Documents\\R\\irTools\\inst\\siteValApp')
@@ -234,6 +236,7 @@ observeEvent(input$clear_sel, {
 ## Clear all selected sites
 observeEvent(input$clear_all, {
 	reactive_objects$selected_sites=NULL
+	reactive_objects$table_selected_mlids=NULL
 })
 
 ## Accept selected sites
@@ -252,8 +255,8 @@ observeEvent(input$accept, {
 		br(),
 		br(),
 		textInput('accept_comment', 'Additional comments (optional)'),
-		actionButton('accept_ok', 'Accept', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%'),
-		actionButton('accept_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%')
+		actionButton('accept_ok', 'Accept', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('check-circle')),
+		actionButton('accept_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
 		))
 	}
 })
@@ -310,8 +313,8 @@ observeEvent(input$reject, {
 		br(),
 		selectInput("reject_reason", label="Reason for rejecting (applied to all selected sites)", choices=reactive_objects$reject_reasons[order(reactive_objects$reject_reasons)]),
 		textInput('reject_comment', 'Additional comments (optional)'),
-		actionButton('reject_ok', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%'),
-		actionButton('reject_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%')
+		actionButton('reject_ok', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('minus-circle')),
+		actionButton('reject_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
 		))
 	}
 })
@@ -370,8 +373,8 @@ observeEvent(input$merge, {
 				selected=reactive_objects$merge_select_mlname)
 		}),
 		textInput('merge_comment', 'Additional comments (optional)'),
-		actionButton('merge_ok', 'Merge', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%'),
-		actionButton('merge_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%')
+		actionButton('merge_ok', 'Merge', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('object-group')),
+		actionButton('merge_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
 		))
 	}
 
@@ -436,8 +439,8 @@ observeEvent(input$flag_further, {
 		}),
 		br(),
 		textInput('flag_further_comment', 'Additional comments (optional)'),
-		actionButton('flag_ok', 'Flag', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%'),
-		actionButton('flag_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%')
+		actionButton('flag_ok', 'Flag', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('flag')),
+		actionButton('flag_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
 		))
 	}
 
@@ -476,8 +479,8 @@ observeEvent(input$flag_ok, {
 observeEvent(input$add_reject_reason, {
 	showModal(modalDialog(title="Add rejection reason", size="l",
 		textInput('rej_reason_to_add', 'Add rejection reason'),
-		actionButton('add_reject_reason_add', 'Add', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'),
-		actionButton('add_reject_reason_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')
+		actionButton('add_reject_reason_add', 'Add', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('plus-circle')),
+		actionButton('add_reject_reason_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close'))
 	))
 })
 observeEvent(input$add_reject_reason_add, {

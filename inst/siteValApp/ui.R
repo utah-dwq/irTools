@@ -4,7 +4,7 @@ library(shinyBS)
 site_type_choices=c("REVIEW","ACCEPT","REJECT")
 names(site_type_choices)=c("Review needed","Accepted","Rejected")
 
-
+options(warn = -1)
 
 ui <-fluidPage(
 
@@ -16,13 +16,13 @@ headerPanel(
 
 mainPanel(width=10,
 bsCollapse(multiple=T, open="Import sites file",
-	bsCollapsePanel("Import sites file",
+	bsCollapsePanel(list(icon('file-import'),"Import sites file"), 
 		fluidRow(
 			column(2, fileInput("import_sites", "Import site file", accept=".xlsx")),
 			column(2, actionButton('example_input', icon=icon('question'), label='', style = "margin-top: 25px;"))
 		)
 	),
-	bsCollapsePanel("Review map",
+	bsCollapsePanel(list(icon('map-marked-alt'),"Review map"),
 		fluidRow(
 			column(1),
 			column(2, shinyWidgets::pickerInput("site_types","Site types to map:", choices=site_type_choices, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))),
@@ -35,16 +35,16 @@ bsCollapse(multiple=T, open="Import sites file",
 		fluidRow(shinycssloaders::withSpinner(leaflet::leafletOutput("map", height="600px"),size=2, color="#0080b7"))
 	),
 	
-	bsCollapsePanel("Edit selected features",
+	bsCollapsePanel(list(icon('edit'),"Edit selected features"),
 		# Reviewer actions
 		fluidRow(
-			actionButton('clear_sel', 'Clear table selection', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'),
-			actionButton('clear_all', 'Clear all', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'),
-			actionButton('accept', 'Accept', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'),
-			actionButton('reject', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'),
-			actionButton('add_reject_reason', 'Add rejection reason', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'),
-			actionButton('merge', 'Merge', style='color: #fff; background-color: #337ab7; border-color: #2e6da4'),
-			actionButton('flag_further', 'Comment & flag for further review',style='color: #fff; background-color: #337ab7; border-color: #2e6da4')
+			actionButton('clear_sel', 'Clear table selection', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('eraser')),
+			actionButton('clear_all', 'Clear all', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('backspace')),
+			actionButton('accept', 'Accept', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle')),
+			actionButton('reject', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('minus-circle')),
+			actionButton('add_reject_reason', 'Add rejection reason', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('plus-circle')),
+			actionButton('merge', 'Merge', style='color: #fff; background-color: #337ab7; border-color: #2e6da4', icon=icon('object-group')),
+			actionButton('flag_further', 'Flag for further review',style='color: #fff; background-color: #337ab7; border-color: #2e6da4', icon=icon('flag'))
 		),
 	
 		# Table
@@ -53,12 +53,10 @@ bsCollapse(multiple=T, open="Import sites file",
 		br(),
 		br()
 	),
-	bsCollapsePanel("Export reviews",
+	bsCollapsePanel(list(icon('download'),"Export reviews"),
 		downloadButton('exp_rev', label = "Export reviews")
 	)
 
 )
 )
-
 )
-	
