@@ -15,6 +15,9 @@ permits=read.csv(file='data/ut_facilities-04-09-2019.csv')
 # empty reactive objects list
 reactive_objects=reactiveValues()
 
+observeEvent(input$example_input, {
+	showModal(urlModal('https://github.com/utah-dwq/irTools/blob/master/inst/siteValApp/data/IR_master_site_file-autoreview.xlsx', title = "Example data", subtitle = "An example data input for this application can be downloaded at this link."))
+})
 
 # Read input files
 observeEvent(input$import_sites,{

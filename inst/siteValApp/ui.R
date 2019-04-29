@@ -17,7 +17,10 @@ headerPanel(
 mainPanel(width=10,
 bsCollapse(multiple=T, open="Import sites file",
 	bsCollapsePanel("Import sites file",
-		fileInput("import_sites", "Import site file", accept=".xlsx")
+		fluidRow(
+			column(2, fileInput("import_sites", "Import site file", accept=".xlsx")),
+			column(2, actionButton('example_input', icon=icon('question'), label='', style = "margin-top: 25px;"))
+		)
 	),
 	bsCollapsePanel("Review map",
 		fluidRow(
