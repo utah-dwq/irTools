@@ -82,9 +82,19 @@ observe({
 observe({
 	reactive_objects$review_reasons=unique(reactive_objects$reasons[reactive_objects$reasons$FLAG %in% input$site_types,]$Reason)
 })
+
+observe({
+	if(!is.null(input$review_reasons)){
+		sel_reasons=input$review_reasons
+	}else{sel_reasons=NULL}
+	reactive_objects$sel_reasons=sel_reasons
+})
+
 output$review_reasons <- renderUI({
-	
-	checkboxGroupInput("review_reasons", "Review reason", reactive_objects$review_reasons[order(reactive_objects$review_reasons)], inline=TRUE, selected=input$review_reasons)
+	req(reactive_objects$review_reasons)
+	isolate({
+		shinyWidgets::pickerInput("review_reasons", "Review reason", reactive_objects$review_reasons[order(reactive_objects$review_reasons)], selected=reactive_objects$sel_reasons, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))
+	})
 })
 
 # Select mlids in reasons
@@ -97,7 +107,8 @@ observe({
 	reactive_objects$ml_types=unique(reactive_objects$sites$MonitoringLocationTypeName[reactive_objects$sites$MonitoringLocationIdentifier %in% reactive_objects$reason_mlids & reactive_objects$sites$IR_FLAG %in% input$site_types])
 })
 output$ml_types=renderUI({
-	checkboxGroupInput("ml_types", "Site types", reactive_objects$ml_types, inline=TRUE, selected=reactive_objects$ml_types)
+	req(reactive_objects$ml_types)
+	shinyWidgets::pickerInput("ml_types", "Site types", reactive_objects$ml_types, selected=reactive_objects$ml_types, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))
 })
 
 # Select mlids in mltypes

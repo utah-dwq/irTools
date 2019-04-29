@@ -1,6 +1,11 @@
 # site validation app ui
 library(shinyBS)
 
+site_type_choices=c("REVIEW","ACCEPT","REJECT")
+names(site_type_choices)=c("Review needed","Accepted","Rejected")
+
+
+
 ui <-fluidPage(
 
 # Header
@@ -12,15 +17,15 @@ headerPanel(
 mainPanel(width=10,
 bsCollapse(multiple=T, open="Import sites file",
 	bsCollapsePanel("Import sites file",
-		fileInput("import_sites", "Import site file", accept=".xlsx")#,
-		#fileInput("import_reasons", "Import review reasons file", accept=".csv")
+		fileInput("import_sites", "Import site file", accept=".xlsx")
 	),
 	bsCollapsePanel("Review map",
 		fluidRow(
-			column(2, checkboxGroupInput("site_types","Site types to map:", choiceNames=c("Review needed","Accepted","Rejected"), choiceValues=c("REVIEW","ACCEPT","REJECT"))),
-			column(5, uiOutput("review_reasons")),
+			column(1),
+			column(2, shinyWidgets::pickerInput("site_types","Site types to map:", choices=site_type_choices, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))),
+			column(3, uiOutput("review_reasons")),
 			column(3, uiOutput('ml_types')),
-			column(2, checkboxInput('auto_zoom', "Auto-zoom to sites", value=TRUE))
+			column(2, shinyWidgets::materialSwitch(inputId = "auto_zoom", label="Auto-zoom on", value = TRUE, right=T, status='primary'))
 		),
 
 		# Map
@@ -47,8 +52,6 @@ bsCollapse(multiple=T, open="Import sites file",
 	),
 	bsCollapsePanel("Export reviews",
 		downloadButton('exp_rev', label = "Export reviews")
-	
-	
 	)
 
 )
