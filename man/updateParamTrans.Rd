@@ -8,9 +8,9 @@ updateParamTrans(data, detquantlim = detquantlim, translation_wb,
   paramTransTable_sheetname = "paramTransTable",
   paramTransTable_startRow = 4, paramTransTable_startCol = 16,
   WQPParamCASID_sheetname = "WQPParamCASID",
-  WQPParamCASID_startRow = 4, WQPParamCASID_startCol = 1,
+  WQPParamCASID_startRow = 2, WQPParamCASID_startCol = 1,
   paramFractionGroup_sheetname = "paramFractionGroup",
-  paramFractionGroup_startRow = 3, paramFractionGroup_startCol = 3)
+  paramFractionGroup_startRow = 3, paramFractionGroup_startCol = 2)
 }
 \arguments{
 \item{data}{A WQP results (merged or narrow result) R-object}

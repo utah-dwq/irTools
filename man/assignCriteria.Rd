@@ -5,7 +5,8 @@
 \title{Assign numeric criteria to WQP data}
 \usage{
 assignCriteria(data, crit_wb, crit_sheetname, ss_sheetname,
-  crit_startRow = 1, ss_startRow = 1, rm_nocrit = TRUE)
+  crit_startRow = 1, ss_startRow = 1, rm_nocrit = TRUE,
+  print = TRUE)
 }
 \arguments{
 \item{data}{A merged, parameter translated, spatially referenced WQP result object. Must be post parameter translation step.}

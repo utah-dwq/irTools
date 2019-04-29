@@ -4,10 +4,11 @@
 \alias{countExceedances}
 \title{Calculate sample and exceedance counts (conventional & toxic assessments)}
 \usage{
-countExceedances(data, group_vars = c("IR_MLID", "R317Descrp", "IR_Lat",
-  "IR_Long", "ASSESS_ID", "AU_NAME", "BeneficialUse", "BEN_CLASS",
-  "R3172ParameterName", "CriterionLabel", "SSC_MLID", "SSC_StartMon",
-  "SSC_EndMon", "AsmntAggFun"), agg_exc = FALSE, agg_exc_as_n = TRUE)
+countExceedances(data, group_vars = c("IR_MLID", "IR_MLNAME",
+  "R317Descrp", "IR_Lat", "IR_Long", "ASSESS_ID", "AU_NAME",
+  "BeneficialUse", "BEN_CLASS", "R3172ParameterName", "CriterionLabel",
+  "SSC_MLID", "SSC_StartMon", "SSC_EndMon", "AsmntAggFun"),
+  agg_exc = FALSE, agg_exc_as_n = TRUE)
 }
 \arguments{
 \item{data}{A prepped water quality portal data object (i.e. output from dataPrep() ). Must include IR_Value and ActivityStartDate.}
