@@ -92,7 +92,7 @@ charToFac=function(x){
 	return(y)
 }
 
-thermo_depths=plyr::ddply(test,
+thermo_depths=plyr::ddply(t_profs,
 						  c("BeneficialUse","ActivityIdentifier","ActivityStartDate","IR_MLID","ASSESS_ID"),
 						  .fun=calcTdepth)
 thermo_depths=dplyr::rename(tc_depth_m="V1", thermo_depths)
