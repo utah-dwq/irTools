@@ -5,13 +5,14 @@
 #' @param data A list of assessment output objects to be rolled up to a different spatial resolution.
 #' @param group_vars Vector of column names on which to group data for assessment rollups. Defaults to aggregate by ASSESS_ID, BeneficialUse, and R3172ParameterName.
 #' @param expand_uses Logical. If TRUE (default), uses are expanded in the output to include all uses associated with group_vars, including unassessed groups which are marked as 'NA' in output dataframe column AssessCat.  If FALSE, only assessed groups are included in the output.
+#' @param cat_var Name of assessment category column.
 #' @param print Logical. If TRUE (default) print summary table of applicable assessment categories & parameters.
 #' @return Returns dataframe with assessment categories for each AU/BenUse/R3172ParameterName.
 #' @importFrom plyr rbind.fill
 #' @importFrom reshape2 colsplit
 
 #' @export
-rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172ParameterName"), expand_uses=TRUE, print=TRUE){
+rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172ParameterName"), cat_var="IR_Cat", expand_uses=TRUE, print=TRUE){
 
 ##### Testing setup
 #data=list(conv_assessed, toxics_assessed)
@@ -29,6 +30,8 @@ if(expand_uses & !"BEN_CLASS" %in% group_vars){group_vars=append(group_vars, "BE
 # Read in list of sites with TMDLs, and redefine IR_Cat for those sites as "TMDLa" (TMDL approved)
 
 # Represent categories numerically so we can select the "max" category to define the AU
+names(dat_all)[names(dat_all)==cat_var]="IR_Cat"
+dat_all=subset(dat_all, !is.na(IR_Cat))
 # Hierarchy of decision making within each subset: NS>TMDLa>idE>idNE>FS
 dat_all$AssessCat[dat_all$IR_Cat=="NS"]<-5
 #dat_all$AssessCat[dat_all$IR_Cat=="TMDLa"]<- 4 - (JV) turning off TMDL approved for now. Not sure if we want to include this here yet or as a sort of "secondary review" type step
