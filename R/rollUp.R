@@ -56,8 +56,8 @@ rollup=within(rollup,{
 	AssessCat[AssessCat=="5"]="NS"
 	AssessCat[AssessCat=="4"]="TMDLa"
 	AssessCat[AssessCat=="3"]="idE"
-	AssessCat[AssessCat=="2"]="idNE"
-	AssessCat[AssessCat=="1"]="FS"
+	AssessCat[AssessCat=="2"]="FS"
+	AssessCat[AssessCat=="1"]="idNE"
 })
 
 # rollup[rollup$ASSESS_ID=="UT14070003-001_00",]
