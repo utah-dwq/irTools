@@ -10,7 +10,10 @@ License: MIT + file LICENSE
 RoxygenNote: 6.1.1
 Encoding: UTF-8
 Imports:
-    sf,
+    shinyBS,
+	shinyWidgets,
+	readxl,
+	sf,
     shiny,
     shinyjs,
     jsonlite,
