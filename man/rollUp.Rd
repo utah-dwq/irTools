@@ -5,12 +5,15 @@
 \title{Summarize assessments to different spatial resolutions}
 \usage{
 rollUp(data, group_vars = c("ASSESS_ID", "BeneficialUse",
-  "R3172ParameterName"), expand_uses = TRUE, print = TRUE)
+  "R3172ParameterName"), cat_var = "IR_Cat", expand_uses = TRUE,
+  print = TRUE)
 }
 \arguments{
 \item{data}{A list of assessment output objects to be rolled up to a different spatial resolution.}
 
 \item{group_vars}{Vector of column names on which to group data for assessment rollups. Defaults to aggregate by ASSESS_ID, BeneficialUse, and R3172ParameterName.}
+
+\item{cat_var}{Name of assessment category column.}
 
 \item{expand_uses}{Logical. If TRUE (default), uses are expanded in the output to include all uses associated with group_vars, including unassessed groups which are marked as 'NA' in output dataframe column AssessCat.  If FALSE, only assessed groups are included in the output.}
 
