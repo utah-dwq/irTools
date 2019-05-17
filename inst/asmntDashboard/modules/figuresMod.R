@@ -20,14 +20,14 @@ figuresModUI <- function(id){
 					uiOutput(ns('sel_param2')),
 					uiOutput(ns('sel_units2'))
 				),
-				column(2,
+				column(3,
 					uiOutput(ns('sel_site'))
 				)
 			)
 		),
 		tabsetPanel(id=ns('tabs'),
 			tabPanel('Multiple sites',
-				fluidRow(column(3,radioButtons(ns("compare_plottype"), "Plot type", choices = c("Time series","Boxplot", "Concentration map"), selected = "Time series", inline = TRUE))),
+				fluidRow(column(4,radioButtons(ns("compare_plottype"), "Plot type", choices = c("Time series","Boxplot", "Concentration map"), selected = "Time series", inline = TRUE))),
 				conditionalPanel(paste0("input['", ns("compare_plottype"),"'] == 'Time series'"), plotlyOutput(ns('multi_site_ts'), height='600px')),
 				conditionalPanel(paste0("input['", ns("compare_plottype"),"'] == 'Boxplot'"), plotlyOutput(ns('multi_site_bp'), height='600px')),
 				conditionalPanel(paste0("input['", ns("compare_plottype"),"'] == 'Concentration map'"), shinycssloaders::withSpinner(leafletOutput(ns('conc_map'), height='600px'),size=2, color="#0080b7"))
@@ -260,7 +260,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 					leg_labs=c(signif(quantile(sites$plot_value, 0.10),3), signif(median(sites$plot_value),3), signif(quantile(sites$plot_value, 0.90),3))
 					leg_sizes=c(quantile(sites$radius, 0.10), median(sites$radius), quantile(sites$radius, 0.90))*2
 					conc_map= conc_map %>%
-						flyToBounds(min_lng,min_lat,max_lng,max_lat) %>%	
+						fitBounds(min_lng,min_lat,max_lng,max_lat) %>%	
 						addCircleMarkers(data = sites, lat=~IR_Lat, lng=~IR_Long, group="Sites", layerId=~IR_MLID, color='blue', stroke=F, fillOpacity=0.5,
 							radius = ~radius, options = pathOptions(pane = "site_markers"),
 							popup = paste0(
