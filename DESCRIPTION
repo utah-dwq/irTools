@@ -20,6 +20,9 @@ Imports:
     jsonlite,
     openxlsx,
     leaflet,
-    wqTools
+    wqTools,
+	shinyjqui,
+	plotly,
+	shinycssloaders
 Remotes:
 	utah-dwq/wqTools
