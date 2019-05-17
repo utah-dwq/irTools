@@ -32,9 +32,20 @@ ui <-fluidPage(
 		title=tags$a(href='https://deq.utah.gov/division-water-quality/',tags$img(src='deq_dwq_logo_draft.png', height = 125, width = 100*2.85*1.75), target="_blank"),
 		tags$head(tags$link(rel = "icon", type = "image/png", href = "dwq_logo_small.png"), windowTitle="WQ Assessment Dashboard")
 	),
-	
-	mainPanel(width=10,
-		fluidRow(
+
+
+	fluidRow(
+		column(2, align="center", 
+			fixedPanel(h3('Review tools'), draggable=T,wellPanel(
+				fluidRow(actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt'), width='100%')),
+				fluidRow(actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox'), width='100%')),
+				fluidRow(actionButton('asmnt_accept','Accept', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'), width='100%')),
+				fluidRow(actionButton('asmnt_flag','Flag', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'), width='100%')),
+				fluidRow(actionButton('asmnt_split','Split AU', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('draw-polygon'), width='100%'))
+			))
+		),
+		
+		column(9, 
 			shinyjqui::jqui_resizable(bsCollapse(multiple=T,
 				bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), 
 					#fluidRow(
@@ -43,21 +54,10 @@ ui <-fluidPage(
 						column(2, actionButton('demo_input', icon=icon('upload'), label='Use demo input', style = "margin-top: 25px; color: #fff; background-color: #337ab7; border-color: #2e6da4%"))
 					#)
 				),
-				bsCollapsePanel(list(icon('plus-circle'), icon('wrench'),"Reviewer tools"),
-					fluidRow(
-						actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt')),
-						actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox')),
-						actionButton('asmnt_accept','Accept', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle')),
-						actionButton('asmnt_flag','Flag', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag')),
-						actionButton('asmnt_split','Split AU', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('draw-polygon'))
-					)
-				),
 				bsCollapsePanel(list(icon('plus-circle'), icon('map-marked-alt'),"Review map"),
 					# Map
 					shinycssloaders::withSpinner(leaflet::leafletOutput("assessment_map", height="600px"),size=2, color="#0080b7")
-				)
-			)),
-			shinyjqui::jqui_resizable(shinyjqui::jqui_draggable(bsCollapse(multiple=T,	
+				),
 				bsCollapsePanel(list(icon('plus-circle'), icon('chart-bar'), "Figures"),
 					figuresModUI('figures')
 				),
@@ -77,11 +77,10 @@ ui <-fluidPage(
 				bsCollapsePanel(list(icon('plus-circle'), icon('download'), "Export reviews"), 
 					downloadButton('exp_rev', label = "Export reviews")
 				)
-			))),
+			)),
 			br(),
 			br(),
 			br()
-		
 		)
 	)
 )
@@ -99,8 +98,7 @@ reactive_objects=reactiveValues()
 
 # Demo data input
 observeEvent(input$demo_input, {
-	file="data\\site-use-param-asmnt.csv" # This is for a deployed version
-	#file=system.file('site-use-param-asmnt.csv', package='irTools') # This is for packaged version
+	file="data\\site-use-param-asmnt.csv" # This is for deployed version - need to update to system file for package version
 	site_use_param_asmnt=read.csv(file)
 	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	inputs=initialDataProc(site_use_param_asmnt)
@@ -191,17 +189,13 @@ observeEvent(input$clear_au, {
 
 # Generate data and criteria subsets (based on selected AUs) for analysis tools on button press 
 observeEvent(input$build_tools,{
-	if(is.null(reactive_objects$selected_aus) | length(reactive_objects$selected_aus)==0){
-		showModal(modalDialog('Select one or more AUs to build analysis tools', easyClose=T))
-	}else{
-		req(reactive_objects$site_asmnt, reactive_objects$selected_aus)
-		sel_sites=reactive_objects$site_asmnt$IR_MLID[reactive_objects$site_asmnt$ASSESS_ID %in% reactive_objects$selected_aus]
-		reactive_objects$sel_sites=sel_sites
-		reactive_objects$sel_data=subset(merged_data, IR_MLID %in% sel_sites)
-		reactive_objects$sel_crit=subset(criteria, IR_MLID %in% sel_sites)
-		showModal(modalDialog(title="Analysis tools ready.",size="l",easyClose=T,
-			"Data and analysis tools ready. Scroll to 'Figures' and 'Data table' panels to review and plot data."))
-	}
+	sel_sites=reactive_objects$site_asmnt$IR_MLID[reactive_objects$site_asmnt$ASSESS_ID %in% reactive_objects$selected_aus]
+	reactive_objects$sel_sites=sel_sites
+	reactive_objects$sel_data=subset(merged_data, IR_MLID %in% sel_sites)
+	reactive_objects$sel_crit=subset(criteria, IR_MLID %in% sel_sites)
+	showModal(modalDialog(title="Analysis tools ready.",size="l",easyClose=T,
+		"Data and analysis tools ready. Scroll to 'Figures' and 'Data table' panels to review and plot data."))
+	
 })
 
 
