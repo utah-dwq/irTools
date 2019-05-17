@@ -12,6 +12,6 @@
 #' @importFrom DT datatable
 
 #' @export
-runSiteValApp=function(){
+siteValApp=function(){
 	 shiny::runApp(system.file('siteValApp', package='irTools'))
 	 }
