@@ -88,7 +88,7 @@ ui <-fluidPage(
 # Server
 server <- function(input, output, session){
 
-options(warn=0)
+#options(warn=0)
 
 # Example input url
 output$ex_url <-renderUI(a(href='https://github.com/utah-dwq/asmntDashboard/blob/version2/data/site-use-param-asmnt.csv',list(icon('question'),"Example input data"),target="_blank"))
@@ -98,7 +98,7 @@ reactive_objects=reactiveValues()
 
 # Demo data input
 observeEvent(input$demo_input, {
-	file="data\\site-use-param-asmnt.csv" # This is for deployed version - need to update to system file for package version
+	file=system.file("extdata", "site-use-param-asmnt.csv", package = "irTools")	
 	site_use_param_asmnt=read.csv(file)
 	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	inputs=initialDataProc(site_use_param_asmnt)
