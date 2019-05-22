@@ -23,6 +23,7 @@ Imports:
     wqTools,
 	shinyjqui,
 	plotly,
-	shinycssloaders
+	shinycssloaders,
+	writexl
 Remotes:
 	utah-dwq/wqTools
