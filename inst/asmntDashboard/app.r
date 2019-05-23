@@ -9,14 +9,12 @@ library(shinyBS)
 library(plotly)
 library(sf)
 library(rgdal)
-library(mapedit)
 
 
 # Modules/functions
 source('modules/initialDataProc.R')
 source('modules/asmntMap.R')
 source('modules/figuresMod.R')
-source('modules/splitMod.R')
 
 # Load data & criteria
 load('data/prepped_merged_data.Rdata')
@@ -43,7 +41,7 @@ ui <-fluidPage(
 				fluidRow(actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox'), width='100%')),
 				fluidRow(actionButton('asmnt_accept','Accept', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'), width='100%')),
 				fluidRow(actionButton('asmnt_flag','Flag', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'), width='100%')),
-				fluidRow(actionButton('au_split','Split AU', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('draw-polygon'), width='100%'))
+				fluidRow(actionButton('asmnt_split','Split AU', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('draw-polygon'), width='100%'))
 			))
 		),
 		
@@ -190,34 +188,21 @@ observeEvent(input$clear_au, {
 })  
 
 # Generate data and criteria subsets (based on selected AUs) for analysis tools on button press 
-#observeEvent(input$build_tools,{
-#	sel_sites=reactive_objects$site_asmnt$IR_MLID[reactive_objects$site_asmnt$ASSESS_ID %in% reactive_objects$selected_aus]
-#	reactive_objects$sel_sites=sel_sites
-#	reactive_objects$sel_data=subset(merged_data, IR_MLID %in% sel_sites)
-#	reactive_objects$sel_crit=subset(criteria, IR_MLID %in% sel_sites)
-#	showModal(modalDialog(title="Analysis tools ready.",size="l",easyClose=T,
-#		"Data and analysis tools ready. Scroll to 'Figures' and 'Data table' panels to review and plot data."))
-#	
-#})
-observe({
-	req(reactive_objects$selected_aus)
+observeEvent(input$build_tools,{
 	sel_sites=reactive_objects$site_asmnt$IR_MLID[reactive_objects$site_asmnt$ASSESS_ID %in% reactive_objects$selected_aus]
 	reactive_objects$sel_sites=sel_sites
 	reactive_objects$sel_data=subset(merged_data, IR_MLID %in% sel_sites)
-	reactive_objects$sel_crit=subset(criteria, IR_MLID %in% sel_sites)	
+	reactive_objects$sel_crit=subset(criteria, IR_MLID %in% sel_sites)
+	showModal(modalDialog(title="Analysis tools ready.",size="l",easyClose=T,
+		"Data and analysis tools ready. Scroll to 'Figures' and 'Data table' panels to review and plot data."))
+	
 })
 
 
 # Figures
 observe({
-	req(reactive_objects$sel_crit)
-	isolate({
-		#print(length(reactive_objects$selected_aus))
-		#print(length(reactive_objects$sel_sites))
-		if(length(reactive_objects$sel_sites)>0 &length(reactive_objects$selected_aus)>0){
-			figures=callModule(module=figuresMod, id='figures', sel_data=reactive_objects$sel_data, sel_crit=reactive_objects$sel_crit)
-		}
-	})
+	req(reactive_objects$sel_data, reactive_objects$sel_crit)
+	figures=callModule(module=figuresMod, id='figures', sel_data=reactive_objects$sel_data, sel_crit=reactive_objects$sel_crit)
 })
 
 # Data table output
@@ -264,27 +249,6 @@ output$exp_rev <- downloadHandler(
 )
 
 
-# Split an AU
-observeEvent(input$au_split, {
-	split_shapes=callModule(module=splitMod, id='au_split',
-		sel_sites=reactive_objects$sel_sites, selected_aus=reactive_objects$selected_aus,
-		au_asmnt_poly=reactive_objects$au_asmnt_poly, site_asmnt=reactive_objects$site_asmnt, na_sites=reactive_objects$na_sites,
-		rejected_sites=reactive_objects$rejected_sites)
-	showModal(modalDialog('Draw your recommended split(s).', footer=NULL, size='l',
-		splitModUI('au_split'),
-		actionButton('split_save','Save & exit'),
-		actionButton('split_cancel','Cancel')
-	))
-	
-	# Cancel
-	observeEvent(input$split_cancel, ignoreInit=T, {
-		removeModal()
-	})
-	observe({
-		req(split_shapes()$finished)
-		print(split_shapes()$finished)
-	})
-})
 
 
 }
