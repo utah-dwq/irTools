@@ -25,9 +25,6 @@ observeEvent(input$example_input, {
 # Demo data input
 observeEvent(input$demo_input, {
 	sites_file=system.file("extdata", "IR_master_site_file-autoreview.xlsx", package = "irTools")	
-	if(is.null(sites_file)){
-		return(NULL)
-	}else{
 		sites=as.data.frame(readxl::read_excel(sites_file, 'sites'))
 		suppressWarnings({sites$IR_Lat=as.numeric(sites$IR_Lat)
 		sites$IR_Long=as.numeric(sites$IR_Long)
@@ -40,15 +37,10 @@ observeEvent(input$demo_input, {
 			color[IR_FLAG=="ACCEPT"]="green"
 			color[IR_FLAG=="REVIEW"]="orange"
 		})
-		#sitestest<<-sites
 		reactive_objects$sites_input=sites
 		reasons=as.data.frame(readxl::read_excel(sites_file, 'reasons'))
-		#reasonstest<<-reasons
-
-
 		reactive_objects$reasons_input=reasons
-			
-	}
+
 showModal(modalDialog(easyClose=T, 'Demo data uploaded.'))
 })
 

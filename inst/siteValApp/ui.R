@@ -1,5 +1,7 @@
 # site validation app ui
 library(shinyBS)
+library(wqTools)
+library(irTools)
 
 site_type_choices=c("REVIEW","ACCEPT","REJECT")
 names(site_type_choices)=c("Review needed","Accepted","Rejected")
