@@ -83,21 +83,20 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 	# Generate parameter 1 data & criteria (need to do criteria still)
 	observe({
 		req(input$sel_param1, input$sel_units1)
-		
-		## Data
-		param1=subset(sel_data, R3172ParameterName == input$sel_param1)
-		if(dim(param1)[1]>0){
-			param1$target_unit=input$sel_units1
-			param1=wqTools::convertUnits(param1, input_units='IR_Unit', target_units = "target_unit", value_var='IR_Value', conv_val_col='plot_value')
-			param1=param1[order(param1$ActivityStartDate),]
-			reactive_objects$param1=unique(param1[,c('IR_MLID','ActivityStartDate','IR_Lat','IR_Long','R3172ParameterName','plot_value','target_unit','IR_MLNAME','IR_DetCond','IR_Fraction','ASSESS_ID','AU_NAME','AU_Type','BEN_CLASS')])
-			## Criteria
-			crit1=subset(sel_crit, R3172ParameterName == input$sel_param1)
-				crit1$target_unit=input$sel_units1
-				crit1=wqTools::convertUnits(crit1, input_units='CriterionUnits', target_units = "target_unit", value_var='NumericCriterion', conv_val_col='plot_value')
-			crit1=crit1[order(crit1$ActivityStartDate),]
-			reactive_objects$crit1<-crit1
-		}
+			## Data
+			param1=subset(sel_data, R3172ParameterName == input$sel_param1)
+			if(dim(param1)[1]>0){
+				param1$target_unit=input$sel_units1
+				param1=wqTools::convertUnits(param1, input_units='IR_Unit', target_units = "target_unit", value_var='IR_Value', conv_val_col='plot_value')
+				param1=param1[order(param1$ActivityStartDate),]
+				reactive_objects$param1=unique(param1[,c('IR_MLID','ActivityStartDate','IR_Lat','IR_Long','R3172ParameterName','plot_value','target_unit','IR_MLNAME','IR_DetCond','IR_Fraction','ASSESS_ID','AU_NAME','AU_Type','BEN_CLASS')])
+				## Criteria
+				crit1=subset(sel_crit, R3172ParameterName == input$sel_param1)
+					crit1$target_unit=input$sel_units1
+					crit1=wqTools::convertUnits(crit1, input_units='CriterionUnits', target_units = "target_unit", value_var='NumericCriterion', conv_val_col='plot_value')
+				crit1=crit1[order(crit1$ActivityStartDate),]
+				reactive_objects$crit1<-crit1
+			}
 	})
 	
 
@@ -221,52 +220,22 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 		}
 	})
 
-		
-	
-	# Concentration map
-	session$onFlushed(once = T, function() {
-		output$conc_map <- leaflet::renderLeaflet({
-			
-			# Map parameters
-			conc_map = wqTools::buildMap(plot_polys=TRUE, search="")
-			conc_map = leaflet::addLayersControl(conc_map,
-				position ="topleft",
-				baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites", "Assessment units","Beneficial uses", "Site-specific standards"),
-				options = leaflet::layersControlOptions(collapsed = TRUE, autoZIndex=TRUE))
-			conc_map=addMapPane(conc_map,"site_markers", zIndex = 450)
-			conc_map=hideGroup(conc_map, "Assessment units")
-			conc_map=hideGroup(conc_map, "Site-specific standards")
-			conc_map=hideGroup(conc_map, "Beneficial uses")
-			conc_map=removeMeasure(conc_map)
-			
-			#if(!is.null(reactive_objects$param1)){
-			#	sites=reactive_objects$param1
-			#	count=aggregate(plot_value~IR_MLID+IR_Lat+IR_Long+target_unit, sites, FUN='length')
-			#	names(count)[names(count)=='plot_value'] = 'count'
-			#	sites=aggregate(plot_value~IR_MLID+IR_MLNAME+IR_Lat+IR_Long+target_unit, sites, FUN='mean')
-			#	sites=merge(sites,count,all.x=T)
-			#	sites$radius=scales::rescale(sites$plot_value, c(5,35))
-			#	min_lat=min(sites$IR_Lat)*0.999
-			#	min_lng=min(sites$IR_Long)*0.999
-			#	max_lat=max(sites$IR_Lat)*1.001
-			#	max_lng=max(sites$IR_Long)*1.001
-			#	leg_labs=c(signif(quantile(sites$plot_value, 0.10),3), signif(median(sites$plot_value),3), signif(quantile(sites$plot_value, 0.90),3))
-			#	leg_sizes=c(quantile(sites$radius, 0.10), median(sites$radius), quantile(sites$radius, 0.90))*2
-			#	conc_map= conc_map %>%
-			#		fitBounds(min_lng,min_lat,max_lng,max_lat) %>%	
-			#		addCircleMarkers(data = sites, lat=~IR_Lat, lng=~IR_Long, group="Sites", layerId=~IR_MLID, color='blue', stroke=F, fillOpacity=0.5,
-			#			radius = ~radius, options = pathOptions(pane = "site_markers"),
-			#			popup = paste0(
-			#				"MLID: ", sites$IR_MLID,
-			#				"<br> ML name: ", sites$IR_MLNAME,
-			#				"<br> Average Parameter Value: ", sites$plot_value,
-			#				"<br> Sample Count: ", sites$count)
-			#		) %>%
-			#	addLegendCustom(colors = c("blue", "blue", "blue"), labels = leg_labs, sizes = leg_sizes, title=reactive_objects$ylab)
-			#}
-			
-		})
+	# Concentration map		
+	conc_map = wqTools::buildMap(plot_polys=TRUE, search="")
+	conc_map = leaflet::addLayersControl(conc_map,
+		position ="topleft",
+		baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites", "Assessment units","Beneficial uses", "Site-specific standards"),
+		options = leaflet::layersControlOptions(collapsed = TRUE, autoZIndex=TRUE))
+	conc_map=addMapPane(conc_map,"site_markers", zIndex = 450)
+	conc_map=hideGroup(conc_map, "Assessment units")
+	conc_map=hideGroup(conc_map, "Site-specific standards")
+	conc_map=hideGroup(conc_map, "Beneficial uses")
+	conc_map=removeMeasure(conc_map)
+
+	output$conc_map <- leaflet::renderLeaflet({
+		conc_map
 	})
+			
 
 	# Map proxy
 	conc_proxy = leaflet::leafletProxy("conc_map")
@@ -284,9 +253,10 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 	})
 
 	# Update concentration map via proxy on param1 change
-	observe({
-		req(reactive_objects$param1)
+	observeEvent(reactive_objects$param1, {
 		if(all(!is.na(reactive_objects$param1$plot_value))){
+
+			conc_proxy%>%clearGroup('Sites') %>% clearControls() 
 			sites=reactive_objects$param1
 			count=aggregate(plot_value~IR_MLID+IR_Lat+IR_Long+target_unit, sites, FUN='length')
 			names(count)[names(count)=='plot_value'] = 'count'
@@ -299,8 +269,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 			max_lng=max(sites$IR_Long)*1.001
 			leg_labs=c(signif(quantile(sites$plot_value, 0.10),3), signif(median(sites$plot_value),3), signif(quantile(sites$plot_value, 0.90),3))
 			leg_sizes=c(quantile(sites$radius, 0.10), median(sites$radius), quantile(sites$radius, 0.90))*2
-			conc_proxy%>%clearGroup('Sites') %>% clearControls() %>%
-				flyToBounds(min_lng,min_lat,max_lng,max_lat) %>%	
+			conc_proxy %>% flyToBounds(min_lng,min_lat,max_lng,max_lat) %>%	
 				addCircleMarkers(data = sites, lat=~IR_Lat, lng=~IR_Long, group="Sites", layerId=~IR_MLID, color='blue', stroke=F, fillOpacity=0.5,
 					radius = ~radius, options = pathOptions(pane = "site_markers"),
 					popup = paste0(
