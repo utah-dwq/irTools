@@ -65,7 +65,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 		units=unique(sel_data[sel_data$R3172ParameterName == input$sel_param1, 'IR_Unit'])
 		selectInput(ns("sel_units1"),"Select units 1", choices = units)
 	})
-
+		
 	# Select param 2
 	output$sel_param2 <- renderUI({
 		ns <- session$ns
@@ -105,6 +105,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 		crit1=crit1[order(crit1$ActivityStartDate),]
 		reactive_objects$crit1<-crit1
 	})
+	
 
 	# Generate parameter 2 data & criteria (need to do criteria still)
 	observe({if(input$tabs=='Multiple parameters'){
@@ -285,7 +286,11 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 		labelAdditions <- paste0("<div style='display: inline-block;height: ", sizes, "px;margin-top: 4px;line-height: ", sizes, "px;'>", labels, "</div>")
 		return(addLegend(map, colors = colorAdditions, labels = labelAdditions, opacity = opacity, title = title))
 	}
-
+	
+	observeEvent(input$sel_param1, {
+		reactive_objects$param1=NULL
+		#print(reactive_objects$param1$target_unit[1] == input$sel_units1)
+	})
 
 	# Update concentration map via proxy on param1 change
 	observe({

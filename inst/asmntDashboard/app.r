@@ -190,12 +190,16 @@ observeEvent(input$clear_au, {
 # Generate data and criteria subsets (based on selected AUs) for analysis tools on button press 
 observeEvent(input$build_tools,{
 	sel_sites=reactive_objects$site_asmnt$IR_MLID[reactive_objects$site_asmnt$ASSESS_ID %in% reactive_objects$selected_aus]
-	reactive_objects$sel_sites=sel_sites
-	reactive_objects$sel_data=subset(merged_data, IR_MLID %in% sel_sites)
-	reactive_objects$sel_crit=subset(criteria, IR_MLID %in% sel_sites)
-	showModal(modalDialog(title="Analysis tools ready.",size="l",easyClose=T,
-		"Data and analysis tools ready. Scroll to 'Figures' and 'Data table' panels to review and plot data."))
-	
+	if(length(sel_sites)>0){
+		reactive_objects$sel_sites=sel_sites
+		reactive_objects$sel_data=subset(merged_data, IR_MLID %in% sel_sites)
+		reactive_objects$sel_crit=subset(criteria, IR_MLID %in% sel_sites)
+		showModal(modalDialog(title="Analysis tools ready.",size="l",easyClose=T,
+			"Data and analysis tools ready. Scroll to 'Figures' and 'Data table' panels to review and plot data."))
+	}else{
+		showModal(modalDialog(title="No sites selected.",easyClose=T,
+			"No assessed sites are associated with selected AUs."))
+	}
 })
 
 
