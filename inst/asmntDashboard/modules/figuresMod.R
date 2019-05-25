@@ -41,84 +41,104 @@ figuresModUI <- function(id){
 
 
 figuresMod <- function(input, output, session, sel_data, sel_crit){
-	
-	# Date formats
-	sel_data$ActivityStartDate=as.Date(sel_data$ActivityStartDate)
-	sel_crit$ActivityStartDate=as.Date(sel_crit$ActivityStartDate)
-	
+
 	# Empty reactive objects
 	reactive_objects=reactiveValues()
-	
-	
-	# Make sure numeric criterion is numeric
-	sel_crit$NumericCriterion=as.numeric(sel_crit$NumericCriterion)
+
+	# Get data & format
+	observe({
+		req(sel_data(), sel_crit())
+		sel_data=sel_data()
+		sel_crit=sel_crit()
+		sel_data$ActivityStartDate=as.Date(sel_data$ActivityStartDate)
+		sel_crit$ActivityStartDate=as.Date(sel_crit$ActivityStartDate)
+		sel_crit$NumericCriterion=as.numeric(sel_crit$NumericCriterion)
+		reactive_objects$sel_data=sel_data
+		reactive_objects$sel_crit=sel_crit
+	})
 	
 	# Select param 1
 	output$sel_param1 <- renderUI({
 		ns <- session$ns
-		selectInput(ns("sel_param1"),"Select parameter 1", choices = sel_data$R3172ParameterName[order(sel_data$R3172ParameterName)])
+		selectInput(ns("sel_param1"),"Select parameter 1", choices = reactive_objects$sel_data$R3172ParameterName[order(reactive_objects$sel_data$R3172ParameterName)])
+	})
+	
+	observe(priority=2, {
+		req(input$sel_param1)
+		reactive_objects$param1_sub=reactive_objects$sel_data[reactive_objects$sel_data$R3172ParameterName == input$sel_param1,]
+	})
+	
+	observe({
+		req(reactive_objects$param1_sub)
+		reactive_objects$units1=unique(reactive_objects$param1_sub$IR_Unit)
 	})
 	
 	# Select units 1
 	output$sel_units1 <- renderUI({
+		req(reactive_objects$units1)
 		ns <- session$ns
-		units=unique(sel_data[sel_data$R3172ParameterName == input$sel_param1, 'IR_Unit'])
-		selectInput(ns("sel_units1"),"Select units 1", choices = units)
+		units=reactive_objects$units1
+		selectInput(ns("sel_units1"),"Select units 1", choices = units, selected="")
 	})
-		
+	
+    
+	observe(priority=5, {
+		req(reactive_objects$sel_crit, reactive_objects$sel_data)
+		ns <- session$ns
+		updateSelectInput(session, ns('sel_units1'), selected="")
+	})
+    
+	
+	observe(priority=1, {
+		req(input$sel_units1)
+		reactive_objects$sel_units1=input$sel_units1
+	})
+	
 	# Select param 2
 	output$sel_param2 <- renderUI({
 		ns <- session$ns
-		param_choices=sel_data$R3172ParameterName[! sel_data$R3172ParameterName %in% input$sel_param1]
+		param_choices=reactive_objects$sel_data$R3172ParameterName[! reactive_objects$sel_data$R3172ParameterName %in% input$sel_param1]
 		selectInput(ns("sel_param2"),"Select parameter 2", choices = param_choices[order(param_choices)])
 	})
-
+    
 	# Select units 2
 	output$sel_units2 <- renderUI({
 		ns <- session$ns
-		units=unique(sel_data[sel_data$R3172ParameterName == input$sel_param2, 'IR_Unit'])
+		units=unique(reactive_objects$sel_data[reactive_objects$sel_data$R3172ParameterName == input$sel_param2, 'IR_Unit'])
 		selectInput(ns("sel_units2"),"Select units 2", choices = units)
 	})
-
+	
 	# Generate parameter 1 data & criteria (need to do criteria still)
 	observe({
-		req(input$sel_param1, input$sel_units1)
-		
-		## Data
-		param1=subset(sel_data, R3172ParameterName == input$sel_param1)
-		### Convert units if multiple available
-		if(length(unique(param1$IR_Unit)>1)){
-			param1$target_unit=input$sel_units1
-			param1=wqTools::convertUnits(param1, input_units='IR_Unit', target_units = "target_unit", value_var='IR_Value', conv_val_col='plot_value')
-		}else{param1$plot_value=param1$IR_Value}
-		param1=param1[order(param1$ActivityStartDate),]
-		reactive_objects$param1=unique(param1[,c('IR_MLID','ActivityStartDate','IR_Lat','IR_Long','R3172ParameterName','plot_value','target_unit','IR_MLNAME','IR_DetCond','IR_Fraction','ASSESS_ID','AU_NAME','AU_Type','BEN_CLASS')])
-		
-		
-		## Criteria
-		crit1=subset(sel_crit, R3172ParameterName == input$sel_param1)
-		### Convert units if multiple available
-		if(length(unique(crit1$CriterionUnits)>1)){
-			crit1$target_unit=input$sel_units1
-			crit1=wqTools::convertUnits(crit1, input_units='CriterionUnits', target_units = "target_unit", value_var='NumericCriterion', conv_val_col='plot_value')
-		}else{crit1$plot_value=crit1$NumericCriterion}
-		crit1=crit1[order(crit1$ActivityStartDate),]
-		reactive_objects$crit1<-crit1
+		req(input$sel_param1, reactive_objects$sel_units1)
+			## Data
+			param1=subset(reactive_objects$sel_data, R3172ParameterName == input$sel_param1)
+			if(dim(param1)[1]>0){
+				param1$target_unit=reactive_objects$sel_units1
+				param1=wqTools::convertUnits(param1, input_units='IR_Unit', target_units = "target_unit", value_var='IR_Value', conv_val_col='plot_value')
+				param1=param1[order(param1$ActivityStartDate),]
+				reactive_objects$param1=unique(param1[,c('IR_MLID','ActivityStartDate','IR_Lat','IR_Long','R3172ParameterName','plot_value','target_unit','IR_MLNAME','IR_DetCond','IR_Fraction','ASSESS_ID','AU_NAME','AU_Type','BEN_CLASS')])
+				## Criteria
+				crit1=subset(reactive_objects$sel_crit, R3172ParameterName == input$sel_param1)
+					crit1$target_unit=reactive_objects$sel_units1
+					crit1=wqTools::convertUnits(crit1, input_units='CriterionUnits', target_units = "target_unit", value_var='NumericCriterion', conv_val_col='plot_value')
+				crit1=crit1[order(crit1$ActivityStartDate),]
+				reactive_objects$crit1<-crit1
+			}
 	})
 	
-
+    
 	# Generate parameter 2 data & criteria (need to do criteria still)
 	observe({if(input$tabs=='Multiple parameters'){
 		req(input$sel_param2, input$sel_units2)
-		param2=subset(sel_data, R3172ParameterName == input$sel_param2)
-		## Convert units if multiple available
-		if(length(unique(param2$IR_Unit)>1)){
+		param2=subset(reactive_objects$sel_data, R3172ParameterName == input$sel_param2)
+		if(dim(param2)[1]>0){
 			param2$target_unit=input$sel_units2
 			param2=wqTools::convertUnits(param2, input_units='IR_Unit', target_units = "target_unit", value_var='IR_Value', conv_val_col='plot_value')
-		}else{param2$plot_value=param2$IR_Value}
-		param2=param2[order(param2$ActivityStartDate),]
-		reactive_objects$param2=unique(param2[,c('IR_MLID','ActivityStartDate','IR_Lat','IR_Long','R3172ParameterName','plot_value','target_unit','IR_MLNAME','IR_DetCond','IR_Fraction','ASSESS_ID','AU_NAME','AU_Type','BEN_CLASS')])
-	}})	
+			param2=param2[order(param2$ActivityStartDate),]
+			reactive_objects$param2=unique(param2[,c('IR_MLID','ActivityStartDate','IR_Lat','IR_Long','R3172ParameterName','plot_value','target_unit','IR_MLNAME','IR_DetCond','IR_Fraction','ASSESS_ID','AU_NAME','AU_Type','BEN_CLASS')])
+		}
+	}})
 	
 	# Multi-site figure labels & visibilities
 	observe({
@@ -140,7 +160,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 		au_vis=as.list(append(rep(F,mlid_len), rep(T, au_len)))
 		reactive_objects$au_vis=as.list(append(au_vis, rep('legendonly',crit_len)))	
 	})
-
+    
 	# Multi-site time series
 	output$multi_site_ts=renderPlotly({
 		req(reactive_objects$param1, input$sel_units1, reactive_objects$crit1, reactive_objects$au_vis)
@@ -179,7 +199,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 				)
 		}
 	})
-
+    
 	# Multi site boxplot
 	output$multi_site_bp=renderPlotly({
 		req(reactive_objects$param1, input$sel_units1, reactive_objects$crit1, reactive_objects$au_vis)
@@ -192,7 +212,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 		crit_plot=rbind(crit_plot0,crit_plot1)
 		
 		
-
+    
 		if(all(!is.na(reactive_objects$param1$plot_value))){
 			plot_ly(type = 'box', y = reactive_objects$param1$plot_value, color = reactive_objects$param1$IR_MLID, visible=T) %>%
 				add_trace(type = 'box', y = reactive_objects$param1$plot_value, color = reactive_objects$param1$ASSESS_ID, visible=F) %>%
@@ -227,59 +247,39 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 				)
 		}
 	})
-
-		
-	
-	# Concentration map
-	session$onFlushed(once = T, function() {
-		observeEvent(input$sel_units1, ignoreInit=T, once=T,{	
-			output$conc_map <- leaflet::renderLeaflet({
-				
-				# Map parameters
-				conc_map = wqTools::buildMap(plot_polys=TRUE, search="")
-				conc_map = leaflet::addLayersControl(conc_map,
-					position ="topleft",
-					baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites", "Assessment units","Beneficial uses", "Site-specific standards"),
-					options = leaflet::layersControlOptions(collapsed = TRUE, autoZIndex=TRUE))
-				conc_map=addMapPane(conc_map,"site_markers", zIndex = 450)
-				conc_map=hideGroup(conc_map, "Assessment units")
-				conc_map=hideGroup(conc_map, "Site-specific standards")
-				conc_map=hideGroup(conc_map, "Beneficial uses")
-				conc_map=removeMeasure(conc_map)
-				
-				if(!is.null(reactive_objects$param1)){
-					sites=reactive_objects$param1
-					count=aggregate(plot_value~IR_MLID+IR_Lat+IR_Long+target_unit, sites, FUN='length')
-					names(count)[names(count)=='plot_value'] = 'count'
-					sites=aggregate(plot_value~IR_MLID+IR_MLNAME+IR_Lat+IR_Long+target_unit, sites, FUN='mean')
-					sites=merge(sites,count,all.x=T)
-					sites$radius=scales::rescale(sites$plot_value, c(5,35))
-					min_lat=min(sites$IR_Lat)*0.999
-					min_lng=min(sites$IR_Long)*0.999
-					max_lat=max(sites$IR_Lat)*1.001
-					max_lng=max(sites$IR_Long)*1.001
-					leg_labs=c(signif(quantile(sites$plot_value, 0.10),3), signif(median(sites$plot_value),3), signif(quantile(sites$plot_value, 0.90),3))
-					leg_sizes=c(quantile(sites$radius, 0.10), median(sites$radius), quantile(sites$radius, 0.90))*2
-					conc_map= conc_map %>%
-						fitBounds(min_lng,min_lat,max_lng,max_lat) %>%	
-						addCircleMarkers(data = sites, lat=~IR_Lat, lng=~IR_Long, group="Sites", layerId=~IR_MLID, color='blue', stroke=F, fillOpacity=0.5,
-							radius = ~radius, options = pathOptions(pane = "site_markers"),
-							popup = paste0(
-								"MLID: ", sites$IR_MLID,
-								"<br> ML name: ", sites$IR_MLNAME,
-								"<br> Average Parameter Value: ", sites$plot_value,
-								"<br> Sample Count: ", sites$count)
-						) %>%
-					addLegendCustom(colors = c("blue", "blue", "blue"), labels = leg_labs, sizes = leg_sizes, title=reactive_objects$ylab)
-				}
-				
-			})
-		})
+    
+	# Concentration map		
+	conc_map = wqTools::buildMap(plot_polys=TRUE, search="")
+	conc_map=conc_map%>%clearGroup('Sites') %>% clearControls()
+	conc_map = leaflet::addLayersControl(conc_map,
+		position ="topleft",
+		baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites", "Assessment units","Beneficial uses", "Site-specific standards"),
+		options = leaflet::layersControlOptions(collapsed = TRUE, autoZIndex=TRUE))
+	conc_map=addMapPane(conc_map,"site_markers", zIndex = 450)
+	conc_map=hideGroup(conc_map, "Assessment units")
+	conc_map=hideGroup(conc_map, "Site-specific standards")
+	conc_map=hideGroup(conc_map, "Beneficial uses")
+	conc_map=removeMeasure(conc_map)
+    
+	output$conc_map <- leaflet::renderLeaflet({
+		conc_map
 	})
-
+	
+	
+	
+	observeEvent(reactive_objects$sel_crit, {
+		output$conc_map <- leaflet::renderLeaflet({
+			conc_map
+		})
+		
+		conc_proxy = leaflet::leafletProxy("conc_map")
+	
+	})
+	
+    
 	# Map proxy
 	conc_proxy = leaflet::leafletProxy("conc_map")
-
+    
 	# Custom leaflet legend (re-size circles)
     addLegendCustom <- function(map, colors, labels, sizes, opacity = 0.5, title = NULL){
 		colorAdditions <- paste0(colors, "; width:", sizes, "px; height:", sizes, "px")
@@ -287,14 +287,12 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 		return(addLegend(map, colors = colorAdditions, labels = labelAdditions, opacity = opacity, title = title))
 	}
 	
-	observeEvent(input$sel_param1, {
-		reactive_objects$param1=NULL
-		#print(reactive_objects$param1$target_unit[1] == input$sel_units1)
-	})
-
+    
 	# Update concentration map via proxy on param1 change
-	observe({
-		req(reactive_objects$param1)
+	observeEvent(reactive_objects$param1, {
+		#req(reactive_objects$param1, reactive_objects$ylab)
+		conc_proxy%>%clearGroup('Sites') %>% clearControls()
+		if(exists('sites')){rm(sites)}
 		if(all(!is.na(reactive_objects$param1$plot_value))){
 			sites=reactive_objects$param1
 			count=aggregate(plot_value~IR_MLID+IR_Lat+IR_Long+target_unit, sites, FUN='length')
@@ -308,8 +306,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 			max_lng=max(sites$IR_Long)*1.001
 			leg_labs=c(signif(quantile(sites$plot_value, 0.10),3), signif(median(sites$plot_value),3), signif(quantile(sites$plot_value, 0.90),3))
 			leg_sizes=c(quantile(sites$radius, 0.10), median(sites$radius), quantile(sites$radius, 0.90))*2
-			conc_proxy%>%clearGroup('Sites') %>% clearControls() %>%
-				flyToBounds(min_lng,min_lat,max_lng,max_lat) %>%	
+			conc_proxy %>% flyToBounds(min_lng,min_lat,max_lng,max_lat) %>%	
 				addCircleMarkers(data = sites, lat=~IR_Lat, lng=~IR_Long, group="Sites", layerId=~IR_MLID, color='blue', stroke=F, fillOpacity=0.5,
 					radius = ~radius, options = pathOptions(pane = "site_markers"),
 					popup = paste0(
@@ -319,7 +316,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 						"<br> Sample Count: ", sites$count)
 				) %>%
 			addLegendCustom(colors = c("blue", "blue", "blue"), labels = leg_labs, sizes = leg_sizes, title=reactive_objects$ylab)
-		}
+			}
 	})
 	
 	
@@ -331,7 +328,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 		ns <- session$ns
 		selectInput(ns("sel_site"),"Select Site", choices = param_site)
 	})
-
+    
 	output$multi_param_ts=renderPlotly({
 		req(reactive_objects$param1, input$sel_units1, reactive_objects$param2, input$sel_units2, input$sel_site)
 		param1=reactive_objects$param1[reactive_objects$param1$IR_MLID %in% input$sel_site,]

@@ -204,10 +204,10 @@ observeEvent(input$build_tools,{
 
 
 # Figures
-observe({
-	req(reactive_objects$sel_data, reactive_objects$sel_crit)
-	figures=callModule(module=figuresMod, id='figures', sel_data=reactive_objects$sel_data, sel_crit=reactive_objects$sel_crit)
-})
+sel_data=reactive(reactive_objects$sel_data)
+sel_crit=reactive(reactive_objects$sel_crit)
+
+callModule(module=figuresMod, id='figures', sel_data, sel_crit)
 
 # Data table output
 output$dt=DT::renderDT({
