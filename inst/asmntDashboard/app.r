@@ -39,9 +39,9 @@ ui <-fluidPage(
 			fixedPanel(h3('Review tools'), draggable=T,wellPanel(
 				fluidRow(actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt'), width='100%')),
 				fluidRow(actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox'), width='100%')),
-				fluidRow(actionButton('asmnt_accept','Accept', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'), width='100%')),
-				fluidRow(actionButton('asmnt_flag','Flag', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'), width='100%')),
-				fluidRow(actionButton('asmnt_split','Split AU', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('draw-polygon'), width='100%'))
+				fluidRow(actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'), width='100%')),
+				fluidRow(actionButton('asmnt_flag','Flag (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'), width='100%'))#,
+				#fluidRow(actionButton('asmnt_split','Split AU', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('draw-polygon'), width='100%'))
 			))
 		),
 		
@@ -151,10 +151,11 @@ asmnt_map_proxy=leafletProxy('assessment_map')
 observeEvent(input$assessment_map_shape_click,{
 	au_click = input$assessment_map_shape_click$id
 	if(!is.null(au_click)){
-		if(au_click %in% reactive_objects$selected_aus){
-			reactive_objects$selected_aus=reactive_objects$selected_aus[!reactive_objects$selected_aus %in% au_click]
+		au_id=as.character(unique(au_poly$ASSESS_ID[au_poly$polyID==au_click]))
+		if(au_id %in% reactive_objects$selected_aus){
+			reactive_objects$selected_aus=reactive_objects$selected_aus[!reactive_objects$selected_aus %in% au_id]
 		}else{
-			reactive_objects$selected_aus=append(reactive_objects$selected_aus, au_click)
+			reactive_objects$selected_aus=append(reactive_objects$selected_aus, au_id)
 		}
 	}
 })
@@ -261,5 +262,27 @@ output$exp_rev <- downloadHandler(
 shinyApp(ui = ui, server = server)
 
 
+
+## Split an AU
+#observeEvent(input$au_split, {
+#	split_shapes=callModule(module=splitMod, id='au_split',
+#		sel_sites=reactive_objects$sel_sites, selected_aus=reactive_objects$selected_aus,
+#		au_asmnt_poly=reactive_objects$au_asmnt_poly, site_asmnt=reactive_objects$site_asmnt, na_sites=reactive_objects$na_sites,
+#		rejected_sites=reactive_objects$rejected_sites)
+#	showModal(modalDialog('Draw your recommended split(s).', footer=NULL, size='l',
+#		splitModUI('au_split'),
+#		actionButton('split_save','Save & exit'),
+#		actionButton('split_cancel','Cancel')
+#	))
+#	
+#	# Cancel
+#	observeEvent(input$split_cancel, ignoreInit=T, {
+#		removeModal()
+#	})
+#	observe({
+#		req(split_shapes()$finished)
+#		print(split_shapes()$finished)
+#	})
+#})
 
 
