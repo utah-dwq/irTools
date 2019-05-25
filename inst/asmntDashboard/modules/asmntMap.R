@@ -49,7 +49,7 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites){
 					"Description: ", bu_poly$R317Descrp,
 					"<br> Uses: ", bu_poly$bu_class)
 			) %>%
-			addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~ASSESS_ID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
+			addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
 				label=lapply(au_asmnt_poly$lab, HTML)
 			) %>%
 			addPolygons(data=ss_poly,group="Site-specific standards",smoothFactor=4,fillOpacity = 0.1,weight=3,color="blue", options = pathOptions(pane = "underlay_polygons"),
