@@ -3,7 +3,7 @@ Title: R-tools for generating Utah's Integrated Report on water quality
 Version: 0.0.0.9000
 Authors: Jake Vander Laan, Utah Division of Water Quality, jvander@utah.gov [aut, cre], Elise Hinman, Utah Division of Water Quality, ehinman@utah.gov [aut]
 Description: This package is a collection of R-tools developed by Utah Division of Water Quality to enhance and automate Utah's Integrated Report on water quality. The package includes tools for downloading data from EPA's Water Quality Portal and Attains, prepping raw data for WQ assessments, and WQ assessment and reporting tools.
-Depends: R (>= 3.4.4)
+Depends: R (>= 2.2.2)
 YEAR: 2018
 COPYRIGHT HOLDER: Utah Division of Water Quality
 License: MIT + file LICENSE
