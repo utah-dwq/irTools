@@ -19,6 +19,7 @@ Imports:
 	sf,
     	shiny,
     	shinyjs,
+	tidyr,
     	jsonlite,
     	openxlsx,
     	leaflet,
