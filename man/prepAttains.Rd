@@ -11,7 +11,7 @@ prepAttains(current_assessment, trans_wb, pull_attains = TRUE,
 \arguments{
 \item{current_assessment}{A list of assessment output objects to be rolled up to a different spatial resolution.}
 
-\item{trans_wb}{Excel workbook containing translation tables connecting irTools outputs to ATTAINS inputs.}
+\item{trans_wb}{Excel workbook containing translation tables connecting irTools outputs to ATTAINS inputs. Currently resides in lookup tables repo.}
 
 \item{pull_attains}{Logical. If TRUE (default), function uses readAttains function from the irTools package to pull assessment data from the previous reporting cycle. If FALSE, param_path and assess_path are needed.}
 

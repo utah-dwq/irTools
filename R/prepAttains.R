@@ -1,7 +1,7 @@
 #' Prepares rolled up AU-Use and AU-Use-Parameter assessments for ATTAINS upload
 #'
 #' @param current_assessment A list of assessment output objects to be rolled up to a different spatial resolution.
-#' @param trans_wb Excel workbook containing translation tables connecting irTools outputs to ATTAINS inputs.
+#' @param trans_wb Excel workbook containing translation tables connecting irTools outputs to ATTAINS inputs. Currently resides in lookup tables repo.
 #' @param pull_attains Logical. If TRUE (default), function uses readAttains function from the irTools package to pull assessment data from the previous reporting cycle. If FALSE, param_path and assess_path are needed.
 #' @param assess_path File path to ATTAINS assessments.csv from previous reporting cycle.
 #' @param param_path File path to ATTAINS parameters.csv from previous reporting cycle.
@@ -26,10 +26,10 @@
 # trans_wb = "ATTAINS_domains.xlsx"
 # assess_path = "exported_2016_asmnts//assessments.csv"
 # param_path = "exported_2016_asmnts//parameters.csv"
-# last_reporting_cycle = 2014
+# last_reporting_cycle = 2016
 # current_reporting_cycle = 2018
 # 
-# testing = pushAttains(current_assessment = current_assessment, trans_wb = trans_wb, pull_attains = TRUE, assess_path = assess_path, param_path = param_path, last_reporting_cycle = last_reporting_cycle, current_reporting_cycle = current_reporting_cycle)
+# testing = prepAttains(current_assessment = current_assessment, trans_wb = trans_wb, pull_attains = TRUE, assess_path = assess_path, param_path = param_path, last_reporting_cycle = last_reporting_cycle, current_reporting_cycle = current_reporting_cycle, filesave = TRUE)
 
 prepAttains <- function(current_assessment, trans_wb, pull_attains = TRUE, assess_path, param_path, last_reporting_cycle, current_reporting_cycle, filesave = TRUE){
   
