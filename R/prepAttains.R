@@ -51,6 +51,7 @@ prepAttains <- function(current_assessment, trans_wb, pull_attains = TRUE, asses
   rm(au_up)
   
   # Read in translation workbook
+  #### NOTE ##### Need to update to overarching translation workbook (with combined domain tables)
   attains_trans = openxlsx::loadWorkbook(trans_wb)
   uses = openxlsx::readWorkbook(attains_trans, sheet = "uses")
   attainment = openxlsx::readWorkbook(attains_trans, sheet = "assess_use")
