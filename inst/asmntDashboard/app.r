@@ -49,7 +49,7 @@ ui <-fluidPage(
 			shinyjqui::jqui_resizable(bsCollapse(multiple=T,
 				bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), 
 					#fluidRow(
-						column(2, fileInput("import_assessments", "Import assessment file", accept=".csv"),
+						column(2, fileInput("import_assessments", "Import assessment file", accept=".xlsx"),
 						uiOutput('ex_url')),
 						column(2, actionButton('demo_input', icon=icon('upload'), label='Use demo input', style = "margin-top: 25px; color: #fff; background-color: #337ab7; border-color: #2e6da4%"))
 					#)
@@ -114,7 +114,9 @@ observeEvent(input$demo_input, {
 # Import site-use-param-assessments file
 observeEvent(input$import_assessments,{
 	file=input$import_assessments$datapath
-	site_use_param_asmnt=read.csv(file)
+	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
+	au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
+	reactive_objects$au_splits=au_splits
 	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	inputs=initialDataProc(site_use_param_asmnt)
 	reactive_objects$au_asmnt_poly=inputs$au_asmnt_poly
@@ -244,6 +246,58 @@ observe({
 })
 output$wqp_url <-renderUI(a(href=paste0(reactive_objects$wqp_url),"Download WQP data",target="_blank"))
 
+
+
+
+
+# AU splits
+
+## Generate split map in modal
+observeEvent(input$asmnt_split, {
+	req(reactive_objects$selected_aus, reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites)
+	if(!is.null(reactive_objects$splits)){
+		reactive_objects$drop_split='Y'
+	}else{reactive_objects$drop_split='N'}
+	au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
+	view=sf::st_bbox(au_asmnt_poly)
+	site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
+	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites) %>%
+		fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
+		showGroup('Assessed sites')
+	reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
+	showModal(modalDialog(title='Draw your split.', size='l', footer=NULL,
+		editModUI("auSplit"),
+		actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
+		actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save'))
+		
+	))
+})
+
+## Save splits
+observeEvent(input$split_save, {
+	req(reactive_objects$splits)
+	splits=reactive_objects$splits()$finished
+	if(!is.null(splits)){
+		if(reactive_objects$drop_split=='Y' & dim(splits)[1]>=2){
+			splits=splits[2:dim(splits)[1],]
+		}
+	splits=as.data.frame(splits)
+	splits=splits[,!names(splits) %in% '_leaflet_id']
+	splits$ASSESS_ID=reactive_objects$selected_aus
+	reactive_objects$au_splits=rbind(reactive_objects$au_splits, splits)
+	au_splits<<-reactive_objects$au_splits
+	print(reactive_objects$au_splits)
+	removeModal()
+	}
+})
+
+## Cancel splits
+observeEvent(input$split_cancel, ignoreInit=T, {
+	removeModal()
+})
+
+
+
 # Export reviews
 output$exp_rev <- downloadHandler(
 	filename=paste0('asmnt-reviews-', Sys.Date(),'.xlsx'),
@@ -251,7 +305,6 @@ output$exp_rev <- downloadHandler(
 		list(asmnt_reviews=reactive_objects$site_use_param_asmnt),
 		path = file, format_headers=F, col_names=T)}
 )
-
 
 
 
