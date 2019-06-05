@@ -119,6 +119,7 @@ observeEvent(input$demo_input, {
 observeEvent(input$import_assessments,{
 	file=input$import_assessments$datapath
 	site_use_param_asmnt=read.csv(file)
+	#site_use_param_asmnt=read.csv("C:\\Users\\jvander\\Desktop\\site-use-param-asmnt - Copy.csv")
 	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	inputs=initialDataProc(site_use_param_asmnt)
 	reactive_objects$au_asmnt_poly=inputs$au_asmnt_poly
@@ -220,7 +221,7 @@ observe({
 	#print(reactive_objects$rebuild)
 })
 
-## Generate rebuild UI
+## Generate rebuild UI (see https://stackoverflow.com/questions/37470226/blinking-loading-text-in-r-shiny)
 output$rebuild=renderUI({
 	req(reactive_objects$rebuild)
 	if(reactive_objects$rebuild){
