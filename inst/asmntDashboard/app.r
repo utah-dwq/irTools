@@ -39,6 +39,7 @@ ui <-fluidPage(
 			fixedPanel(h3('Review tools'), draggable=T,wellPanel(
 				fluidRow(actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt'), width='100%')),
 				fluidRow(actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox'), width='100%')),
+				uiOutput('rebuild'),
 				fluidRow(actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'), width='100%')),
 				fluidRow(actionButton('asmnt_flag','Flag (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'), width='100%'))#,
 				#fluidRow(actionButton('asmnt_split','Split AU', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('draw-polygon'), width='100%'))
@@ -89,6 +90,9 @@ ui <-fluidPage(
 server <- function(input, output, session){
 
 #options(warn=0)
+
+# Import all available WQP sites
+#wqp_sites=wqTools::readWQP(type="sites", statecode="US:49", siteType=c("Lake, Reservoir, Impoundment","Stream", "Spring"))
 
 # Example input url
 output$ex_url <-renderUI(a(href='https://raw.githubusercontent.com/utah-dwq/irTools/master/inst/extdata/site-use-param-asmnt.csv',list(icon('question'),"Example input data"),target="_blank"))
@@ -143,7 +147,7 @@ observe({
 # Map output
 output$assessment_map=leaflet::renderLeaflet({
 	req(reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt)
-	asmntMap(reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites)
+	asmntMap(reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, wqp_sites=wqp_sites)
 })
 asmnt_map_proxy=leafletProxy('assessment_map')
 
@@ -200,6 +204,34 @@ observeEvent(input$build_tools,{
 	}else{
 		showModal(modalDialog(title="No sites selected.",easyClose=T,
 			"No assessed sites are associated with selected AUs."))
+	}
+})
+
+
+# Recommend rebuild
+## Determine if a rebuild is appropriate
+observe({
+	req(reactive_objects$sel_data)
+	data_aus=(unique(reactive_objects$sel_data$ASSESS_ID))[order(unique(reactive_objects$sel_data$ASSESS_ID))]
+	if(length(reactive_objects$selected_aus)>0){
+		map_aus=reactive_objects$selected_aus[order(reactive_objects$selected_aus)]
+		reactive_objects$rebuild=!all(data_aus==map_aus)
+	}else{reactive_objects$rebuild=TRUE}
+	#print(reactive_objects$rebuild)
+})
+
+## Generate rebuild UI
+output$rebuild=renderUI({
+	req(reactive_objects$rebuild)
+	if(reactive_objects$rebuild){
+		fluidRow(
+			tags$div("Re-build recommended...",id="rebuild_message"),
+			tags$script(HTML("
+				(function blink() { 
+					$('#rebuild_message').fadeOut(500).fadeIn(500, blink); 
+				})();
+			"))
+		)
 	}
 })
 
