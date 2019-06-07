@@ -1,4 +1,4 @@
-asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, wqp_sites){
+asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites){
 	ss_poly=wqTools::ss_poly
 	bu_poly=wqTools::bu_poly
 	au_asmnt_poly=within(au_asmnt_poly, {

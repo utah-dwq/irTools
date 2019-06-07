@@ -252,7 +252,7 @@ output$dt=DT::renderDT({
 	)
 })
 
-# Export data table
+# Export data table - (export wide dataset, not column subset dataset)
 output$exp_dt <- downloadHandler(
 	filename=paste0('exported-data-', Sys.Date(),'.xlsx'),
 	content = function(file) {writexl::write_xlsx(
