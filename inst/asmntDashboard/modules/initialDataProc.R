@@ -1,5 +1,7 @@
 initialDataProc=function(site_use_param_asmnt){
 
+#site_use_param_asmnt=read.csv("C:\\Users\\jvander\\Desktop\\site-use-param-asmnt - Copy.csv")
+
 # Initial data processing
 ## Site level rollups
 site_param_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('IR_MLID','IR_MLNAME','IR_Lat','IR_Long','ASSESS_ID','AU_NAME','R3172ParameterName'), cat_var="AssessCat", print=F, expand_uses=F)
@@ -16,32 +18,33 @@ na_sites=subset(master_site, IR_FLAG=="ACCEPT" & !IR_MLID %in% site_asmnt$IR_MLI
 
 ### Generate impaired params wide list
 sites_ns=subset(site_param_asmnt, AssessCat=='NS')
-impaired_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_ns, value.var='R3172ParameterName')
-nms=names(impaired_params[2:dim(impaired_params)[2]])
-impaired_params=tidyr::unite(impaired_params, 'Impaired_params', nms, sep='; ')
-impaired_params=within(impaired_params, {
-	Impaired_params=gsub('NA; ', '', Impaired_params)
-	Impaired_params=gsub('NA', '', Impaired_params)
-	Impaired_params=sub("; $","",Impaired_params)
-})
-head(impaired_params)
+if(dim(sites_ns)[1]>0){
+	impaired_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_ns, value.var='R3172ParameterName')
+	nms=names(impaired_params[2:dim(impaired_params)[2]])
+	impaired_params=tidyr::unite(impaired_params, 'Impaired_params', nms, sep='; ')
+	impaired_params=within(impaired_params, {
+		Impaired_params=gsub('NA; ', '', Impaired_params)
+		Impaired_params=gsub('NA', '', Impaired_params)
+		Impaired_params=sub("; $","",Impaired_params)
+	})
+	head(impaired_params)
+	site_asmnt=merge(site_asmnt, impaired_params, all.x=T)
+}else{site_asmnt$Impaired_params=NA}
 
 ### Generate idE params wide list
 sites_idE=subset(site_param_asmnt, AssessCat=='idE')
-idE_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_idE, value.var='R3172ParameterName')
-nms=names(idE_params[2:dim(idE_params)[2]])
-idE_params=tidyr::unite(idE_params, 'idE_params', nms, sep='; ')
-idE_params=within(idE_params, {
-	idE_params=gsub('NA; ', '', idE_params)
-	idE_params=gsub('NA', '', idE_params)
-	idE_params=sub("; $","",idE_params)
-})
-head(idE_params)
-
-### Merge NS params & idE params to site assessments
-site_asmnt=merge(site_asmnt, impaired_params, all.x=T)
-site_asmnt=merge(site_asmnt, idE_params, all.x=T)
-head(site_asmnt)
+if(dim(sites_idE)[1]>0){
+	idE_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_idE, value.var='R3172ParameterName')
+	nms=names(idE_params[2:dim(idE_params)[2]])
+	idE_params=tidyr::unite(idE_params, 'idE_params', nms, sep='; ')
+	idE_params=within(idE_params, {
+		idE_params=gsub('NA; ', '', idE_params)
+		idE_params=gsub('NA', '', idE_params)
+		idE_params=sub("; $","",idE_params)
+	})
+	head(idE_params)
+	site_asmnt=merge(site_asmnt, idE_params, all.x=T)
+}else{site_asmnt$idE_params=NA}
 
 
 ## AU level rollups
@@ -50,33 +53,35 @@ au_asmnt=rollUp(list(site_use_param_asmnt), group_vars=c('ASSESS_ID','AU_NAME'),
 
 ### Generate impaired params wide list
 aus_ns=subset(au_param_asmnt, AssessCat=='NS')
-impaired_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_ns, value.var='R3172ParameterName')
-nms=names(impaired_params[2:dim(impaired_params)[2]])
-impaired_params=tidyr::unite(impaired_params, 'Impaired_params', nms, sep='; ')
-impaired_params=within(impaired_params, {
-	Impaired_params=gsub('NA; ', '', Impaired_params)
-	Impaired_params=gsub('NA', '', Impaired_params)
-	Impaired_params=sub("; $","",Impaired_params)
-})
-head(impaired_params)
+if(dim(aus_ns)[1]>0){
+	impaired_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_ns, value.var='R3172ParameterName')
+	nms=names(impaired_params[2:dim(impaired_params)[2]])
+	impaired_params=tidyr::unite(impaired_params, 'Impaired_params', nms, sep='; ')
+	impaired_params=within(impaired_params, {
+		Impaired_params=gsub('NA; ', '', Impaired_params)
+		Impaired_params=gsub('NA', '', Impaired_params)
+		Impaired_params=sub("; $","",Impaired_params)
+	})
+	head(impaired_params)
+	au_asmnt=merge(au_asmnt, impaired_params, all.x=T)
+}else{au_asmnt$Impaired_params=NA}
 
 ### Generate idE params wide list
 aus_idE=subset(au_param_asmnt, AssessCat=='idE')
-idE_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_idE, value.var='R3172ParameterName')
-nms=names(idE_params[2:dim(idE_params)[2]])
-idE_params=tidyr::unite(idE_params, 'idE_params', nms, sep='; ')
-idE_params=within(idE_params, {
-	idE_params=gsub('NA; ', '', idE_params)
-	idE_params=gsub('NA', '', idE_params)
-	idE_params=sub("; $","",idE_params)
-})
-head(idE_params)
+if(dim(aus_idE)[1]>0){
+	idE_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_idE, value.var='R3172ParameterName')
+	nms=names(idE_params[2:dim(idE_params)[2]])
+	idE_params=tidyr::unite(idE_params, 'idE_params', nms, sep='; ')
+	idE_params=within(idE_params, {
+		idE_params=gsub('NA; ', '', idE_params)
+		idE_params=gsub('NA', '', idE_params)
+		idE_params=sub("; $","",idE_params)
+	})
+	head(idE_params)
+	au_asmnt=merge(au_asmnt, idE_params, all.x=T)
+}else{au_asmnt$idE_params=NA}
 
-### Merge NS params & idE params to au assessments
-au_asmnt=merge(au_asmnt, impaired_params, all.x=T)
-au_asmnt=merge(au_asmnt, idE_params, all.x=T)
-head(au_asmnt)
-
+# Assign colors
 assignAsmntCols=function(x){
 	y=within(x, {
 		col=NA

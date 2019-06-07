@@ -39,9 +39,10 @@ ui <-fluidPage(
 			fixedPanel(h3('Review tools'), draggable=T,wellPanel(
 				fluidRow(actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt'), width='100%')),
 				fluidRow(actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox'), width='100%')),
-				fluidRow(actionButton('asmnt_accept','Accept', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'), width='100%')),
-				fluidRow(actionButton('asmnt_flag','Flag', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'), width='100%')),
-				fluidRow(actionButton('asmnt_split','Split AU', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('draw-polygon'), width='100%'))
+				uiOutput('rebuild'),
+				fluidRow(actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'), width='100%')),
+				fluidRow(actionButton('asmnt_flag','Flag (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'), width='100%'))#,
+				#fluidRow(actionButton('asmnt_split','Split AU', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('draw-polygon'), width='100%'))
 			))
 		),
 		
@@ -90,8 +91,11 @@ server <- function(input, output, session){
 
 #options(warn=0)
 
+# Import all available WQP sites
+#wqp_sites=wqTools::readWQP(type="sites", statecode="US:49", siteType=c("Lake, Reservoir, Impoundment","Stream", "Spring"))
+
 # Example input url
-output$ex_url <-renderUI(a(href='https://github.com/utah-dwq/asmntDashboard/blob/version2/data/site-use-param-asmnt.csv',list(icon('question'),"Example input data"),target="_blank"))
+output$ex_url <-renderUI(a(href='https://raw.githubusercontent.com/utah-dwq/irTools/master/inst/extdata/site-use-param-asmnt.csv',list(icon('question'),"Example input data"),target="_blank"))
 
 # Empty reactive objects
 reactive_objects=reactiveValues()
@@ -114,9 +118,14 @@ observeEvent(input$demo_input, {
 # Import site-use-param-assessments file
 observeEvent(input$import_assessments,{
 	file=input$import_assessments$datapath
+<<<<<<< HEAD
 	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
 	au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
 	reactive_objects$au_splits=au_splits
+=======
+	site_use_param_asmnt=read.csv(file)
+	#site_use_param_asmnt=read.csv("C:\\Users\\jvander\\Desktop\\site-use-param-asmnt - Copy.csv")
+>>>>>>> master
 	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	inputs=initialDataProc(site_use_param_asmnt)
 	reactive_objects$au_asmnt_poly=inputs$au_asmnt_poly
@@ -145,7 +154,7 @@ observe({
 # Map output
 output$assessment_map=leaflet::renderLeaflet({
 	req(reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt)
-	asmntMap(reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites)
+	asmntMap(reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, wqp_sites=wqp_sites)
 })
 asmnt_map_proxy=leafletProxy('assessment_map')
 
@@ -153,10 +162,11 @@ asmnt_map_proxy=leafletProxy('assessment_map')
 observeEvent(input$assessment_map_shape_click,{
 	au_click = input$assessment_map_shape_click$id
 	if(!is.null(au_click)){
-		if(au_click %in% reactive_objects$selected_aus){
-			reactive_objects$selected_aus=reactive_objects$selected_aus[!reactive_objects$selected_aus %in% au_click]
+		au_id=as.character(unique(au_poly$ASSESS_ID[au_poly$polyID==au_click]))
+		if(au_id %in% reactive_objects$selected_aus){
+			reactive_objects$selected_aus=reactive_objects$selected_aus[!reactive_objects$selected_aus %in% au_id]
 		}else{
-			reactive_objects$selected_aus=append(reactive_objects$selected_aus, au_click)
+			reactive_objects$selected_aus=append(reactive_objects$selected_aus, au_id)
 		}
 	}
 })
@@ -205,6 +215,34 @@ observeEvent(input$build_tools,{
 })
 
 
+# Recommend rebuild
+## Determine if a rebuild is appropriate
+observe({
+	req(reactive_objects$sel_data)
+	data_aus=(unique(reactive_objects$sel_data$ASSESS_ID))[order(unique(reactive_objects$sel_data$ASSESS_ID))]
+	if(length(reactive_objects$selected_aus)>0){
+		map_aus=reactive_objects$selected_aus[order(reactive_objects$selected_aus)]
+		reactive_objects$rebuild=!all(data_aus==map_aus)
+	}else{reactive_objects$rebuild=TRUE}
+	#print(reactive_objects$rebuild)
+})
+
+## Generate rebuild UI (see https://stackoverflow.com/questions/37470226/blinking-loading-text-in-r-shiny)
+output$rebuild=renderUI({
+	req(reactive_objects$rebuild)
+	if(reactive_objects$rebuild){
+		fluidRow(
+			tags$div("Re-build recommended...",id="rebuild_message"),
+			tags$script(HTML("
+				(function blink() { 
+					$('#rebuild_message').fadeOut(500).fadeIn(500, blink); 
+				})();
+			"))
+		)
+	}
+})
+
+
 # Figures
 sel_data=reactive(reactive_objects$sel_data)
 sel_crit=reactive(reactive_objects$sel_crit)
@@ -220,7 +258,7 @@ output$dt=DT::renderDT({
 	)
 })
 
-# Export data table
+# Export data table - (export wide dataset, not column subset dataset)
 output$exp_dt <- downloadHandler(
 	filename=paste0('exported-data-', Sys.Date(),'.xlsx'),
 	content = function(file) {writexl::write_xlsx(
@@ -314,5 +352,27 @@ output$exp_rev <- downloadHandler(
 shinyApp(ui = ui, server = server)
 
 
+
+## Split an AU
+#observeEvent(input$au_split, {
+#	split_shapes=callModule(module=splitMod, id='au_split',
+#		sel_sites=reactive_objects$sel_sites, selected_aus=reactive_objects$selected_aus,
+#		au_asmnt_poly=reactive_objects$au_asmnt_poly, site_asmnt=reactive_objects$site_asmnt, na_sites=reactive_objects$na_sites,
+#		rejected_sites=reactive_objects$rejected_sites)
+#	showModal(modalDialog('Draw your recommended split(s).', footer=NULL, size='l',
+#		splitModUI('au_split'),
+#		actionButton('split_save','Save & exit'),
+#		actionButton('split_cancel','Cancel')
+#	))
+#	
+#	# Cancel
+#	observeEvent(input$split_cancel, ignoreInit=T, {
+#		removeModal()
+#	})
+#	observe({
+#		req(split_shapes()$finished)
+#		print(split_shapes()$finished)
+#	})
+#})
 
 

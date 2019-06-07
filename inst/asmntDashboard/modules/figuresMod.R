@@ -60,6 +60,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 	# Select param 1
 	output$sel_param1 <- renderUI({
 		ns <- session$ns
+		req(reactive_objects$sel_data$R3172ParameterName)
 		selectInput(ns("sel_param1"),"Select parameter 1", choices = reactive_objects$sel_data$R3172ParameterName[order(reactive_objects$sel_data$R3172ParameterName)])
 	})
 	
