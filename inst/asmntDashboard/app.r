@@ -9,6 +9,7 @@ library(shinyBS)
 library(plotly)
 library(sf)
 library(rgdal)
+library(mapedit)
 
 
 # Modules/functions
@@ -36,13 +37,21 @@ ui <-fluidPage(
 
 	fluidRow(
 		column(2, align="center", 
-			fixedPanel(h3('Review tools'), draggable=T,wellPanel(
-				fluidRow(actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt'), width='100%')),
-				fluidRow(actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox'), width='100%')),
+			fixedPanel(h3('Review tools'), draggable=T, style="z-index:10000;", wellPanel(
+				fluidRow(actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt'))),
+				fluidRow(actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox'))),
 				uiOutput('rebuild'),
-				fluidRow(actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'), width='100%')),
-				fluidRow(actionButton('asmnt_flag','Flag (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'), width='100%'))#,
+				fluidRow(actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'))),
+				fluidRow(actionButton('asmnt_flag','Flag (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'))),
 				#fluidRow(actionButton('asmnt_split','Split AU', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('draw-polygon'), width='100%'))
+				shinyjqui::jqui_resizable(bsCollapse(
+					bsCollapsePanel(list(icon('plus-circle'), icon('draw-polygon'),"Split AU"),
+						actionButton('build_split_map','Build split map', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%',  icon=icon('map-marked-alt')),
+						actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
+						actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save')),
+						editModUI("auSplit")
+					)
+				))
 			))
 		),
 		
@@ -102,8 +111,10 @@ reactive_objects=reactiveValues()
 
 # Demo data input
 observeEvent(input$demo_input, {
-	file=system.file("extdata", "site-use-param-asmnt.csv", package = "irTools")	
-	site_use_param_asmnt=read.csv(file)
+	file=system.file("extdata", "site-use-param-asmnt.xlsx", package = "irTools")	
+	au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
+	reactive_objects$au_splits=au_splits
+	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
 	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	inputs=initialDataProc(site_use_param_asmnt)
 	reactive_objects$au_asmnt_poly=inputs$au_asmnt_poly
@@ -118,14 +129,11 @@ observeEvent(input$demo_input, {
 # Import site-use-param-assessments file
 observeEvent(input$import_assessments,{
 	file=input$import_assessments$datapath
-<<<<<<< HEAD
-	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
+	#site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt.xlsx'))
 	au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
 	reactive_objects$au_splits=au_splits
-=======
-	site_use_param_asmnt=read.csv(file)
+	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
 	#site_use_param_asmnt=read.csv("C:\\Users\\jvander\\Desktop\\site-use-param-asmnt - Copy.csv")
->>>>>>> master
 	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	inputs=initialDataProc(site_use_param_asmnt)
 	reactive_objects$au_asmnt_poly=inputs$au_asmnt_poly
@@ -154,7 +162,7 @@ observe({
 # Map output
 output$assessment_map=leaflet::renderLeaflet({
 	req(reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt)
-	asmntMap(reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, wqp_sites=wqp_sites)
+	asmntMap(reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites)#, wqp_sites=wqp_sites)
 })
 asmnt_map_proxy=leafletProxy('assessment_map')
 
@@ -285,13 +293,8 @@ observe({
 output$wqp_url <-renderUI(a(href=paste0(reactive_objects$wqp_url),"Download WQP data",target="_blank"))
 
 
-
-
-
 # AU splits
-
-## Generate split map in modal
-observeEvent(input$asmnt_split, {
+observeEvent(input$build_split_map, {
 	req(reactive_objects$selected_aus, reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites)
 	if(!is.null(reactive_objects$splits)){
 		reactive_objects$drop_split='Y'
@@ -303,15 +306,39 @@ observeEvent(input$asmnt_split, {
 		fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
 		showGroup('Assessed sites')
 	reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
-	showModal(modalDialog(title='Draw your split.', size='l', footer=NULL,
-		editModUI("auSplit"),
-		actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
-		actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save'))
-		
-	))
 })
 
-## Save splits
+
+
+### Generate split map in modal
+#observeEvent(input$asmnt_split, {
+#	req(reactive_objects$selected_aus, reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites)
+#	if(length(reactive_objects$selected_aus)>1){
+#		showModal(shinyjqui::draggableModalDialog('Splits can only be made for one AU at a time. Please select a single AU to split', easyClose=T))
+#	}else{
+#		if(!is.null(reactive_objects$splits)){
+#			reactive_objects$drop_split='Y'
+#		}else{reactive_objects$drop_split='N'}
+#		au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
+#		view=sf::st_bbox(au_asmnt_poly)
+#		site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
+#		sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites) %>%
+#			fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
+#			showGroup('Assessed sites')
+#		reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
+#		showModal(shinyjqui::draggableModalDialog(title='Draw your split.', size='l', footer=NULL,
+#			editModUI("auSplit"),
+#			actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
+#			actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save'))
+#		))
+#	}
+#})
+
+
+
+
+
+### Save splits
 observeEvent(input$split_save, {
 	req(reactive_objects$splits)
 	splits=reactive_objects$splits()$finished
@@ -321,9 +348,8 @@ observeEvent(input$split_save, {
 		}
 	splits=as.data.frame(splits)
 	splits=splits[,!names(splits) %in% '_leaflet_id']
-	splits$ASSESS_ID=reactive_objects$selected_aus
+	splits$ASSESS_ID=reactive_objects$selected_aus[1]
 	reactive_objects$au_splits=rbind(reactive_objects$au_splits, splits)
-	au_splits<<-reactive_objects$au_splits
 	print(reactive_objects$au_splits)
 	removeModal()
 	}
@@ -350,6 +376,11 @@ output$exp_rev <- downloadHandler(
 
 ## run app
 shinyApp(ui = ui, server = server)
+
+
+
+
+
 
 
 
