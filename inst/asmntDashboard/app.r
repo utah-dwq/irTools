@@ -1,6 +1,8 @@
 ### Assessment Dashboard
 ### Version 2
 
+#setwd('C:\\Users\\jvander\\Documents\\R\\irTools\\inst\\asmntDashboard')
+
 # Packages
 library(wqTools)
 library(irTools)
@@ -34,65 +36,65 @@ ui <-fluidPage(
 		tags$head(tags$link(rel = "icon", type = "image/png", href = "dwq_logo_small.png"), windowTitle="WQ Assessment Dashboard")
 	),
 
-
-	fluidRow(
-		column(2, align="center", 
-			fixedPanel(h3('Review tools'), draggable=T, style="z-index:10000;", wellPanel(
-				fluidRow(actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt'))),
-				fluidRow(actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox'))),
-				uiOutput('rebuild'),
-				fluidRow(actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'))),
-				fluidRow(actionButton('asmnt_flag','Flag (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'))),
-				#fluidRow(actionButton('asmnt_split','Split AU', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('draw-polygon'), width='100%'))
-				shinyjqui::jqui_resizable(bsCollapse(
-					bsCollapsePanel(list(icon('plus-circle'), icon('draw-polygon'),"Split AU"),
-						actionButton('build_split_map','Build split map', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%',  icon=icon('map-marked-alt')),
-						actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
-						actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save')),
-						editModUI("auSplit")
-					)
-				))
-			))
+	
+	# User inputs & figures
+	column(8, shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1, 
+		bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), value=1, 
+			#fluidRow(
+				column(2, fileInput("import_assessments", "Import assessment file", accept=".xlsx"),
+				uiOutput('ex_url')),
+				column(2, actionButton('demo_input', icon=icon('upload'), label='Use demo input', style = "margin-top: 25px; color: #fff; background-color: #337ab7; border-color: #2e6da4%"))
+			#)
 		),
-		
-		column(9, 
-			shinyjqui::jqui_resizable(bsCollapse(multiple=T,
-				bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), 
-					#fluidRow(
-						column(2, fileInput("import_assessments", "Import assessment file", accept=".xlsx"),
-						uiOutput('ex_url')),
-						column(2, actionButton('demo_input', icon=icon('upload'), label='Use demo input', style = "margin-top: 25px; color: #fff; background-color: #337ab7; border-color: #2e6da4%"))
-					#)
-				),
-				bsCollapsePanel(list(icon('plus-circle'), icon('map-marked-alt'),"Review map"),
-					# Map
-					shinycssloaders::withSpinner(leaflet::leafletOutput("assessment_map", height="600px"),size=2, color="#0080b7")
-				),
-				bsCollapsePanel(list(icon('plus-circle'), icon('chart-bar'), "Figures"),
-					figuresModUI('figures')
-				),
-				bsCollapsePanel(list(icon('plus-circle'), icon('table'), "Data table"),
-					fluidRow(downloadButton('exp_dt', label = "Export data table", icon='download', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')),
-					br(),
-					fluidRow(div(DT::DTOutput("dt"), style = list("font-size:65%")))
-				),
-				bsCollapsePanel(list(icon('plus-circle'), icon('database'), "Download raw data from WQP"), 
-					fluidRow(
-						column(2, h4('Start date'), dateInput('start_date', '', format='mm/dd/yyyy', value='10/01/2008')),
-						column(2, h4('End date'), dateInput('end_date', '', format='mm/dd/yyyy'))
-					),
-					uiOutput('wqp_url')
-					#actionButton('dwnld_wqp', 'Download WQP data', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('download'))
-				),
-				bsCollapsePanel(list(icon('plus-circle'), icon('download'), "Export reviews"), 
-					downloadButton('exp_rev', label = "Export reviews")
-				)
-			)),
+		bsCollapsePanel(list(icon('plus-circle'), icon('map-marked-alt'),"Review map"),
+			# Map
+			shinycssloaders::withSpinner(leaflet::leafletOutput("assessment_map", height="600px"),size=2, color="#0080b7")
+		),
+		bsCollapsePanel(list(icon('plus-circle'), icon('chart-bar'), "Figures"),
+			figuresModUI('figures')
+		),
+		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "Data table"),
+			fluidRow(downloadButton('exp_dt', label = "Export data table", icon='download', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')),
 			br(),
-			br(),
-			br()
+			fluidRow(div(DT::DTOutput("dt"), style = list("font-size:65%")))
+		),
+		bsCollapsePanel(list(icon('plus-circle'), icon('database'), "Download raw data from WQP"), 
+			fluidRow(
+				column(2, h4('Start date'), dateInput('start_date', '', format='mm/dd/yyyy', value='10/01/2008')),
+				column(2, h4('End date'), dateInput('end_date', '', format='mm/dd/yyyy'))
+			),
+			uiOutput('wqp_url')
+			#actionButton('dwnld_wqp', 'Download WQP data', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('download'))
+		),
+		bsCollapsePanel(list(icon('plus-circle'), icon('download'), "Export reviews"), 
+			downloadButton('exp_rev', label = "Export reviews")
 		)
-	)
+	))),
+	
+	#Reviewer toolbar (wide)
+	column(4,fixedPanel(draggable=T, style="z-index:1000;",
+		shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1,
+			bsCollapsePanel(list(icon('plus-circle'), icon('toolbox'), 'Toolbar'), value=1,
+				fluidRow(
+					textInput('rev_init', 'Reviewer initials'),
+					actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt')),
+					actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox')),
+					actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle')),
+					actionButton('asmnt_flag','Flag (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'))
+				),
+				fluidRow(column(1), column(4, uiOutput('rebuild')))
+			),
+			bsCollapsePanel(list(icon('plus-circle'), icon('draw-polygon'),"Split AU"),
+				actionButton('build_split_map','Build split map', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%',  icon=icon('map-marked-alt')),
+				actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
+				actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save')),
+				editModUI("auSplit")
+			)
+		))
+	)),
+	br(),
+	br(),
+	br()
 )
 
 # Server
@@ -155,7 +157,6 @@ observe({
 					'<br />', "Assessment: ", AssessCat,
 					'<br />', "Impaired params: ", Impaired_params,
 					'<br />', "ID w/ exceedance params: ", idE_params)
-	
 	})
 })
 
@@ -296,47 +297,21 @@ output$wqp_url <-renderUI(a(href=paste0(reactive_objects$wqp_url),"Download WQP 
 # AU splits
 observeEvent(input$build_split_map, {
 	req(reactive_objects$selected_aus, reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites)
-	if(!is.null(reactive_objects$splits)){
-		reactive_objects$drop_split='Y'
-	}else{reactive_objects$drop_split='N'}
-	au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
-	view=sf::st_bbox(au_asmnt_poly)
-	site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
-	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites) %>%
-		fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
-		showGroup('Assessed sites')
-	reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
+	if(length(reactive_objects$selected_aus)>1){
+		showModal(modalDialog(easyClose=T, title = 'Select a single AU.', 'Splits can only be performed on one AU at a time. Please select a single AU before proceeding.'))
+	}else{
+		if(!is.null(reactive_objects$splits)){
+			reactive_objects$drop_split='Y'
+		}else{reactive_objects$drop_split='N'}
+		au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
+		view=sf::st_bbox(au_asmnt_poly)
+		site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
+		sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites) %>%
+			fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
+			showGroup('Assessed sites')
+		reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
+	}
 })
-
-
-
-### Generate split map in modal
-#observeEvent(input$asmnt_split, {
-#	req(reactive_objects$selected_aus, reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites)
-#	if(length(reactive_objects$selected_aus)>1){
-#		showModal(shinyjqui::draggableModalDialog('Splits can only be made for one AU at a time. Please select a single AU to split', easyClose=T))
-#	}else{
-#		if(!is.null(reactive_objects$splits)){
-#			reactive_objects$drop_split='Y'
-#		}else{reactive_objects$drop_split='N'}
-#		au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
-#		view=sf::st_bbox(au_asmnt_poly)
-#		site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
-#		sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites) %>%
-#			fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
-#			showGroup('Assessed sites')
-#		reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
-#		showModal(shinyjqui::draggableModalDialog(title='Draw your split.', size='l', footer=NULL,
-#			editModUI("auSplit"),
-#			actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
-#			actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save'))
-#		))
-#	}
-#})
-
-
-
-
 
 ### Save splits
 observeEvent(input$split_save, {
@@ -351,15 +326,26 @@ observeEvent(input$split_save, {
 	splits$ASSESS_ID=reactive_objects$selected_aus[1]
 	reactive_objects$au_splits=rbind(reactive_objects$au_splits, splits)
 	print(reactive_objects$au_splits)
-	removeModal()
+	au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
+	view=sf::st_bbox(au_asmnt_poly)
+	site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
+	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites) %>%
+		fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
+		clearMarkers() %>% clearShapes()
+	reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
 	}
 })
 
 ## Cancel splits
 observeEvent(input$split_cancel, ignoreInit=T, {
-	removeModal()
+	au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
+	view=sf::st_bbox(au_asmnt_poly)
+	site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
+	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites) %>%
+		fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
+		clearMarkers() %>% clearShapes()
+	reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
 })
-
 
 
 # Export reviews
@@ -369,7 +355,6 @@ output$exp_rev <- downloadHandler(
 		list(asmnt_reviews=reactive_objects$site_use_param_asmnt),
 		path = file, format_headers=F, col_names=T)}
 )
-
 
 
 }
@@ -405,5 +390,93 @@ shinyApp(ui = ui, server = server)
 #		print(split_shapes()$finished)
 #	})
 #})
+
+
+
+
+### Generate split map in modal
+#observeEvent(input$asmnt_split, {
+#	req(reactive_objects$selected_aus, reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites)
+#	if(length(reactive_objects$selected_aus)>1){
+#		showModal(shinyjqui::draggableModalDialog('Splits can only be made for one AU at a time. Please select a single AU to split', easyClose=T))
+#	}else{
+#		if(!is.null(reactive_objects$splits)){
+#			reactive_objects$drop_split='Y'
+#		}else{reactive_objects$drop_split='N'}
+#		au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
+#		view=sf::st_bbox(au_asmnt_poly)
+#		site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
+#		sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites) %>%
+#			fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
+#			showGroup('Assessed sites')
+#		reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
+#		showModal(shinyjqui::draggableModalDialog(title='Draw your split.', size='l', footer=NULL,
+#			editModUI("auSplit"),
+#			actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
+#			actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save'))
+#		))
+#	}
+#})
+
+
+# Reviewer toolbar (long)
+#fluidRow(
+#	column(2, align="center", 
+#		fixedPanel(h3('Review tools'), draggable=T, style="z-index:10000;", wellPanel(
+#			fluidRow(actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt'))),
+#			fluidRow(actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox'))),
+#			uiOutput('rebuild'),
+#			fluidRow(actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'))),
+#			fluidRow(actionButton('asmnt_flag','Flag (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'))),
+#			#fluidRow(actionButton('asmnt_split','Split AU', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('draw-polygon'), width='100%'))
+#			shinyjqui::jqui_resizable(bsCollapse(
+#				bsCollapsePanel(list(icon('plus-circle'), icon('draw-polygon'),"Split AU"),
+#					actionButton('build_split_map','Build split map', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%',  icon=icon('map-marked-alt')),
+#					actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
+#					actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save')),
+#					editModUI("auSplit")
+#				)
+#			))
+#		))
+#	),
+#	
+#	column(9, 
+#		shinyjqui::jqui_resizable(bsCollapse(multiple=T,
+#			bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), 
+#				#fluidRow(
+#					column(2, fileInput("import_assessments", "Import assessment file", accept=".xlsx"),
+#					uiOutput('ex_url')),
+#					column(2, actionButton('demo_input', icon=icon('upload'), label='Use demo input', style = "margin-top: 25px; color: #fff; background-color: #337ab7; border-color: #2e6da4%"))
+#				#)
+#			),
+#			bsCollapsePanel(list(icon('plus-circle'), icon('map-marked-alt'),"Review map"),
+#				# Map
+#				shinycssloaders::withSpinner(leaflet::leafletOutput("assessment_map", height="600px"),size=2, color="#0080b7")
+#			),
+#			bsCollapsePanel(list(icon('plus-circle'), icon('chart-bar'), "Figures"),
+#				figuresModUI('figures')
+#			),
+#			bsCollapsePanel(list(icon('plus-circle'), icon('table'), "Data table"),
+#				fluidRow(downloadButton('exp_dt', label = "Export data table", icon='download', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')),
+#				br(),
+#				fluidRow(div(DT::DTOutput("dt"), style = list("font-size:65%")))
+#			),
+#			bsCollapsePanel(list(icon('plus-circle'), icon('database'), "Download raw data from WQP"), 
+#				fluidRow(
+#					column(2, h4('Start date'), dateInput('start_date', '', format='mm/dd/yyyy', value='10/01/2008')),
+#					column(2, h4('End date'), dateInput('end_date', '', format='mm/dd/yyyy'))
+#				),
+#				uiOutput('wqp_url')
+#				#actionButton('dwnld_wqp', 'Download WQP data', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('download'))
+#			),
+#			bsCollapsePanel(list(icon('plus-circle'), icon('download'), "Export reviews"), 
+#				downloadButton('exp_rev', label = "Export reviews")
+#			)
+#		)),
+#		br(),
+#		br(),
+#		br()
+#	)
+#)
 
 
