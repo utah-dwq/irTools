@@ -13,14 +13,14 @@
 #' @export assessHFDO
 
 #### TESTING ####
-library(lubridate)
-library(plyr)
-load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\hfdo_data.Rdata")
-data = hfdo_data
-data$DailyAggFun[data$AsmntAggPeriod>1]="mean" #These should be means in the standards table
-data$AsmntAggFun=data$DailyAggFun #These should be means in the standards table
-head(data)
-min_n=10
+# library(lubridate)
+# library(plyr)
+# load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\hfdo_demo\\hfdo_data.Rdata")
+# data = hfdo_data
+# data$DailyAggFun[data$AsmntAggPeriod>1]="mean" #These should be means in the standards table
+# data$AsmntAggFun=data$DailyAggFun #These should be means in the standards table
+# head(data)
+# min_n=10
 # HFDO_assessed=assessHFDO(data)
 #save(file="F:\\Shiny\\hfdo\\data\\assessed_hfdo.Rdata", HFDO_assessed)
 
