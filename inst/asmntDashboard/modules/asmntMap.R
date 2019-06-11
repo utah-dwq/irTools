@@ -27,6 +27,7 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, hover=T, 
 				popup = paste0(
 					"IR MLID: ", site_asmnt$IR_MLID,
 					"<br> IR MLNAME: ", site_asmnt$IR_MLNAME,
+					"<br> ML type: ", site_asmnt$MonitoringLocationTypeName,
 					"<br> Assessment: ", site_asmnt$AssessCat,
 					"<br> Impaired params: ", site_asmnt$Impaired_params,
 					"<br> ID w/ exceedance params: ", site_asmnt$idE_params)

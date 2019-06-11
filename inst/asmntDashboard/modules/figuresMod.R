@@ -61,10 +61,10 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 	output$sel_param1 <- renderUI({
 		ns <- session$ns
 		req(reactive_objects$sel_data$R3172ParameterName)
-		selectInput(ns("sel_param1"),"Select parameter 1", choices = reactive_objects$sel_data$R3172ParameterName[order(reactive_objects$sel_data$R3172ParameterName)])
+		selectInput(ns("sel_param1"),"Select parameter 1", choices = unique(reactive_objects$sel_data$R3172ParameterName[order(reactive_objects$sel_data$R3172ParameterName)]))
 	})
 	
-	observe(priority=2, {
+	observe({
 		req(input$sel_param1)
 		reactive_objects$param1_sub=reactive_objects$sel_data[reactive_objects$sel_data$R3172ParameterName == input$sel_param1,]
 	})
@@ -83,14 +83,14 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 	})
 	
     
-	observe(priority=5, {
+	observe({
 		req(reactive_objects$sel_crit, reactive_objects$sel_data)
 		ns <- session$ns
 		updateSelectInput(session, ns('sel_units1'), selected="")
 	})
     
 	
-	observe(priority=1, {
+	observe({
 		req(input$sel_units1)
 		reactive_objects$sel_units1=input$sel_units1
 	})
@@ -202,7 +202,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
     
 
 	# Export selected data
-	select_data  <- reactive({event_data("plotly_selected", source="a")})
+	#select_data  <- reactive({event_data("plotly_selected", source="a")})
 	
 	# Multi site boxplot
 	output$multi_site_bp=renderPlotly({
@@ -364,7 +364,13 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 		}
 	})
 	
-	
-	return(select_data)
+	return(list(
+		select_data=reactive({event_data("plotly_selected", source="a")}),
+		param1=reactive({input$sel_param1}),
+		param_choices=reactive({
+				req(reactive_objects$sel_data)
+				unique(reactive_objects$sel_data$R3172ParameterName[order(reactive_objects$sel_data$R3172ParameterName)])
+			})
+	))
 	
 }

@@ -16,6 +16,11 @@ rejected_sites=subset(master_site, IR_FLAG=="REJECT")
 ## ID accepted sites w/o assessments
 na_sites=subset(master_site, IR_FLAG=="ACCEPT" & !IR_MLID %in% site_asmnt$IR_MLID)
 
+## Join site types back to site asmnt
+site_types=master_site[,c('IR_MLID','MonitoringLocationTypeName')]
+site_asmnt=merge(site_asmnt,site_types, all.x=T)
+
+
 ### Generate impaired params wide list
 sites_ns=subset(site_param_asmnt, AssessCat=='NS')
 if(dim(sites_ns)[1]>0){
