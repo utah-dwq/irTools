@@ -37,7 +37,8 @@ assessHFDO <- function(data, min_n=10){
   head(data)
  
   data$IR_Unit="mg/l" #Manually added for the time being - should be added in the data process in the future.
- 
+  data$NumericCriterion = as.numeric(data$NumericCriterion) #For some reason criteria were data type "character"
+  
   data=droplevels(data)
 
   agg_full_days <- function(x){ # Subsets data to complete days and calculates daily mins/means for complete days only
@@ -167,11 +168,13 @@ adeq_space_values <- plyr::ddply(.data=daily_values_mean, c("IR_MLID", "Benefici
 
 # Moving window assessments function - 7 and 30 day 
 movingwindow_assess <- function(x){
-  out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","NumericCriterion","AsmntAggPeriod")]
+  out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","AsmntAggPeriod")]
   out$Min_Date <- min(x$ActivityStartDate)
   out$Max_Date <- max(x$ActivityStartDate)
   datmean = c()
+  numcrit = c()
   startdat = c()
+  exceed = c()
   days = x$AsmntAggPeriod[1]-1
   m = 1
   for(i in 1:dim(x)[1]){
@@ -179,15 +182,21 @@ movingwindow_assess <- function(x){
     dmax = x$ActivityStartDate[i]+days
     datrange <- x[x$ActivityStartDate>=dmin&x$ActivityStartDate<=dmax,]
     if(dim(datrange)[1]< x$AsmntAggPeriod[1]){next}
+    
+    # Keep track of each comparison 
+    numcrit[m] <- median(datrange$NumericCriterion) # Use median numeric criterion for each multi-day mean DO
     datmean[m] <- mean(datrange$IR_Value)
+    exceed[m] <- ifelse(mean(datrange$IR_Value)<median(datrange$NumericCriterion),1,0)
     startdat[m] <- dmin
     m = m+1
   }
   out$means=list(datmean)
   out$dates=list(startdat)
+  out$exceed = list(exceed)
+  out$NumericCriterion = list(numcrit)
   tenpct = ceiling(length(datmean)*.1) 
   out$SampleCount = length(datmean)
-  out$ExcCount = length(datmean[datmean<out$NumericCriterion])
+  out$ExcCount = length(exceed[exceed==1])
   out$IR_Cat = ifelse(out$ExcCount>tenpct,"NS","FS")
   return(out)
 }
