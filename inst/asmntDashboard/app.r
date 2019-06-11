@@ -392,10 +392,10 @@ output$flagUI=renderUI({
 	tagList(
 		selectInput('flag_scope', 'Scope:', choices=c('Assessment unit(s)', 'Site(s)', 'Record(s)', 'State-wide'), selected=input$flag_scope),
 		conditionalPanel(condition="input.flag_scope=='State-wide'",
-			shinyWidgets::pickerInput("flag_ml_types_sw", "ML types", choices=ml_types_all(), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))
+			shinyWidgets::pickerInput("flag_ml_types_sw", "ML types", choices=ml_types_all(), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
 		),
 		conditionalPanel(condition="input.flag_scope=='Assessment unit(s)'",
-			shinyWidgets::pickerInput("flag_aus", "Assessment unit(s)", choices=reactive_objects$selected_aus, selected=input$flag_aus, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))
+			shinyWidgets::pickerInput("flag_aus", "Assessment unit(s)", choices=reactive_objects$selected_aus, selected=input$flag_aus, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
 		),
 		conditionalPanel(condition="input.flag_scope=='Site(s)' | input.flag_scope=='Record(s)'",
 			radioButtons('site_flag_type','Select sites by:', choices=c('MLID','ML type')),
@@ -403,10 +403,10 @@ output$flagUI=renderUI({
 				shinyWidgets::pickerInput("flag_sites", "Site(s)", choices=ml_types_sel_au(), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))
 			),
 			conditionalPanel(condition="input.site_flag_type=='ML type'",
-				shinyWidgets::pickerInput("flag_ml_types_sel_au", "ML types", choices=reactive_objects$sel_sites, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))
+				shinyWidgets::pickerInput("flag_ml_types_sel_au", "ML types", choices=reactive_objects$sel_sites, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
 			)
 		),
-		shinyWidgets::pickerInput("flag_param", "Parameter(s)", choices=param_choices(), multiple=T, selected=param1(), options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3")),
+		shinyWidgets::pickerInput("flag_param", "Parameter(s)", choices=param_choices(), multiple=T, selected=param1(), options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE)),
 		textInput('flag_comment', 'Comment', placeholder='Enter comment...'),
 		actionButton('flag_apply','Apply flag (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'))
 	)
