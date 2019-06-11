@@ -79,16 +79,22 @@ ui <-fluidPage(
 					textInput('rev_init', 'Reviewer initials'),
 					actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt')),
 					actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox')),
-					actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle')),
-					actionButton('asmnt_flag','Flag (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'))
+					actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'))
 				),
 				fluidRow(column(1), column(4, uiOutput('rebuild')))
+			),
+			bsCollapsePanel(list(icon('plus-circle'), icon('flag'),"Flag assessment"),
+				selectInput('flag_scope', 'Scope:', choices=c('Assessment unit', 'Site(s)', 'Record(s)')),
+				shinyWidgets::pickerInput("flag_param", "Parameter(s)", choices=c('param1','param2','param3'), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3")),
+				textInput('flag_comment', 'Comment', placeholder='Enter comment...'),
+				actionButton('flag_save','Save (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'))
 			),
 			bsCollapsePanel(list(icon('plus-circle'), icon('draw-polygon'),"Split AU"),
 				actionButton('build_split_map','Build split map', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%',  icon=icon('map-marked-alt')),
 				actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
 				actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save')),
-				editModUI("auSplit")
+				editModUI("auSplit"),
+				helpText('Note - Map panning with mouse grab is disabled here. Use arrow keys to pan map.')
 			)
 		))
 	)),
@@ -125,7 +131,7 @@ observeEvent(input$demo_input, {
 	reactive_objects$rejected_sites=inputs$rejected_sites
 	reactive_objects$na_sites=inputs$na_sites
 	reactive_objects$master_site=inputs$master_site
-	showModal(modalDialog(easyClose=T, 'Demo data uploaded.'))
+	showModal(shinyjqui::draggableModalDialog(easyClose=T, 'Demo data uploaded.'))
 })
 
 # Import site-use-param-assessments file
@@ -256,7 +262,7 @@ output$rebuild=renderUI({
 sel_data=reactive(reactive_objects$sel_data)
 sel_crit=reactive(reactive_objects$sel_crit)
 
-callModule(module=figuresMod, id='figures', sel_data, sel_crit)
+select_data=callModule(module=figuresMod, id='figures', sel_data, sel_crit)
 
 # Data table output
 output$dt=DT::renderDT({
@@ -297,23 +303,23 @@ output$wqp_url <-renderUI(a(href=paste0(reactive_objects$wqp_url),"Download WQP 
 # AU splits
 observeEvent(input$build_split_map, {
 	req(reactive_objects$selected_aus, reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites)
-	if(length(reactive_objects$selected_aus)>1){
-		showModal(modalDialog(easyClose=T, title = 'Select a single AU.', 'Splits can only be performed on one AU at a time. Please select a single AU before proceeding.'))
-	}else{
-		if(!is.null(reactive_objects$splits)){
-			reactive_objects$drop_split='Y'
-		}else{reactive_objects$drop_split='N'}
-		au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
-		view=sf::st_bbox(au_asmnt_poly)
-		site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
-		sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites) %>%
-			fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
-			showGroup('Assessed sites')
-		reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
-	}
+		if(length(reactive_objects$selected_aus)>1){
+			showModal(modalDialog(easyClose=T, title = 'Select a single AU.', 'Splits can only be performed on one AU at a time. Please select a single AU before proceeding.'))
+		}else{
+			if(!is.null(reactive_objects$splits)){
+				reactive_objects$drop_split='Y'
+			}else{reactive_objects$drop_split='N'}
+			au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
+			view=sf::st_bbox(au_asmnt_poly)
+			site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
+			sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, hover=F, options=leafletOptions(dragging=F)) %>%
+				fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
+				showGroup('Assessed sites') %>% clearControls()
+			reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
+		}
 })
 
-### Save splits
+## Save splits
 observeEvent(input$split_save, {
 	req(reactive_objects$splits)
 	splits=reactive_objects$splits()$finished
@@ -329,9 +335,9 @@ observeEvent(input$split_save, {
 	au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
 	view=sf::st_bbox(au_asmnt_poly)
 	site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
-	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites) %>%
+	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, hover=F, options=leafletOptions(dragging=F)) %>%
 		fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
-		clearMarkers() %>% clearShapes()
+		clearMarkers() %>% clearShapes() %>% clearControls()
 	reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
 	}
 })
@@ -341,9 +347,9 @@ observeEvent(input$split_cancel, ignoreInit=T, {
 	au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
 	view=sf::st_bbox(au_asmnt_poly)
 	site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
-	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites) %>%
+	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, hover=F, options=leafletOptions(dragging=F)) %>%
 		fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
-		clearMarkers() %>% clearShapes()
+		clearMarkers() %>% clearShapes() %>% clearControls()
 	reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
 })
 
@@ -355,6 +361,26 @@ output$exp_rev <- downloadHandler(
 		list(asmnt_reviews=reactive_objects$site_use_param_asmnt),
 		path = file, format_headers=F, col_names=T)}
 )
+
+
+# Print data selected in time series plot
+observe({
+	if(!is.null(select_data())){
+		print(select_data())
+	}
+})
+
+
+# Flag UI
+#output$flagUI=renderUI({
+# scopes: State, AU, site, waterbody type
+# 
+#
+#
+#
+#
+#})
+
 
 
 }
