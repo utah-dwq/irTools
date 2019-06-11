@@ -1,6 +1,6 @@
 #' Prepares rolled up AU-Use and AU-Use-Parameter assessments for ATTAINS upload
 #'
-#' @param current_assessment A list of assessment output objects to be rolled up to a different spatial resolution.
+#' @param current_assessment A list of assessment output objects to be rolled up to the AU-use and (for cat 5 only) AU-use-parameter resolutions.
 #' @param trans_wb Excel workbook containing translation tables connecting irTools outputs to ATTAINS inputs. Currently resides in lookup tables repo.
 #' @param pull_attains Logical. If TRUE (default), function uses readAttains function from the irTools package to pull assessment data from the previous reporting cycle. If FALSE, param_path and assess_path are needed.
 #' @param assess_path File path to ATTAINS assessments.csv from previous reporting cycle.
@@ -10,7 +10,7 @@
 #' @param filesave Logical. If TRUE (default), function saves AU-Use-Assessments and Category 5 AU-Use-Parameter Assessments to .csvs in a folder selected by the user.
 #' @return Returns a list consisting of two objects: AU-Use-Assessments for all AU's and Category 5 AU-Use-Parameter Assessments.
 #' @import openxlsx
-#' @importForm tidyr unnest
+#' @import tidyr
 
 #' @export
 
@@ -41,7 +41,7 @@ prepAttains <- function(current_assessment, trans_wb, pull_attains = TRUE, asses
   
   # Run roll up at AU-use level
   au_u=irTools::rollUp(data=current_assessment, group_vars=c("ASSESS_ID","AU_NAME", "BeneficialUse"), expand_uses=TRUE, print = FALSE)
-  au_u$AssessCat[au_u$AssessCat=="NA"] = NA
+  au_u$AssessCat[au_u$AssessCat=="NA"] = "Not Applicable"
   
   # Run roll up at AU-use-parameter level
   au_up=irTools::rollUp(data=current_assessment, group_vars=c("ASSESS_ID","AU_NAME","BeneficialUse", "R3172ParameterName"), expand_uses=FALSE, print = FALSE)
@@ -73,8 +73,8 @@ prepAttains <- function(current_assessment, trans_wb, pull_attains = TRUE, asses
     names(prev.params) = prev.assess[[1]]$assessmentUnitIdentifier
     prev.params.df <- plyr::ldply(prev.params, data.frame)
     
-    prev.params.flat = prev.params.df %>% unnest(associatedUses)
-    prev.params.flat = prev.params.flat[,!names(prev.params.flat)%in%"seasons"]
+    prev.params.flat = unnest(prev.params.df, associatedUses)
+    prev.params.flat = prev.params.flat[,!names(prev.params.flat)%in%c("seasons")]
     prev.params.flat$ASSESSMENT_UNIT_ID = prev.params.flat$.id
     prev.params.flat$PARAM_NAME = prev.params.flat$parameterName
     prev.params.flat$PARAM_USE_NAME = prev.params.flat$associatedUseName
