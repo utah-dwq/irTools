@@ -363,7 +363,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 				)
 		}
 	})
-	
+
 	return(list(
 		select_data=reactive({event_data("plotly_selected", source="a")}),
 		param1=reactive({input$sel_param1}),

@@ -460,10 +460,18 @@ output$flagUI5=renderUI({
 	shinyWidgets::pickerInput("flag_param", "Parameter(s):", choices=param_choices(), multiple=T, selected=param1(), options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
 })
 
+
+start_date=reactive({
+	min(figures$select_data()$x)
+})
+end_date=reactive({
+	max(figures$select_data()$x)
+})
+
 output$flagUI6=renderUI({
 	req(input$flag_scope)
 	conditionalPanel(condition="input.flag_scope=='Record(s)'",
-		dateRangeInput('flag_date_range', 'Date range:')
+		dateRangeInput('flag_date_range', 'Date range:', start=start_date(), end=end_date())
 	)
 })
 
