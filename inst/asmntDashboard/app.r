@@ -41,7 +41,7 @@ ui <-fluidPage(
 	column(8, shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1, 
 		bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), value=1, 
 			#fluidRow(
-				column(2, fileInput("import_assessments", "Import assessment file", accept=".xlsx"),
+				column(4, fileInput("import_assessments", "Import assessment file", accept=".xlsx"),
 				uiOutput('ex_url')),
 				column(2, actionButton('demo_input', icon=icon('upload'), label='Use demo input', style = "margin-top: 25px; color: #fff; background-color: #337ab7; border-color: #2e6da4%"))
 			#)
@@ -81,17 +81,19 @@ ui <-fluidPage(
 					actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox')),
 					actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'))
 				),
-				fluidRow(column(1), column(4, uiOutput('rebuild')))
+				fluidRow(column(12, uiOutput('rebuild')))
 			),
 			bsCollapsePanel(list(icon('plus-circle'), icon('flag'),"Flag assessment"),
-				uiOutput('flagUI')
+				uiOutput('flagUI1'),
+				uiOutput('flagUI2'),
+				uiOutput('flagUI3'),
+				uiOutput('flagUI4'),
+				uiOutput('flagUI5'),
+				uiOutput('flagUI6'),
+				uiOutput('flagUI7')
 			),
 			bsCollapsePanel(list(icon('plus-circle'), icon('draw-polygon'),"Split AU"),
-				actionButton('build_split_map','Build split map', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%',  icon=icon('map-marked-alt')),
-				actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
-				actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save')),
-				editModUI("auSplit"),
-				helpText('Note - Map panning with mouse grab is disabled here. Use arrow keys to pan map.')
+				uiOutput('splitUI')
 			)
 		))
 	)),
@@ -128,6 +130,7 @@ observeEvent(input$demo_input, {
 	reactive_objects$rejected_sites=inputs$rejected_sites
 	reactive_objects$na_sites=inputs$na_sites
 	reactive_objects$master_site=inputs$master_site
+	reactive_objects$rebuild=FALSE
 	showModal(shinyjqui::draggableModalDialog(easyClose=T, 'Demo data uploaded.'))
 })
 
@@ -147,6 +150,7 @@ observeEvent(input$import_assessments,{
 	reactive_objects$rejected_sites=inputs$rejected_sites
 	reactive_objects$na_sites=inputs$na_sites
 	reactive_objects$master_site=inputs$master_site
+	reactive_objects$rebuild=FALSE
 })
 
 
@@ -301,6 +305,26 @@ output$wqp_url <-renderUI(a(href=paste0(reactive_objects$wqp_url),"Download WQP 
 
 
 # AU splits
+output$build_to_proceed=renderText({"Select AU(s) and build analysis tools to proceed..."})
+
+## AU split UI
+
+output$splitUI=renderUI({
+	if(is.null(reactive_objects$sel_sites)){
+		textOutput('build_to_proceed')
+	}else{
+		tagList(
+			actionButton('build_split_map','Build split map', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%',  icon=icon('map-marked-alt')),
+			actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
+			actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save')),
+			editModUI("auSplit"),
+			helpText('Note - Map panning with mouse grab is disabled here. Use arrow keys to pan map.')
+		)
+	}
+})
+
+
+## Build split map
 observeEvent(input$build_split_map, {
 	req(reactive_objects$selected_aus, reactive_objects$au_asmnt_poly, reactive_objects$site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites)
 		if(length(reactive_objects$selected_aus)>1){
@@ -318,6 +342,7 @@ observeEvent(input$build_split_map, {
 			reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
 		}
 })
+
 
 ## Save splits
 observeEvent(input$split_save, {
@@ -387,32 +412,68 @@ ml_types_all=reactive({
 ml_types_sel_au=reactive({
 	unique(reactive_objects$site_asmnt$MonitoringLocationTypeName[reactive_objects$site_asmnt$IR_MLID %in% reactive_objects$sel_sites])
 })
-output$flagUI=renderUI({
-	req(param_choices(), reactive_objects$sel_sites, ml_types_all(), ml_types_sel_au())
-	tagList(
-		selectInput('flag_scope', 'Scope:', choices=c('Assessment unit(s)', 'Site(s)', 'Record(s)', 'State-wide'), selected=input$flag_scope),
-		conditionalPanel(condition="input.flag_scope=='State-wide'",
-			shinyWidgets::pickerInput("flag_ml_types_sw", "ML types", choices=ml_types_all(), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
+output$build_to_proceed2=renderText({"Select AU(s) and build analysis tools to proceed..."})
+
+output$flagUI1=renderUI({
+		if(is.null(reactive_objects$sel_sites)){
+			textOutput('build_to_proceed2')
+		}else{
+			selectInput('flag_scope', 'Scope:', choices=c('Assessment unit(s)', 'Site(s)', 'Record(s)', 'State-wide'), selected=input$flag_scope)
+		}
+})
+
+output$flagUI2=renderUI({
+	req(ml_types_all())
+	conditionalPanel(condition="input.flag_scope=='State-wide'",
+		shinyWidgets::radioGroupButtons('flag_sw_ml_or_au', 'Apply flag by:', choices=c('AU type', 'ML type')),
+		conditionalPanel(condition="input.flag_sw_ml_or_au == 'AU type'",
+			shinyWidgets::pickerInput("flag_sw_au_type", "AU types:", choices=unique(reactive_objects$site_asmnt$AU_Type[order(reactive_objects$site_asmnt$AU_Type)]), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
 		),
-		conditionalPanel(condition="input.flag_scope=='Assessment unit(s)'",
-			shinyWidgets::pickerInput("flag_aus", "Assessment unit(s)", choices=reactive_objects$selected_aus, selected=input$flag_aus, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
-		),
-		conditionalPanel(condition="input.flag_scope=='Site(s)' | input.flag_scope=='Record(s)'",
-			radioButtons('site_flag_type','Select sites by:', choices=c('MLID','ML type')),
-			conditionalPanel(condition="input.site_flag_type=='MLID'",
-				shinyWidgets::pickerInput("flag_sites", "Site(s)", choices=ml_types_sel_au(), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))
-			),
-			conditionalPanel(condition="input.site_flag_type=='ML type'",
-				shinyWidgets::pickerInput("flag_ml_types_sel_au", "ML types", choices=reactive_objects$sel_sites, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
-			)
-		),
-		shinyWidgets::pickerInput("flag_param", "Parameter(s)", choices=param_choices(), multiple=T, selected=param1(), options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE)),
-		textInput('flag_comment', 'Comment', placeholder='Enter comment...'),
-		actionButton('flag_apply','Apply flag (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'))
+		conditionalPanel(condition="input.flag_sw_ml_or_au == 'ML type'",
+			shinyWidgets::pickerInput("flag_sw_ml_type", "ML types:", choices=ml_types_all(), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
+		)
 	)
 })
 
+output$flagUI3=renderUI({
+	req(reactive_objects$selected_aus, reactive_objects$sel_sites)
+	conditionalPanel(condition="input.flag_scope=='Assessment unit(s)'",
+		shinyWidgets::pickerInput("flag_aus", "Assessment unit(s):", choices=reactive_objects$selected_aus, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
+	)
+})
 
+output$flagUI4=renderUI({
+	req(reactive_objects$sel_sites, ml_types_sel_au())
+	conditionalPanel(condition="input.flag_scope=='Site(s)' | input.flag_scope=='Record(s)'",
+		shinyWidgets::radioGroupButtons('site_flag_type','Select sites by:', choices=c('MLID','ML type')),
+		conditionalPanel(condition="input.site_flag_type=='MLID'",
+			shinyWidgets::pickerInput("flag_sites", "Site(s):", choices=reactive_objects$sel_sites, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))
+		),
+		conditionalPanel(condition="input.site_flag_type=='ML type'",
+			shinyWidgets::pickerInput("flag_ml_types_sel_au", "ML types", choices=ml_types_sel_au(), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
+		)
+	)
+})
+
+output$flagUI5=renderUI({
+	req(param_choices())
+	shinyWidgets::pickerInput("flag_param", "Parameter(s):", choices=param_choices(), multiple=T, selected=param1(), options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
+})
+
+output$flagUI6=renderUI({
+	req(input$flag_scope)
+	conditionalPanel(condition="input.flag_scope=='Record(s)'",
+		dateRangeInput('flag_date_range', 'Date range:')
+	)
+})
+
+output$flagUI7=renderUI({
+	req(input$flag_scope)
+	tagList(
+		textInput('flag_comment', 'Comment:', placeholder='Enter comment...'),
+		actionButton('flag_apply','Apply flag (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'))
+	)
+})
 
 }
 
