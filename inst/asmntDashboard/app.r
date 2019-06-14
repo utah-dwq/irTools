@@ -15,9 +15,9 @@ library(mapedit)
 
 
 # Modules/functions
-source('modules/initialDataProc.R')
-source('modules/asmntMap.R')
-source('modules/figuresMod.R')
+source('helpers/initialDataProc.R')
+source('helpers/asmntMap.R')
+source('helpers/figuresMod.R')
 
 # Load data & criteria
 load('data/prepped_merged_data.Rdata')
@@ -105,7 +105,7 @@ ui <-fluidPage(
 # Server
 server <- function(input, output, session){
 
-#options(warn=0)
+options(warn=0)
 
 # Import all available WQP sites
 #wqp_sites=wqTools::readWQP(type="sites", statecode="US:49", siteType=c("Lake, Reservoir, Impoundment","Stream", "Spring"))
