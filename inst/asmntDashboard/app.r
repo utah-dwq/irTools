@@ -38,6 +38,10 @@ ui <-fluidPage(
 
 	
 	# User inputs & figures
+	fluidRow(column(12, align='left', offset=8,
+		actionButton('toolbar_reset', 'Reset toolbar', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('sync-alt'))
+	)),
+	br(),
 	column(8, shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1, 
 		bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), value=1, 
 			#fluidRow(
@@ -72,31 +76,7 @@ ui <-fluidPage(
 	))),
 	
 	#Reviewer toolbar (wide)
-	column(4,fixedPanel(draggable=T, style="z-index:1000;",
-		shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1,
-			bsCollapsePanel(list(icon('plus-circle'), icon('toolbox'), 'Toolbar'), value=1,
-				fluidRow(
-					textInput('rev_name', 'Reviewer name'),
-					actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt')),
-					actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox')),
-					actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'))
-				),
-				fluidRow(column(12, uiOutput('rebuild')))
-			),
-			bsCollapsePanel(list(icon('plus-circle'), icon('flag'),"Flag assessment"),
-				uiOutput('flagUI1'),
-				uiOutput('flagUI2'),
-				uiOutput('flagUI3'),
-				uiOutput('flagUI4'),
-				uiOutput('flagUI5'),
-				uiOutput('flagUI6'),
-				uiOutput('flagUI7')
-			),
-			bsCollapsePanel(list(icon('plus-circle'), icon('draw-polygon'),"Split AU"),
-				uiOutput('splitUI')
-			)
-		))
-	)),
+	uiOutput('toolbarUI'),
 	br(),
 	br(),
 	br()
@@ -104,6 +84,39 @@ ui <-fluidPage(
 
 # Server
 server <- function(input, output, session){
+
+
+# Toolbar UI
+observeEvent(input$toolbar_reset, ignoreInit=F, ignoreNULL=F, {
+	options(warn=-1)
+	output$toolbarUI=renderUI({
+		column(4,fixedPanel(draggable=T, style="z-index:1000;",
+			shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1,
+				bsCollapsePanel(list(icon('plus-circle'), icon('toolbox'), 'Toolbar'), value=1,
+					fluidRow(
+						textInput('rev_name', 'Reviewer name'),
+						actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt')),
+						actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox')),
+						actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'))
+					),
+					fluidRow(column(12, uiOutput('rebuild')))
+				),
+				bsCollapsePanel(list(icon('plus-circle'), icon('flag'),"Flag assessment"),
+					uiOutput('flagUI1'),
+					uiOutput('flagUI2'),
+					uiOutput('flagUI3'),
+					uiOutput('flagUI4'),
+					uiOutput('flagUI5'),
+					uiOutput('flagUI6'),
+					uiOutput('flagUI7')
+				),
+				bsCollapsePanel(list(icon('plus-circle'), icon('draw-polygon'),"Split AU"),
+					uiOutput('splitUI')
+				)
+			))
+		))
+	})
+})
 
 options(warn=0)
 
@@ -366,10 +379,8 @@ observeEvent(input$split_save, {
 	splits$ASSESS_ID=reactive_objects$selected_aus[1]
 	splits$Comment=input$split_comment
 	splits$Reviewer=input$rev_name
-	splits$geometry=as.character(splits$geometry)
+	splits$geometry=st_as_text(splits$geometry)
 	reactive_objects$au_splits=plyr::rbind.fill(reactive_objects$au_splits, splits)
-	print(reactive_objects$au_splits)
-	#au_splits<<-reactive_objects$au_splits
 	au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
 	view=sf::st_bbox(au_asmnt_poly)
 	site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
