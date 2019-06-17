@@ -9,7 +9,7 @@ site_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('IR_MLID','I
 
 ## Read master site list
 master_site_file=system.file("extdata", "IR_master_site_file.xlsx", package = "irTools")
-master_site=as.data.frame(readxl::read_excel('master_site_file', 'sites'))
+master_site=as.data.frame(readxl::read_excel(master_site_file, 'sites'))
 
 ## ID rejected site locations
 rejected_sites=subset(master_site, IR_FLAG=="REJECT")

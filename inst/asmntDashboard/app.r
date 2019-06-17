@@ -124,6 +124,11 @@ observeEvent(input$demo_input, {
 	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
 	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	inputs=initialDataProc(site_use_param_asmnt)
+	reactive_objects$au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
+	reactive_objects$au_reviews=as.data.frame(readxl::read_excel(file, 'au-reviews'))
+	#reactive_objects$site_reviews=as.data.frame(readxl::read_excel(file, 'site-reviews'))
+	#reactive_objects$record_reviews=as.data.frame(readxl::read_excel(file, 'record-reviews'))
+	#reactive_objects$sw_reviews=as.data.frame(readxl::read_excel(file, 'sw-reviews'))
 	reactive_objects$au_asmnt_poly=inputs$au_asmnt_poly
 	reactive_objects$site_asmnt=inputs$site_asmnt
 	reactive_objects$selected_aus=vector()
@@ -137,13 +142,16 @@ observeEvent(input$demo_input, {
 # Import site-use-param-assessments file
 observeEvent(input$import_assessments,{
 	file=input$import_assessments$datapath
-	#site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt.xlsx'))
 	au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
 	reactive_objects$au_splits=au_splits
 	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
-	#site_use_param_asmnt=read.csv("C:\\Users\\jvander\\Desktop\\site-use-param-asmnt - Copy.csv")
 	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	inputs=initialDataProc(site_use_param_asmnt)
+	reactive_objects$au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
+	reactive_objects$au_reviews=as.data.frame(readxl::read_excel(file, 'au-reviews'))
+	#reactive_objects$site_reviews=as.data.frame(readxl::read_excel(file, 'site-reviews'))
+	#reactive_objects$record_reviews=as.data.frame(readxl::read_excel(file, 'record-reviews'))
+	#reactive_objects$sw_reviews=as.data.frame(readxl::read_excel(file, 'sw-reviews'))
 	reactive_objects$au_asmnt_poly=inputs$au_asmnt_poly
 	reactive_objects$site_asmnt=inputs$site_asmnt
 	reactive_objects$selected_aus=vector()
@@ -315,10 +323,11 @@ output$splitUI=renderUI({
 	}else{
 		tagList(
 			actionButton('build_split_map','Build split map', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%',  icon=icon('map-marked-alt')),
+			editModUI("auSplit"),
+			helpText('Note - Map panning with mouse grab is disabled here. Use arrow keys to pan map.'),
 			actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
 			actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save')),
-			editModUI("auSplit"),
-			helpText('Note - Map panning with mouse grab is disabled here. Use arrow keys to pan map.')
+			textInput('split_comment', 'Comment:', placeholder='Enter comment...')
 		)
 	}
 })
@@ -355,8 +364,12 @@ observeEvent(input$split_save, {
 	splits=as.data.frame(splits)
 	splits=splits[,!names(splits) %in% '_leaflet_id']
 	splits$ASSESS_ID=reactive_objects$selected_aus[1]
-	reactive_objects$au_splits=rbind(reactive_objects$au_splits, splits)
+	splits$Comment=input$split_comment
+	splits$Reviewer=input$rev_name
+	splits$geometry=as.character(splits$geometry)
+	reactive_objects$au_splits=plyr::rbind.fill(reactive_objects$au_splits, splits)
 	print(reactive_objects$au_splits)
+	#au_splits<<-reactive_objects$au_splits
 	au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
 	view=sf::st_bbox(au_asmnt_poly)
 	site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
@@ -377,15 +390,6 @@ observeEvent(input$split_cancel, ignoreInit=T, {
 		clearMarkers() %>% clearShapes() %>% clearControls()
 	reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
 })
-
-
-# Export reviews
-output$exp_rev <- downloadHandler(
-	filename=paste0('asmnt-reviews-', Sys.Date(),'.xlsx'),
-	content = function(file) {writexl::write_xlsx(
-		list(asmnt_reviews=reactive_objects$site_use_param_asmnt),
-		path = file, format_headers=F, col_names=T)}
-)
 
 
 # Print figures module outputs
@@ -462,9 +466,11 @@ output$flagUI5=renderUI({
 
 
 start_date=reactive({
+	req(figures$select_data())
 	min(figures$select_data()$x)
 })
 end_date=reactive({
+	req(figures$select_data())
 	max(figures$select_data()$x)
 })
 
@@ -482,6 +488,19 @@ output$flagUI7=renderUI({
 		actionButton('flag_apply','Apply flag (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'))
 	)
 })
+
+# Export reviews
+output$exp_rev <- downloadHandler(
+	filename=paste0('asmnt-reviews-', Sys.Date(),'.xlsx'),
+	content = function(file) {writexl::write_xlsx(
+		list(
+			'site-use-param-asmnt'=reactive_objects$site_use_param_asmnt,
+			'au-splits'=reactive_objects$au_splits
+			),
+		path = file, format_headers=F, col_names=T)}
+)
+
+
 
 }
 

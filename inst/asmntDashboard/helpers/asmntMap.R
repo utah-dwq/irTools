@@ -1,4 +1,6 @@
 asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, hover=T, ...){
+	na_sites$IR_Lat=as.numeric(na_sites$IR_Lat)
+	na_sites$IR_Long=as.numeric(na_sites$IR_Long)
 	ss_poly=wqTools::ss_poly
 	bu_poly=wqTools::bu_poly
 	au_asmnt_poly=within(au_asmnt_poly, {
