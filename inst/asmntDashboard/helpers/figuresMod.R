@@ -61,10 +61,10 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 	output$sel_param1 <- renderUI({
 		ns <- session$ns
 		req(reactive_objects$sel_data$R3172ParameterName)
-		selectInput(ns("sel_param1"),"Select parameter 1", choices = reactive_objects$sel_data$R3172ParameterName[order(reactive_objects$sel_data$R3172ParameterName)])
+		selectInput(ns("sel_param1"),"Select parameter 1", choices = unique(reactive_objects$sel_data$R3172ParameterName[order(reactive_objects$sel_data$R3172ParameterName)]))
 	})
 	
-	observe(priority=2, {
+	observe({
 		req(input$sel_param1)
 		reactive_objects$param1_sub=reactive_objects$sel_data[reactive_objects$sel_data$R3172ParameterName == input$sel_param1,]
 	})
@@ -83,14 +83,14 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 	})
 	
     
-	observe(priority=5, {
+	observe({
 		req(reactive_objects$sel_crit, reactive_objects$sel_data)
 		ns <- session$ns
 		updateSelectInput(session, ns('sel_units1'), selected="")
 	})
     
 	
-	observe(priority=1, {
+	observe({
 		req(input$sel_units1)
 		reactive_objects$sel_units1=input$sel_units1
 	})
@@ -167,7 +167,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 		req(reactive_objects$param1, input$sel_units1, reactive_objects$crit1, reactive_objects$au_vis)
 		
 		if(all(!is.na(reactive_objects$param1$plot_value))){
-			plot_ly() %>%
+			plot_ly(source="a") %>%
 				add_trace(type = 'scatter', mode = 'lines+markers', x=as.Date(reactive_objects$param1$ActivityStartDate), y = reactive_objects$param1$plot_value, color = reactive_objects$param1$IR_MLID, marker = list(size=10), visible=T) %>%
 				add_trace(type = 'scatter', mode = 'markers',x = as.Date(reactive_objects$param1$ActivityStartDate), y=reactive_objects$param1$plot_value, color = reactive_objects$param1$ASSESS_ID, marker = list(size=10), visible=F) %>%
 				add_trace(type = 'scatter', mode='lines', x = as.Date(reactive_objects$crit_plot$ActivityStartDate), y=reactive_objects$crit_plot$plot_value, connectgaps=TRUE, color = reactive_objects$crit_plot$label, visible='legendonly') %>%
@@ -194,13 +194,16 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 				config(displaylogo = FALSE, collaborate = FALSE,
 					modeBarButtonsToRemove = c(
 						'sendDataToCloud',
-						'lasso2d',
-						'select2d'
+						'lasso2d'
 					)
 				)
 		}
 	})
     
+
+	# Export selected data
+	#select_data  <- reactive({event_data("plotly_selected", source="a")})
+	
 	# Multi site boxplot
 	output$multi_site_bp=renderPlotly({
 		req(reactive_objects$param1, input$sel_units1, reactive_objects$crit1, reactive_objects$au_vis)
@@ -242,13 +245,17 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 				config(displaylogo = FALSE, collaborate = FALSE,
 					modeBarButtonsToRemove = c(
 						'sendDataToCloud',
-						'lasso2d',
-						'select2d'
+						'select2d',
+						'lasso2d'
 					)
 				)
 		}
 	})
     
+	
+	
+	
+	
 	# Concentration map		
 	conc_map = wqTools::buildMap(plot_polys=TRUE, search="")
 	conc_map=conc_map%>%clearGroup('Sites') %>% clearControls()
@@ -356,6 +363,14 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 				)
 		}
 	})
-	
+
+	return(list(
+		select_data=reactive({event_data("plotly_selected", source="a")}),
+		param1=reactive({input$sel_param1}),
+		param_choices=reactive({
+				req(reactive_objects$sel_data)
+				unique(reactive_objects$sel_data$R3172ParameterName[order(reactive_objects$sel_data$R3172ParameterName)])
+			})
+	))
 	
 }
