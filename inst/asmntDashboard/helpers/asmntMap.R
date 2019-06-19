@@ -1,18 +1,8 @@
-asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, hover=T, ...){
+asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 	na_sites$IR_Lat=as.numeric(na_sites$IR_Lat)
 	na_sites$IR_Long=as.numeric(na_sites$IR_Long)
 	ss_poly=wqTools::ss_poly
 	bu_poly=wqTools::bu_poly
-	au_asmnt_poly=within(au_asmnt_poly, {
-		lab=paste0(
-					'<p>', 
-					"AU name: ", AU_NAME,
-					'<br />', "AU ID: ", ASSESS_ID,
-					'<br />', "Assessment: ", AssessCat,
-					'<br />', "Impaired params: ", Impaired_params,
-					'<br />', "ID w/ exceedance params: ", idE_params)
-	
-	})
 
 	na_sites=na_sites[,names(na_sites) %in% names(site_asmnt)]
 	na_sites$AssessCat=NA
@@ -59,13 +49,13 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, hover=T, 
 					"<br> Uses: ", bu_poly$bu_class)
 			)
 			
-			if(hover){
-				assessment_map = assessment_map %>% addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
-					label=lapply(au_asmnt_poly$lab, HTML)
-				)
-			}else{
-				assessment_map = assessment_map %>% addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"))
-			}
+			#if(hover){
+			#	assessment_map = assessment_map %>% addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
+			#		label=lapply(au_asmnt_poly$lab, HTML)
+			#	)
+			#}else{
+			#	assessment_map = assessment_map %>% addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"))
+			#}
 			
 			assessment_map = assessment_map %>% addPolygons(data=ss_poly,group="Site-specific standards",smoothFactor=4,fillOpacity = 0.1,weight=3,color="blue", options = pathOptions(pane = "underlay_polygons"),
 				popup=paste0("SS std: ", ss_poly$SiteSpecif)
