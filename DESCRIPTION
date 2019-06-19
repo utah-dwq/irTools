@@ -17,15 +17,17 @@ Imports:
 	shinyWidgets,
 	readxl,
 	sf,
-    	shiny,
-    	shinyjs,
-    	jsonlite,
-    	openxlsx,
-    	leaflet,
-    	wqTools,
+    shiny,
+    shinyjs,
+    jsonlite,
+    openxlsx,
+    leaflet,
+    wqTools,
 	shinyjqui,
 	plotly,
 	shinycssloaders,
-	writexl
+	writexl,
+	rgdal,
+	mapedit
 Remotes:
 	utah-dwq/wqTools

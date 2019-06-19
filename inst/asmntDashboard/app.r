@@ -21,12 +21,14 @@ source('helpers/asmntMap.R')
 source('helpers/figuresMod.R')
 
 # Load data & criteria
-load('data/prepped_merged_data.Rdata')
+load(system.file("extdata", "prepped_merged_data.Rdata", package = "irTools"))
 
 options(warn = -1)
 
+
 # User interface
 ui <-fluidPage(
+
 	# Header
 	#headerPanel(
 	#	title=tags$a(href='https://deq.utah.gov/division-water-quality/',tags$img(src='deq_dwq_logo.png', height = 75, width = 75*2.85), target="_blank"),
@@ -112,7 +114,8 @@ observeEvent(input$toolbar_reset, ignoreInit=F, ignoreNULL=F, {
 					uiOutput('flagUI4'),
 					uiOutput('flagUI5'),
 					uiOutput('flagUI6'),
-					uiOutput('flagUI7')
+					uiOutput('flagUI7'),
+					uiOutput('flagUI8')
 				),
 				bsCollapsePanel(list(icon('plus-circle'), icon('draw-polygon'),"Split AU"),
 					uiOutput('splitUI')
@@ -128,7 +131,7 @@ options(warn=0)
 #wqp_sites=wqTools::readWQP(type="sites", statecode="US:49", siteType=c("Lake, Reservoir, Impoundment","Stream", "Spring"))
 
 # Example input url
-output$ex_url <-renderUI(a(href='https://raw.githubusercontent.com/utah-dwq/irTools/master/inst/extdata/site-use-param-asmnt.csv',list(icon('question'),"Example input data"),target="_blank"))
+output$ex_url <-renderUI(a(href='https://raw.githubusercontent.com/utah-dwq/irTools/master/inst/extdata/site-use-param-asmnt.xlsx',list(icon('question'),"Example input data"),target="_blank"))
 
 # Empty reactive objects
 reactive_objects=reactiveValues()
@@ -139,6 +142,7 @@ observeEvent(input$demo_input, {
 	au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
 	reactive_objects$au_splits=au_splits
 	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
+	site_use_param_asmnt$AU_review=as.character(site_use_param_asmnt$AU_review)
 	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	inputs=initialDataProc(site_use_param_asmnt)
 	reactive_objects$au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
@@ -162,6 +166,7 @@ observeEvent(input$import_assessments,{
 	au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
 	reactive_objects$au_splits=au_splits
 	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
+	site_use_param_asmnt$AU_review=as.character(site_use_param_asmnt$AU_review)
 	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	inputs=initialDataProc(site_use_param_asmnt)
 	reactive_objects$au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
@@ -205,16 +210,19 @@ asmnt_map_proxy=leafletProxy('assessment_map')
 # Map filter UI
 output$map_rev_filter=renderUI({
 	req(reactive_objects$site_use_param_asmnt)
-	choices=unique(reactive_objects$site_use_param_asmnt$Review)
+	#req(reactive_objects$map_ready)
+	choices=unique(reactive_objects$site_use_param_asmnt$AU_review)
+	choices=c('Review needed', 'Complete', 'Complete with flag(s)')
 	fluidRow(
 		column(1),
-		column(11,shinyWidgets::pickerInput('map_rev_filter', 'Review types', choices, selected=choices, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3")))
+		column(11,shinyWidgets::pickerInput('map_rev_filter', 'Review types', choices, selected='Review needed', multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3")))
 	)
 })
 
 # Filter map by review type
 observeEvent(input$map_rev_filter, ignoreInit=T, {
-	aus=unique(reactive_objects$site_use_param_asmnt$ASSESS_ID[reactive_objects$site_use_param_asmnt$Review %in% input$map_rev_filter])
+	req(reactive_objects$site_use_param_asmnt)
+	aus=unique(reactive_objects$site_use_param_asmnt$ASSESS_ID[reactive_objects$site_use_param_asmnt$AU_review %in% input$map_rev_filter])
 	au_asmnt_poly=reactive_objects$au_asmnt_poly[reactive_objects$au_asmnt_poly$ASSESS_ID %in% aus,]
 	au_asmnt_poly=within(au_asmnt_poly, {
 	lab=paste0(
@@ -227,10 +235,15 @@ observeEvent(input$map_rev_filter, ignoreInit=T, {
 	
 	})
 
-	asmnt_map_proxy %>%
-		clearGroup(group='Assessment units') %>%
-		addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
-					label=lapply(au_asmnt_poly$lab, HTML))
+	if(dim(au_asmnt_poly)[1]>0){
+		asmnt_map_proxy %>%
+			clearGroup(group='Assessment units') %>%
+			addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
+						label=lapply(au_asmnt_poly$lab, HTML))
+	}else{
+		asmnt_map_proxy %>%
+			clearGroup(group='Assessment units')
+	}
 })
 
 
@@ -395,7 +408,8 @@ observeEvent(input$build_split_map, {
 			au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
 			view=sf::st_bbox(au_asmnt_poly)
 			site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
-			sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, hover=F, options=leafletOptions(dragging=F)) %>%
+			sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, options=leafletOptions(dragging=F)) %>%
+				addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly")) %>%
 				fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
 				showGroup('Assessed sites') %>% clearControls()
 			reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
@@ -421,7 +435,7 @@ observeEvent(input$split_save, {
 	au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
 	view=sf::st_bbox(au_asmnt_poly)
 	site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
-	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, hover=F, options=leafletOptions(dragging=F)) %>%
+	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, options=leafletOptions(dragging=F)) %>%
 		fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
 		clearMarkers() %>% clearShapes() %>% clearControls()
 	reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
@@ -433,7 +447,7 @@ observeEvent(input$split_cancel, ignoreInit=T, {
 	au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
 	view=sf::st_bbox(au_asmnt_poly)
 	site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
-	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, hover=F, options=leafletOptions(dragging=F)) %>%
+	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, options=leafletOptions(dragging=F)) %>%
 		fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
 		clearMarkers() %>% clearShapes() %>% clearControls()
 	reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
@@ -497,7 +511,7 @@ output$flagUI2=renderUI({
 })
 
 output$flagUI3=renderUI({
-	req(reactive_objects$selected_aus, reactive_objects$sel_sites)
+	#req(reactive_objects$selected_aus, reactive_objects$sel_sites)
 	conditionalPanel(condition="input.flag_scope=='Assessment unit(s)' | input.rev_type=='Mark complete'",
 		shinyWidgets::pickerInput("flag_aus", "Assessment unit(s):", choices=reactive_objects$selected_aus, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
 	)
@@ -540,95 +554,145 @@ output$flagUI6=renderUI({
 	)
 })
 
-
 output$flagUI7=renderUI({
-	req(input$flag_scope)
-	tagList(
-		textInput('rev_comment', 'Comment:', placeholder='Enter comment...'),
-		actionButton('rev_apply','Apply review (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'))
+	req(input$flag_scope, input$flag_param)
+	conditionalPanel(condition="input.rev_type=='Generate flag'",
+		textInput('rev_comment', 'Comment:', placeholder='Enter comment...')
 	)
 })
 
+output$flagUI8=renderUI({
+	req(input$flag_scope)
+	tagList(
+		conditionalPanel(condition="input.rev_type=='Generate flag'",
+			actionButton('flag_apply','Apply flag', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('flag'))
+		),
+		conditionalPanel(condition="input.rev_type=='Mark complete'",
+			actionButton('mark_complete','Mark review complete', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'))
+		)
+	)
+
+})
+
+
+
+observeEvent(input$mark_complete, ignoreInit=T, {
+	# Mark reviews for selected AUs as complete w/ no flags or complete w/ flags in reactive_objects$site_use_param_asmnt
+	if(input$rev_name!="" & !is.null(input$flag_aus)){
+		flag_aus=input$flag_aus
+		au_flags=unique(reactive_objects$au_reviews[reactive_objects$au_reviews$ASSESS_ID %in% flag_aus,]$ASSESS_ID)
+		print(au_flags)
+		site_flags=unique(reactive_objects$site_reviews[reactive_objects$site_reviews$ASSESS_ID %in% flag_aus,]$ASSESS_ID)
+		print(site_flags)
+		record_flags=unique(reactive_objects$record_reviews[reactive_objects$record_reviews$ASSESS_ID %in% flag_aus,]$ASSESS_ID)
+		print(site_flags)
+		flags=unique(c(as.character(au_flags), as.character(site_flags), as.character(record_flags)))
+		complete_flag_aus=flag_aus[flag_aus %in% flags]
+		complete_no_flag_aus=flag_aus[!flag_aus %in% flags]
+		
+		reactive_objects$site_use_param_asmnt=within(reactive_objects$site_use_param_asmnt, {
+			AU_review[ASSESS_ID %in% complete_flag_aus] = 'Complete with flag(s)'
+			AU_review[ASSESS_ID %in% complete_no_flag_aus] = 'Complete'	
+		})		
+		
+		# Update AU polygons in map
+		aus=unique(reactive_objects$site_use_param_asmnt$ASSESS_ID[reactive_objects$site_use_param_asmnt$AU_review %in% input$map_rev_filter])
+		au_asmnt_poly=reactive_objects$au_asmnt_poly[reactive_objects$au_asmnt_poly$ASSESS_ID %in% aus,]
+		au_asmnt_poly=within(au_asmnt_poly, {
+		lab=paste0(
+					'<p>', 
+					"AU name: ", AU_NAME,
+					'<br />', "AU ID: ", ASSESS_ID,
+					'<br />', "Assessment: ", AssessCat,
+					'<br />', "Impaired params: ", Impaired_params,
+					'<br />', "ID w/ exceedance params: ", idE_params)
+		
+		})
+	
+		if(dim(au_asmnt_poly)[1]>0){
+			asmnt_map_proxy %>%
+				clearGroup(group='Assessment units') %>%
+				addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
+							label=lapply(au_asmnt_poly$lab, HTML))
+		}else{
+			asmnt_map_proxy %>%
+				clearGroup(group='Assessment units')
+		}
+		# Clear completed AUs from selected AUs
+		reactive_objects$selected_aus=reactive_objects$selected_aus[!reactive_objects$selected_aus %in% flag_aus]
+		
+	}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
+	
+	
+})
 
 # Save reviews
-observeEvent(input$rev_apply, ignoreInit=T, {
-	if(input$rev_type=='Mark complete'){
-		if(input$rev_name!="" & !is.null(input$flag_aus)){
-			reviews=merge(input$flag_aus, param_choices())
+observeEvent(input$flag_apply, ignoreInit=T, {
+	if(input$flag_scope=='Assessment unit(s)'){
+		if(input$rev_name!="" & !is.null(input$flag_aus) & !is.null(input$flag_param) & input$rev_comment!=""){
+			reviews=merge(input$flag_aus, input$flag_param)
 			names(reviews)=c('ASSESS_ID','R3172ParameterName')
 			reviews$Reviewer=input$rev_name
-			if(input$rev_comment==""){reviews$Comment='Complete'}else{reviews$Comment=input$rev_comment}
+			reviews$Comment=input$rev_comment
 			reactive_objects$au_reviews=rbind(reactive_objects$au_reviews, reviews)
-				reviews$Review='Complete'
 			print(reactive_objects$au_reviews)
+			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
 		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
 	}
-	if(input$rev_type=='Generate flag'){
-		if(input$flag_scope=='Assessment unit(s)'){
-			if(input$rev_name!="" & !is.null(input$flag_aus) & !is.null(input$flag_param) & input$rev_comment!=""){
-				reviews=merge(input$flag_aus, input$flag_param)
-				names(reviews)=c('ASSESS_ID','R3172ParameterName')
-				reviews$Reviewer=input$rev_name
-				reviews$Comment=input$rev_comment
-				reviews$Review='Flag'
-				reactive_objects$au_reviews=rbind(reactive_objects$au_reviews, reviews)
-				print(reactive_objects$au_reviews)
-			}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
-		}
-		if(input$flag_scope=='Site(s)' | input$flag_scope=='Record(s)'){
-			if((input$flag_scope=='Site(s)' & 
+	if(input$flag_scope=='Site(s)' | input$flag_scope=='Record(s)'){
+		if((input$flag_scope=='Site(s)' & 
+			(input$rev_name!="" &
+					((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) & 
+					!is.null(input$flag_param) &  !is.null(input$rev_name) &  input$rev_comment!="")
+			|(input$flag_scope=='Record(s)' & 
 				(input$rev_name!="" &
-						((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) & 
-						!is.null(input$flag_param) &  !is.null(input$rev_name) &  input$rev_comment!="")
-				|(input$flag_scope=='Record(s)' & 
-					(input$rev_name!="" &
-						((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) & 
-						!is.null(input$flag_param) &  !is.null(input$rev_name) &  input$rev_comment!="" & input$flag_date_range[1]!=Sys.Date()))
-			)){
-				if(input$site_flag_type=='MLID'){
-					sites=input$flag_sites
-				}else{
-					sites=reactive_objects$site_asmnt$IR_MLID[reactive_objects$site_asmnt$IR_MLID %in% reactive_objects$sel_sites & reactive_objects$site_asmnt$MonitoringLocationTypeName %in% input$flag_ml_types_sel_au]
-				}
-				site_metadata=reactive_objects$site_asmnt[reactive_objects$site_asmnt$IR_MLID %in% sites, c('IR_MLID', 'IR_MLNAME', 'ASSESS_ID', 'MonitoringLocationTypeName'),]
-				sites=data.frame(sites)
-				names(sites)='IR_MLID'
-				reviews=merge(sites, site_metadata)
-				names(reviews)=c('IR_MLID', 'IR_MLNAME', 'ASSESS_ID','ML_Type')
-				reviews=merge(reviews, input$flag_param)
-				names(reviews)=c('IR_MLID', 'IR_MLNAME', 'ASSESS_ID','ML_Type', 'R3172ParameterName')
-				reviews$Reviewer=input$rev_name
-				reviews$Comment=input$rev_comment					
-				reviews$Review='Flag'
-				if(input$flag_scope=='Site(s)'){
-					reactive_objects$site_reviews=rbind(reactive_objects$site_reviews, reviews)
-					print(reactive_objects$site_reviews)
-				}else{
-					reviews$StartDate=input$flag_date_range[1]
-					reviews$EndDate=input$flag_date_range[2]				
-					reactive_objects$record_reviews=rbind(reactive_objects$record_reviews, reviews)
-					print(reactive_objects$record_reviews)
-				}				
-			}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
-		}
-		if(input$flag_scope=='State-wide'){
-			if(input$rev_name!="" & ((input$flag_sw_ml_or_au=='AU type' & !is.null(input$flag_sw_au_type)) | (input$flag_sw_ml_or_au=='ML type' & !is.null(input$flag_sw_ml_type))) & !is.null(input$flag_param)){
-				if(input$flag_sw_ml_or_au=='AU type'){
-					sw_reviews=merge(input$flag_sw_au_type, input$flag_param)
-					sw_reviews$ML_Type=NA
-					names(sw_reviews)=c('AU_Type','ML_Type','R3172ParameterName')
-				}else{
-					sw_reviews=merge(input$flag_sw_ml_type, input$flag_param)
-					sw_reviews$AU_Type=NA
-					names(sw_reviews)=c('ML_Type','AU_Type','R3172ParameterName')
-				}
-				sw_reviews$Review=input$rev_name
-				sw_reviews$Comment=input$rev_comment		
-				sw_reviews$Review='Flag'
-				reactive_objects$sw_reviews=rbind(reactive_objects$sw_reviews,sw_reviews)
-				print(reactive_objects$sw_reviews)
-			}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
-		}
+					((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) & 
+					!is.null(input$flag_param) &  !is.null(input$rev_name) &  input$rev_comment!="" & input$flag_date_range[1]!=Sys.Date()))
+		)){
+			if(input$site_flag_type=='MLID'){
+				sites=input$flag_sites
+			}else{
+				sites=reactive_objects$site_asmnt$IR_MLID[reactive_objects$site_asmnt$IR_MLID %in% reactive_objects$sel_sites & reactive_objects$site_asmnt$MonitoringLocationTypeName %in% input$flag_ml_types_sel_au]
+			}
+			site_metadata=reactive_objects$site_asmnt[reactive_objects$site_asmnt$IR_MLID %in% sites, c('IR_MLID', 'IR_MLNAME', 'ASSESS_ID', 'MonitoringLocationTypeName'),]
+			sites=data.frame(sites)
+			names(sites)='IR_MLID'
+			reviews=merge(sites, site_metadata)
+			names(reviews)=c('IR_MLID', 'IR_MLNAME', 'ASSESS_ID','ML_Type')
+			reviews=merge(reviews, input$flag_param)
+			names(reviews)=c('IR_MLID', 'IR_MLNAME', 'ASSESS_ID','ML_Type', 'R3172ParameterName')
+			reviews$Reviewer=input$rev_name
+			reviews$Comment=input$rev_comment					
+			if(input$flag_scope=='Site(s)'){
+				reactive_objects$site_reviews=rbind(reactive_objects$site_reviews, reviews)
+				print(reactive_objects$site_reviews)
+			}else{
+				reviews$StartDate=input$flag_date_range[1]
+				reviews$EndDate=input$flag_date_range[2]				
+				reactive_objects$record_reviews=rbind(reactive_objects$record_reviews, reviews)
+				print(reactive_objects$record_reviews)
+			}
+			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
+			
+		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
+	}
+	if(input$flag_scope=='State-wide'){
+		if(input$rev_name!="" & ((input$flag_sw_ml_or_au=='AU type' & !is.null(input$flag_sw_au_type)) | (input$flag_sw_ml_or_au=='ML type' & !is.null(input$flag_sw_ml_type))) & !is.null(input$flag_param)){
+			if(input$flag_sw_ml_or_au=='AU type'){
+				sw_reviews=merge(input$flag_sw_au_type, input$flag_param)
+				sw_reviews$ML_Type=NA
+				names(sw_reviews)=c('AU_Type','ML_Type','R3172ParameterName')
+			}else{
+				sw_reviews=merge(input$flag_sw_ml_type, input$flag_param)
+				sw_reviews$AU_Type=NA
+				names(sw_reviews)=c('ML_Type','AU_Type','R3172ParameterName')
+			}
+			sw_reviews$Reviewer=input$rev_name
+			sw_reviews$Comment=input$rev_comment		
+			reactive_objects$sw_reviews=rbind(reactive_objects$sw_reviews,sw_reviews)
+			print(reactive_objects$sw_reviews)
+			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
+		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
 	}
 })
 
