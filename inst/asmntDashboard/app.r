@@ -93,7 +93,7 @@ output$build_to_proceed3=renderText({"Select AU(s) and build analysis tools to p
 observeEvent(input$toolbar_reset, ignoreInit=F, ignoreNULL=F, {
 	options(warn=-1)
 	output$toolbarUI=renderUI({
-		column(4,fixedPanel(draggable=T, style="z-index:1000; overflow-y:scroll; max-height: 75vh",
+		column(4,fixedPanel(draggable=T, style="z-index:1000; overflow-y:scroll; max-height: 85vh",
 			shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1,
 				bsCollapsePanel(list(icon('plus-circle'), icon('toolbox'), 'Toolbar'), value=1,
 					fluidRow(
@@ -226,9 +226,10 @@ observeEvent(input$map_rev_filter, ignoreInit=T, {
 				'<br />', "ID w/ exceedance params: ", idE_params)
 	
 	})
+
 	asmnt_map_proxy %>%
 		clearGroup(group='Assessment units') %>%
-		addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~ASSESS_ID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
+		addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
 					label=lapply(au_asmnt_poly$lab, HTML))
 })
 
@@ -267,7 +268,7 @@ observeEvent(reactive_objects$selected_aus, ignoreNULL = F, ignoreInit=T, {
 	asmnt_map_proxy %>%
 	clearGroup(group='highlight') %>%
 	addPolygons(data=reactive_objects$au_asmnt_poly[reactive_objects$au_asmnt_poly$ASSESS_ID %in% reactive_objects$selected_aus,],
-		group='highlight', options = pathOptions(pane = "highlight"), color='chartreuse', opacity = 0.75, fillOpacity = 0.4, weight = 10)
+		group='highlight', options = pathOptions(pane = "highlight"), color='chartreuse', opacity = 0.75, fillOpacity = 0.4, weight = 5)
 })
 
 # Clear selected AUs with clear_au action button
@@ -470,21 +471,21 @@ output$flagUI1a=renderUI({
 			textOutput('build_to_proceed2')
 		}else{
 			tagList(
-				shinyWidgets::radioGroupButtons('rev_type', 'Review type:', choices=c('Accept','Flag'), checkIcon = list(yes = icon("check")))
+				shinyWidgets::radioGroupButtons('rev_type', 'Review type:', choices=c('Generate flag','Mark complete'), checkIcon = list(yes = icon("check")))
 			)
 		}	
 })
 
 output$flagUI1b=renderUI({
 	req(input$rev_type)
-	conditionalPanel(condition="input.rev_type=='Flag'",
+	conditionalPanel(condition="input.rev_type=='Generate flag'",
 		shinyWidgets::radioGroupButtons('flag_scope', 'Scope:', choices=c('Assessment unit(s)', 'Site(s)', 'Record(s)', 'State-wide'), selected=input$flag_scope, checkIcon = list(yes = icon("check")))
 	)
 })
 
 output$flagUI2=renderUI({
 	req(ml_types_all())
-	conditionalPanel(condition="input.flag_scope=='State-wide' & input.rev_type=='Flag'",
+	conditionalPanel(condition="input.flag_scope=='State-wide' & input.rev_type=='Generate flag'",
 		shinyWidgets::radioGroupButtons('flag_sw_ml_or_au', 'Apply flag by:', choices=c('AU type', 'ML type'), checkIcon = list(yes = icon("check"))),
 		conditionalPanel(condition="input.flag_sw_ml_or_au == 'AU type'",
 			shinyWidgets::pickerInput("flag_sw_au_type", "AU types:", choices=unique(reactive_objects$site_asmnt$AU_Type[order(reactive_objects$site_asmnt$AU_Type)]), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
@@ -497,14 +498,14 @@ output$flagUI2=renderUI({
 
 output$flagUI3=renderUI({
 	req(reactive_objects$selected_aus, reactive_objects$sel_sites)
-	conditionalPanel(condition="input.flag_scope=='Assessment unit(s)'",
+	conditionalPanel(condition="input.flag_scope=='Assessment unit(s)' | input.rev_type=='Mark complete'",
 		shinyWidgets::pickerInput("flag_aus", "Assessment unit(s):", choices=reactive_objects$selected_aus, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
 	)
 })
 
 output$flagUI4=renderUI({
 	req(reactive_objects$sel_sites, ml_types_sel_au())
-	conditionalPanel(condition="(input.flag_scope=='Site(s)' | input.flag_scope=='Record(s)')  & input.rev_type=='Flag'",
+	conditionalPanel(condition="(input.flag_scope=='Site(s)' | input.flag_scope=='Record(s)')  & input.rev_type=='Generate flag'",
 		shinyWidgets::radioGroupButtons('site_flag_type','Select sites by:', choices=c('MLID','ML type'), checkIcon = list(yes = icon("check"))),
 		conditionalPanel(condition="input.site_flag_type=='MLID'",
 			shinyWidgets::pickerInput("flag_sites", "Site(s):", choices=reactive_objects$sel_sites, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
@@ -517,7 +518,7 @@ output$flagUI4=renderUI({
 
 output$flagUI5=renderUI({
 	req(param_choices())
-	conditionalPanel(condition="input.rev_type=='Flag'",
+	conditionalPanel(condition="input.rev_type=='Generate flag'",
 		shinyWidgets::pickerInput("flag_param", "Parameter(s):", choices=param_choices(), multiple=T, selected=param1(), options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
 	)
 })
@@ -533,7 +534,7 @@ observe({
 
 output$flagUI6=renderUI({
 	req(input$flag_scope)
-	conditionalPanel(condition="input.rev_type=='Flag' & input.flag_scope=='Record(s)'",
+	conditionalPanel(condition="input.rev_type=='Generate flag' & input.flag_scope=='Record(s)'",
 		dateRangeInput('flag_date_range', 'Date range:', start=reactive_objects$start_date, end=reactive_objects$end_date),
 		helpText('Use the box select tool on the multi-site time series plot to select a date range interactively.')
 	)
@@ -551,18 +552,18 @@ output$flagUI7=renderUI({
 
 # Save reviews
 observeEvent(input$rev_apply, ignoreInit=T, {
-	if(input$rev_type=='Accept'){
+	if(input$rev_type=='Mark complete'){
 		if(input$rev_name!="" & !is.null(input$flag_aus)){
 			reviews=merge(input$flag_aus, param_choices())
 			names(reviews)=c('ASSESS_ID','R3172ParameterName')
 			reviews$Reviewer=input$rev_name
-			if(input$rev_comment==""){reviews$Comment='Accept'}else{reviews$Comment=input$rev_comment}
+			if(input$rev_comment==""){reviews$Comment='Complete'}else{reviews$Comment=input$rev_comment}
 			reactive_objects$au_reviews=rbind(reactive_objects$au_reviews, reviews)
-				reviews$Review='Accept'
+				reviews$Review='Complete'
 			print(reactive_objects$au_reviews)
 		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
 	}
-	if(input$rev_type=='Flag'){
+	if(input$rev_type=='Generate flag'){
 		if(input$flag_scope=='Assessment unit(s)'){
 			if(input$rev_name!="" & !is.null(input$flag_aus) & !is.null(input$flag_param) & input$rev_comment!=""){
 				reviews=merge(input$flag_aus, input$flag_param)
