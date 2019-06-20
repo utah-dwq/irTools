@@ -143,7 +143,6 @@ observeEvent(input$demo_input, {
 	reactive_objects$au_splits=au_splits
 	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
 	site_use_param_asmnt$AU_review=as.character(site_use_param_asmnt$AU_review)
-	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	inputs=initialDataProc(site_use_param_asmnt)
 	reactive_objects$au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
 	reactive_objects$au_reviews=as.data.frame(readxl::read_excel(file, 'au-reviews'))
@@ -151,12 +150,16 @@ observeEvent(input$demo_input, {
 	reactive_objects$record_reviews=as.data.frame(readxl::read_excel(file, 'record-reviews'))
 	reactive_objects$sw_reviews=as.data.frame(readxl::read_excel(file, 'sw-reviews'))
 	reactive_objects$au_asmnt_poly=inputs$au_asmnt_poly
+	na_polys=st_set_geometry(reactive_objects$au_asmnt_poly[is.na(reactive_objects$au_asmnt_poly$AssessCat),colnames(reactive_objects$au_asmnt_poly) %in% colnames(site_use_param_asmnt)], NULL)
 	reactive_objects$site_asmnt=inputs$site_asmnt
 	reactive_objects$selected_aus=vector()
 	reactive_objects$rejected_sites=inputs$rejected_sites
 	reactive_objects$na_sites=inputs$na_sites
 	reactive_objects$master_site=inputs$master_site
 	reactive_objects$rebuild=FALSE
+	site_use_param_asmnt=plyr::rbind.fill(site_use_param_asmnt, na_polys)
+	site_use_param_asmnt$AU_review[is.na(site_use_param_asmnt$AU_review)] = 'Not assessed'
+	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	showModal(shinyjqui::draggableModalDialog(easyClose=T, 'Demo data uploaded.'))
 })
 
@@ -167,7 +170,6 @@ observeEvent(input$import_assessments,{
 	reactive_objects$au_splits=au_splits
 	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
 	site_use_param_asmnt$AU_review=as.character(site_use_param_asmnt$AU_review)
-	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 	inputs=initialDataProc(site_use_param_asmnt)
 	reactive_objects$au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
 	reactive_objects$au_reviews=as.data.frame(readxl::read_excel(file, 'au-reviews'))
@@ -175,12 +177,16 @@ observeEvent(input$import_assessments,{
 	reactive_objects$record_reviews=as.data.frame(readxl::read_excel(file, 'record-reviews'))
 	reactive_objects$sw_reviews=as.data.frame(readxl::read_excel(file, 'sw-reviews'))
 	reactive_objects$au_asmnt_poly=inputs$au_asmnt_poly
+	na_polys=st_set_geometry(reactive_objects$au_asmnt_poly[is.na(reactive_objects$au_asmnt_poly$AssessCat),colnames(reactive_objects$au_asmnt_poly) %in% colnames(site_use_param_asmnt)], NULL)
 	reactive_objects$site_asmnt=inputs$site_asmnt
 	reactive_objects$selected_aus=vector()
 	reactive_objects$rejected_sites=inputs$rejected_sites
 	reactive_objects$na_sites=inputs$na_sites
 	reactive_objects$master_site=inputs$master_site
 	reactive_objects$rebuild=FALSE
+	site_use_param_asmnt=plyr::rbind.fill(site_use_param_asmnt, na_polys)
+	site_use_param_asmnt$AU_review[is.na(site_use_param_asmnt$AU_review)] = 'Not assessed'
+	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 })
 
 
@@ -212,7 +218,7 @@ output$map_rev_filter=renderUI({
 	req(reactive_objects$site_use_param_asmnt)
 	#req(reactive_objects$map_ready)
 	choices=unique(reactive_objects$site_use_param_asmnt$AU_review)
-	choices=c('Review needed', 'Complete', 'Complete with flag(s)')
+	choices=c('Review needed', 'Complete', 'Complete with flag(s)', 'Not assessed')
 	fluidRow(
 		column(1),
 		column(11,shinyWidgets::pickerInput('map_rev_filter', 'Review types', choices, selected='Review needed', multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3")))

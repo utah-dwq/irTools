@@ -206,7 +206,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 	
 	# Multi site boxplot
 	output$multi_site_bp=renderPlotly({
-		req(reactive_objects$param1, input$sel_units1, reactive_objects$crit1, reactive_objects$au_vis)
+		req(reactive_objects$param1, input$sel_units1, reactive_objects$crit1, reactive_objects$au_vis, reactive_objects$title, reactive_objects$ylab, reactive_objects$mlid_vis, reactive_objects$au_vis)
 		crit_plot=reactive_objects$crit_plot
 		crit_plot=unique(crit_plot[!is.na(crit_plot$plot_value),c('plot_value','label')])
 		crit_plot0=crit_plot
@@ -215,8 +215,6 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 		crit_plot1$x=1
 		crit_plot=rbind(crit_plot0,crit_plot1)
 		
-		
-    
 		if(all(!is.na(reactive_objects$param1$plot_value))){
 			plot_ly(type = 'box', y = reactive_objects$param1$plot_value, color = reactive_objects$param1$IR_MLID, visible=T) %>%
 				add_trace(type = 'box', y = reactive_objects$param1$plot_value, color = reactive_objects$param1$ASSESS_ID, visible=F) %>%
