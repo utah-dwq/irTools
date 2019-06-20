@@ -386,7 +386,7 @@ output$splitUI=renderUI({
 	}else{
 		tagList(
 			actionButton('build_split_map','Build split map', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%',  icon=icon('map-marked-alt')),
-			editModUI("auSplit"),
+			editModUI("auSplit", height='450px'),
 			helpText('Note - Map panning with mouse grab is disabled here. Use arrow keys to pan map.'),
 			actionButton('split_cancel','Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close')),
 			actionButton('split_save','Save', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('save')),
@@ -421,25 +421,28 @@ observeEvent(input$build_split_map, {
 observeEvent(input$split_save, {
 	req(reactive_objects$splits)
 	splits=reactive_objects$splits()$finished
-	if(!is.null(splits)){
-		if(reactive_objects$drop_split=='Y' & dim(splits)[1]>=2){
-			splits=splits[2:dim(splits)[1],]
-		}
-	splits=as.data.frame(splits)
-	splits=splits[,!names(splits) %in% '_leaflet_id']
-	splits$ASSESS_ID=reactive_objects$selected_aus[1]
-	splits$Comment=input$split_comment
-	splits$Reviewer=input$rev_name
-	splits$geometry=st_as_text(splits$geometry)
-	reactive_objects$au_splits=plyr::rbind.fill(reactive_objects$au_splits, splits)
-	au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
-	view=sf::st_bbox(au_asmnt_poly)
-	site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
-	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, options=leafletOptions(dragging=F)) %>%
-		fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
-		clearMarkers() %>% clearShapes() %>% clearControls()
-	reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
-	}
+	if(input$rev_name!=''){
+		if(!is.null(splits)){
+			if(reactive_objects$drop_split=='Y' & dim(splits)[1]>=2){
+				splits=splits[2:dim(splits)[1],]
+			}
+			splits=as.data.frame(splits)
+			splits=splits[,!names(splits) %in% '_leaflet_id']
+			splits$ASSESS_ID=reactive_objects$selected_aus[1]
+			splits$Comment=input$split_comment
+			splits$Reviewer=input$rev_name
+			splits$geometry=st_as_text(splits$geometry)
+			reactive_objects$au_splits=plyr::rbind.fill(reactive_objects$au_splits, splits)
+			au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
+			view=sf::st_bbox(au_asmnt_poly)
+			site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
+			sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, options=leafletOptions(dragging=F)) %>%
+				fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
+				clearMarkers() %>% clearShapes() %>% clearControls()
+			reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
+			showModal(modalDialog(title='Split(s) saved.', easyClose=T))
+		}else{showModal(modalDialog(title='Nothing drawn.', 'Finish drawing recommended splits before saving.', easyClose=T))}
+	}else{showModal(modalDialog(title='Reviewer name required.', 'Fill in reviewer name above before saving.', easyClose=T))}
 })
 
 ## Cancel splits
