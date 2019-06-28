@@ -20,15 +20,15 @@
 #' @export
 autoValidateWQPsites=function(sites_object,master_site_file,waterbody_type_file,correct_longitude=FALSE){
 
-#########
-###TESTING SETUP
-#library(sp)
-#library(sf)
-#sites_object=read.csv("C:/Users/jvander/Documents/R/irTools-test-16/01-raw-data/sites-2019-04-04.csv")
-#master_site_file="C:/Users/jvander/Documents/R/irTools-test-16/02-site-validation/IR_master_site_file-autoreview-for-testing.xlsx"
-#waterbody_type_file = "C:/Users/jvander/Documents/R/irTools-test-16/00-lookup-tables/waterbody_type_domain_table.csv"
-#correct_longitude=FALSE
 ########
+##TESTING SETUP
+library(sp)
+library(sf)
+sites_object=read.csv("C:/Users/jvander/Documents/R/irTools-test-16/01-raw-data/sites-2019-04-04.csv")
+master_site_file="P:/WQ/Integrated Report/IR_2020/2020-IR-assessments/spatial_files/IR_master_site_file-including-manual-edits.xlsx"
+waterbody_type_file = "C:/Users/jvander/Documents/R/irTools-test-16/00-lookup-tables/waterbody_type_domain_table.csv"
+correct_longitude=FALSE
+#######
 
 # Polygon intersection function
   intpoly <- function(polygon, sites_object, sites){
@@ -100,7 +100,9 @@ print(paste(dim(stn_new)[1],"sites found in sites_file not present in master_sit
 if(dim(stn_new)[1]==0){
   readline(prompt="Press [enter] to continue with master_site autovalidation or [esc] to end function.")
 }else{readline(prompt="Press [enter] to continue.")}
+
 rm(stn2)
+
 
 #Assign UID to new sites
 if(dim(master_site)[1]>0&dim(stn_new)[1]>0){
@@ -124,6 +126,7 @@ ut_poly=ut_poly[,"STATE_NAME"]
 #suppressWarnings({ut_poly=st_buffer(ut_poly, 0)})
 gsl_poly=subset(au_poly, AU_NAME=='Gilbert Bay' | AU_NAME=='Gunnison Bay' | AU_NAME=='Farmington Bay' | AU_NAME=='Bear River Bay')
 gsl_poly$gsl='y'
+wmu_poly=wqTools::wmu_poly
 
 ##################################
 ####Master site reviews
@@ -152,7 +155,7 @@ if(dim(master_site)[1]>0){
 		
 	
 	#Remove ASSESS_ID, & AU_NAME cols from master_site before re-assigning (this updates master list in case polygons change)
-	master_site=master_site[,!names(master_site)%in%c("ASSESS_ID","AU_NAME","AU_Type","BEN_CLASS","R317Descrp","ss_R317Descrp","Water_Type")]
+	master_site=master_site[,!names(master_site)%in%c("ASSESS_ID","AU_NAME","AU_Type","BEN_CLASS","R317Descrp","ss_R317Descrp","Water_Type", "Mgmt_Unit")]
 	class(master_site$IR_FLAG)
 	dim(master_site)
 	
@@ -171,6 +174,7 @@ if(dim(master_site)[1]>0){
 	master_site <- intpoly(bu_poly,master_site, sites)
 	master_site <- intpoly(ss_poly,master_site, sites)
 	master_site <- intpoly(gsl_poly,master_site, sites)
+	master_site <- intpoly(wmu_poly,master_site, sites)
 	
 	rm(sites)
 
@@ -362,6 +366,7 @@ stn_new <- intpoly(au_poly,stn_new, sites)
 stn_new <- intpoly(bu_poly,stn_new, sites)
 stn_new <- intpoly(ss_poly,stn_new, sites)
 stn_new <- intpoly(gsl_poly,stn_new, sites)
+stn_new <- intpoly(wmu_poly,stn_new, sites)
 
 rm(sites)
 
