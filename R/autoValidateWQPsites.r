@@ -20,15 +20,15 @@
 #' @export
 autoValidateWQPsites=function(sites_object,master_site_file,waterbody_type_file,correct_longitude=FALSE){
 
+#########
+###TESTING SETUP
+#library(sp)
+#library(sf)
+#sites_object=read.csv("C:/Users/jvander/Documents/R/irTools-test-16/01-raw-data/sites-2019-04-04.csv")
+#master_site_file="C:/Users/jvander/Documents/R/irTools-test-16/02-site-validation/IR_master_site_file-autoreview-for-testing.xlsx"
+#waterbody_type_file = "C:/Users/jvander/Documents/R/irTools-test-16/00-lookup-tables/waterbody_type_domain_table.csv"
+#correct_longitude=FALSE
 ########
-##TESTING SETUP
-library(sp)
-library(sf)
-sites_object=read.csv("C:/Users/jvander/Documents/R/irTools-test-16/01-raw-data/sites-2019-04-04.csv")
-master_site_file="C:/Users/jvander/Documents/R/irTools-test-16/02-site-validation/IR_master_site_file-autoreview-for-testing.xlsx"
-waterbody_type_file = "C:/Users/jvander/Documents/R/irTools-test-16/00-lookup-tables/waterbody_type_domain_table.csv"
-correct_longitude=FALSE
-#######
 
 # Polygon intersection function
   intpoly <- function(polygon, sites_object, sites){
