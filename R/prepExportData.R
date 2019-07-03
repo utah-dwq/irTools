@@ -24,9 +24,16 @@ intersecting_cols = all_data_cols[all_data_cols%in%abbrev_cols]
 
 non_intersecting_cols = abbrev_cols[!abbrev_cols%in%intersecting_cols]
 
-# Bring in results data
+# Obtain columns of interest from pre-split prepped data
+pre.split.cols_a = result$acc_data[,c(intersecting_cols)]
+pre.split.cols_r = result$rej_data[,c(intersecting_cols)]
+pre.split.cols_all = rbind.fill(pre.split.cols_a,pre.split.cols_r)
 
-# Label results by type
+# Bring in result data and merge together - add in other assessments, too??
+prep.dat = plyr::rbind.fill(result$lake_profiles,result$lakes_trophic, result$ecoli, result$toxics, result$agg_tds, result$conventionals)
+
+# Merge prep.dat with pre.split.cols
+                         
 
 # 
 
