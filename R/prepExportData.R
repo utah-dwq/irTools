@@ -32,8 +32,8 @@ pre.split.cols_all = rbind.fill(pre.split.cols_a,pre.split.cols_r)
 # Bring in result data and merge together - add in other assessments, too??
 prep.dat = plyr::rbind.fill(result$lake_profiles,result$lakes_trophic, result$ecoli, result$toxics, result$agg_tds, result$conventionals)
 
-# Merge prep.dat with pre.split.cols
-                         
+# Merge prep.dat with pre.split.cols - appears to expand dataset
+dat.all.cols = merge(pre.split.cols_all, prep.dat, all = TRUE)           
 
 # 
 
