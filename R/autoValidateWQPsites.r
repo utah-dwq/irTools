@@ -20,15 +20,15 @@
 #' @export
 autoValidateWQPsites=function(sites_object,master_site_file,waterbody_type_file,correct_longitude=FALSE){
 
+#########
+###TESTING SETUP
+#library(sp)
+#library(sf)
+#sites_object=read.csv("C:/Users/jvander/Documents/R/irTools-test-16/01-raw-data/sites-2019-04-04.csv")
+#master_site_file="P:/WQ/Integrated Report/IR_2020/2020-IR-assessments/spatial_files/IR_master_site_file-including-manual-edits.xlsx"
+#waterbody_type_file = "C:/Users/jvander/Documents/R/irTools-test-16/00-lookup-tables/waterbody_type_domain_table.csv"
+#correct_longitude=FALSE
 ########
-##TESTING SETUP
-library(sp)
-library(sf)
-sites_object=read.csv("C:/Users/jvander/Documents/R/irTools-test-16/01-raw-data/sites-2019-04-04.csv")
-master_site_file="P:/WQ/Integrated Report/IR_2020/2020-IR-assessments/spatial_files/IR_master_site_file-including-manual-edits.xlsx"
-waterbody_type_file = "C:/Users/jvander/Documents/R/irTools-test-16/00-lookup-tables/waterbody_type_domain_table.csv"
-correct_longitude=FALSE
-#######
 
 # Polygon intersection function
   intpoly <- function(polygon, sites_object, sites){
@@ -235,10 +235,7 @@ if(dim(master_site)[1]>0){
 	  stop("Dimensions of master_site have changed following master site reviews. Function/file check needed.")
 	}
 	#Send master sites that have only undergone AUTO validation or were flagged for AUTO review above to stn_new (i.e. re-auto review those sites to account for any changes in automated review process)
-	stn_new$IR_Lat=NA
-	stn_new$IR_Long=NA
-	stn_new$Note=NA
-	stn_new=rbind(stn_new,master_site[master_site$ValidationType=="AUTO",names(stn_new)])
+	stn_new=plyr::rbind.fill(stn_new,master_site[master_site$ValidationType=="AUTO",c(names(stn_new), 'IR_Lat', 'IR_Long', 'Note')])
 	dim(stn_new)
 	table(stn_new$HorizontalCoordinateReferenceSystemDatumName)
 	
@@ -432,7 +429,7 @@ table(stn_new$IR_FLAG)
 print("Performing 100m/duplicate MLID/duplicate lat-long checks...")
 
 #rbind new auto-validated sites back to master file and calculate distances on all non-rejected sites in master file (this way if polygons change, it is automatically accounted for in master file)
-spatial_check_data=rbind(master_site,stn_new)
+spatial_check_data=rbind(master_site[,names(stn_new)],stn_new)
 dim(spatial_check_data)
 
 #Splitting off rejected sites prior to other spatial analyses (including all previously accepted/merged sites allows calc of distances including previously reviewed sites.)
@@ -457,9 +454,12 @@ Long_Count=as.vector(table(accept_review$LongitudeMeasure))[as.factor(accept_rev
 accept_review$Long_Count=Long_Count
 
 #Identify non-rejected sites w/in 100 m (0.1 km)
-distmat=spDists(cbind(accept_review$LongitudeMeasure,accept_review$LatitudeMeasure),longlat=TRUE)
+accept_review$lat=ifelse(is.na(accept_review$IR_Lat), accept_review$LatitudeMeasure, accept_review$IR_Lat)
+accept_review$long=ifelse(is.na(accept_review$IR_Long), accept_review$LongitudeMeasure, accept_review$IR_Long)
+distmat=spDists(cbind(accept_review$long,accept_review$lat),longlat=TRUE)
 row.names(distmat)=accept_review$MonitoringLocationIdentifier
 colnames(distmat)=accept_review$MonitoringLocationIdentifier
+accept_review=accept_review[,!names(accept_review) %in% c('lat','long')]
 
 sum(table(accept_review$IR_FLAG))
 
