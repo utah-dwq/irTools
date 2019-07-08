@@ -8,7 +8,7 @@
 #' @export
 readUses=function(file, col_names = c('Name','1C','2A','2B','3A','3B','3C','3D','3E','4')){
 
-#file="F:\\stds-test-file.txt"
+#file="P:/WQ/Integrated Report/IR_2020/standards_UAC_R3172/ben_uses_05232019.txt"
 #col_names=c('Name','1C','2A','2B','3A','3B','3C','3D','3E','4')
 
 	name=col_names[1]
@@ -31,8 +31,10 @@ readUses=function(file, col_names = c('Name','1C','2A','2B','3A','3B','3C','3D',
 			data[n, name] = NA
 		}
 	}
-	
 	data=data[rowSums(is.na(data)) != ncol(data), ]
+	data=tidyr::unite(data, bu_class, sep=', ', 2:10)
+	data$bu_class=gsub('NA, ', '', data$bu_class)
+	data$bu_class=gsub(', NA', '', data$bu_class)
 	return(data)
 }
 
