@@ -100,7 +100,7 @@ assessHFDO <- function(data, min_n=10){
     return(out) 
   }
   
-  min_do_assessed <- plyr::ddply(.data=daily_values_min, c("IR_MLID","BEN_CLASS", "ASSESS_ID", "BeneficialUse","R3172ParameterName","NumericCriterion"), .fun=min.do)
+  min_do_assessed <- plyr::ddply(.data=daily_values_min, c("IR_MLID","BEN_CLASS", "ASSESS_ID", "BeneficialUse","R3172ParameterName"), .fun=min.do)
   
   # Moving window (7- and 30-day) assessments - determine which data fit adequate spacing requirement
   # EH NOTE: Have "MinContig" as column in standards table to specify spacing? Or could create input for it. Many options
@@ -164,7 +164,7 @@ assessHFDO <- function(data, min_n=10){
     
   }
  
-adeq_space_values <- plyr::ddply(.data=daily_values_mean, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit","AsmntAggFun"), .fun=adeq_space)
+adeq_space_values <- plyr::ddply(.data=daily_values_mean, c("IR_MLID", "BeneficialUse", "IR_Unit", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit","AsmntAggFun"), .fun=adeq_space)
 
 # Moving window assessments function - 7 and 30 day 
 movingwindow_assess <- function(x){
@@ -202,7 +202,7 @@ movingwindow_assess <- function(x){
 }
 # EH note: removed "group" as a variable. I do not think it's needed anymore.
 #thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit", "group","AsmntAggFun"), .fun=movingwindow_assess)
-thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit","AsmntAggFun"), .fun=movingwindow_assess)
+thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, c("IR_MLID", "BeneficialUse", "IR_Unit", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit","AsmntAggFun"), .fun=movingwindow_assess)
 
 #Extract 30 & 7 d means
 thirty_seven_means=tidyr::unnest(thirty_seven_assessed,.drop=FALSE)
