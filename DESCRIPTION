@@ -13,20 +13,23 @@ Imports:
 	dplyr,
 	glue,
 	DT,
-   	shinyBS,
+  shinyBS,
 	shinyWidgets,
 	readxl,
 	sf,
-    	shiny,
-    	shinyjs,
+	pushAttains
+  shiny,
+  shinyjs,
 	tidyr,
-    	jsonlite,
-    	openxlsx,
-    	leaflet,
-    	wqTools,
+  jsonlite,
+  openxlsx,
+  leaflet,
+  wqTools,
 	shinyjqui,
 	plotly,
 	shinycssloaders,
-	writexl
+	writexl,
+	rgdal,
+	mapedit
 Remotes:
 	utah-dwq/wqTools
