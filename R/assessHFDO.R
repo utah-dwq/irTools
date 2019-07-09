@@ -22,7 +22,7 @@
 # head(data)
 # min_n=10
 # HFDO_assessed=assessHFDO(data)
-# #save(file="F:\\Shiny\\hfdo\\data\\assessed_hfdo.Rdata", HFDO_assessed)
+#save(file="F:\\Shiny\\hfdo\\data\\assessed_hfdo.Rdata", HFDO_assessed)
 
 #JV note - There's a few more factors I'd like to carry through the process for later use/interpretation. But we'll have to do that when we have more "real" data.
 	#Units (IR & Criterion), site-specific info (descriptions, MLID, & time periods), maybe site/AU names (but these could also be stitched back later).
@@ -37,7 +37,8 @@ assessHFDO <- function(data, min_n=10){
   head(data)
  
   data$IR_Unit="mg/l" #Manually added for the time being - should be added in the data process in the future.
- 
+  data$NumericCriterion = as.numeric(data$NumericCriterion) #For some reason criteria were data type "character"
+  
   data=droplevels(data)
 
   agg_full_days <- function(x){ # Subsets data to complete days and calculates daily mins/means for complete days only
@@ -99,7 +100,7 @@ assessHFDO <- function(data, min_n=10){
     return(out) 
   }
   
-  min_do_assessed <- plyr::ddply(.data=daily_values_min, c("IR_MLID","BEN_CLASS", "ASSESS_ID", "BeneficialUse","R3172ParameterName","NumericCriterion"), .fun=min.do)
+  min_do_assessed <- plyr::ddply(.data=daily_values_min, c("IR_MLID","BEN_CLASS", "ASSESS_ID", "BeneficialUse","R3172ParameterName"), .fun=min.do)
   
   # Moving window (7- and 30-day) assessments - determine which data fit adequate spacing requirement
   # EH NOTE: Have "MinContig" as column in standards table to specify spacing? Or could create input for it. Many options
@@ -107,7 +108,9 @@ assessHFDO <- function(data, min_n=10){
   # <ADDED FOR THIS DRAFT>
   
   daily_values_mean <- daily_values[!daily_values$AsmntAggPeriod==1,]
-  daily_values_mean$MinContig = daily_values_mean$AsmntAggPeriod +  min_n - 1
+  
+  # EH: No longer need min contig here
+  # daily_values_mean$MinContig = daily_values_mean$AsmntAggPeriod +  min_n - 1
   
   # testing adeq_space
   # x = daily_values_mean[daily_values_mean$IR_MLID=="UTAHDWQ_WQX-4991900"&daily_values_mean$BeneficialUse=="3B"&daily_values_mean$MinContig==16,]
@@ -117,6 +120,7 @@ assessHFDO <- function(data, min_n=10){
     
     # Order by date
     x = x[order(x$ActivityStartDate),]
+    agg_period = x$AsmntAggPeriod[1]
     
     # ID groups of complete days
     x$diff = c(1,diff(x$ActivityStartDate)) # determine difference between value and the one before it--starts with number just greater than zero to ensure first record kept.
@@ -137,18 +141,21 @@ assessHFDO <- function(data, min_n=10){
     groups$max_dat = x$ActivityStartDate[groups$index_upper] 
 
     # Subset to ranges that fit the minimum consecutive days
-    groups_fit = groups[groups$rles.lengths>=x$MinContig[1],]
+    groups_fit = groups[groups$rles.lengths>=agg_period,]
+    
+    # Count number of rolling consecutive day averages
+    num_rolling = sum(groups_fit$rles.lengths-agg_period+1)
     
     # Obtain data from original dataset falling within that date range
     # EH NOTE: There might be a way to accurately do this with the grouping factor scheme, but I could not figure it out. I was getting incorrect groupings using the test code.
     # I do not believe this for loop (nestled so deeply within ddply subsets) will take up much computing power. Let me know what you think. 
 	# JV - I think this will be fine - it's lightning fast on the test data - it takes longer to compile the function than run the ddply lol.
-    if(dim(groups_fit)[1]>0){
+    if(num_rolling>min_n){
       dat_list = list()
       for(i in 1:dim(groups_fit)[1]){
         chunk <- x$ActivityStartDate>=groups_fit$min_dat[i]&x$ActivityStartDate<=groups_fit$max_dat[i]
         x1 = x[chunk==TRUE,]
-        x1$group = as.numeric(x1$ActivityStartDate[1])
+        #x1$group = as.numeric(x1$ActivityStartDate[1])
         dat_list[[i]] <- x1
       }
       out = do.call(rbind, dat_list)
@@ -157,14 +164,17 @@ assessHFDO <- function(data, min_n=10){
     
   }
  
-adeq_space_values <- plyr::ddply(.data=daily_values_mean, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit","AsmntAggFun"), .fun=adeq_space)
+adeq_space_values <- plyr::ddply(.data=daily_values_mean, c("IR_MLID", "BeneficialUse", "IR_Unit", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit","AsmntAggFun"), .fun=adeq_space)
 
 # Moving window assessments function - 7 and 30 day 
 movingwindow_assess <- function(x){
-  out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","NumericCriterion","AsmntAggPeriod")]
+  out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","AsmntAggPeriod")]
   out$Min_Date <- min(x$ActivityStartDate)
   out$Max_Date <- max(x$ActivityStartDate)
   datmean = c()
+  numcrit = c()
+  startdat = c()
+  exceed = c()
   days = x$AsmntAggPeriod[1]-1
   m = 1
   for(i in 1:dim(x)[1]){
@@ -172,24 +182,33 @@ movingwindow_assess <- function(x){
     dmax = x$ActivityStartDate[i]+days
     datrange <- x[x$ActivityStartDate>=dmin&x$ActivityStartDate<=dmax,]
     if(dim(datrange)[1]< x$AsmntAggPeriod[1]){next}
+    
+    # Keep track of each comparison 
+    numcrit[m] <- median(datrange$NumericCriterion) # Use median numeric criterion for each multi-day mean DO
     datmean[m] <- mean(datrange$IR_Value)
+    exceed[m] <- ifelse(mean(datrange$IR_Value)<median(datrange$NumericCriterion),1,0)
+    startdat[m] <- dmin
     m = m+1
   }
   out$means=list(datmean)
-  out$dates=list(seq(out$Min_Date[1], out$Min_Date[1]+length(datmean)-1,1))
+  out$dates=list(startdat)
+  out$exceed = list(exceed)
+  out$NumericCriterion = list(numcrit)
   tenpct = ceiling(length(datmean)*.1) 
   out$SampleCount = length(datmean)
-  out$ExcCount = length(datmean[datmean<out$NumericCriterion])
+  out$ExcCount = length(exceed[exceed==1])
   out$IR_Cat = ifelse(out$ExcCount>tenpct,"NS","FS")
   return(out)
 }
-
-thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit", "group","AsmntAggFun"), .fun=movingwindow_assess)
+# EH note: removed "group" as a variable. I do not think it's needed anymore.
+#thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit", "group","AsmntAggFun"), .fun=movingwindow_assess)
+thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, c("IR_MLID", "BeneficialUse", "IR_Unit", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit","AsmntAggFun"), .fun=movingwindow_assess)
 
 #Extract 30 & 7 d means
 thirty_seven_means=tidyr::unnest(thirty_seven_assessed,.drop=FALSE)
 names(thirty_seven_means)[names(thirty_seven_means)=="means"]="mean"
 names(thirty_seven_means)[names(thirty_seven_means)=="dates"]="start_date"
+thirty_seven_means$start_date = as.Date(thirty_seven_means$start_date, origin = "1970-01-01")
 
 #Drop extra cols
 thirty_seven_assessed=thirty_seven_assessed[,!names(thirty_seven_assessed) %in% c("means","dates","group")]
@@ -201,7 +220,7 @@ HFDO_assessed$allHFDO_asmnts = allHFDO_asmnts
 
 ### Roll up to site-use assessment ###
 allHFDO_asmnts.list <- list(allHFDO_asmnts)
-site_use_rollup = rollUp(allHFDO_asmnts.list,group_vars = c("IR_MLID","BeneficialUse","R3172ParameterName"),expand_uses=TRUE,print=TRUE)
+site_use_rollup = irTools::rollUp(allHFDO_asmnts.list,group_vars = c("IR_MLID","BeneficialUse","R3172ParameterName"),expand_uses=TRUE,print=TRUE)
 HFDO_assessed$site_use_rollup = site_use_rollup
 
 #Value added outputs (potentially for use in visualization tools):
