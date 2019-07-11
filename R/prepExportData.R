@@ -26,20 +26,23 @@ non_intersecting_cols = abbrev_cols[!abbrev_cols%in%intersecting_cols]
 
 # Obtain columns of interest from pre-split prepped data
 pre.split.cols_a = result$acc_data[,c(intersecting_cols)]
+pre.split.cols_a = pre.split.cols_a[!pre.split.cols_a$BeneficialUse=="CF",]
 pre.split.cols_r = result$rej_data[,c(intersecting_cols)]
-pre.split.cols_all = rbind.fill(pre.split.cols_a,pre.split.cols_r)
+pre.split.cols_all = plyr::rbind.fill(pre.split.cols_a,pre.split.cols_r)
 
 # Bring in result data and merge together - add in other assessments, too??
-prep.dat = plyr::rbind.fill(result$lake_profiles,result$lakes_trophic, result$ecoli, result$toxics, result$agg_tds, result$conventionals)
+result$conventionals$NumericCriterion = wqTools::facToNum(result$conventionals$NumericCriterion)
+aggreg.dat = plyr::rbind.fill(result$toxics, result$conventionals)
+names(aggreg.dat)[names(aggreg.dat)=="IR_Value"] = "IR_Value_Aggreg"
+names(aggreg.dat)[names(aggreg.dat)=="NumericCriterion"] = "NumericCriterion_Aggreg"
 
 # Merge prep.dat with pre.split.cols - appears to expand dataset
-dat.all.cols = merge(pre.split.cols_all, prep.dat, all = TRUE)           
+dat.all.cols = merge(pre.split.cols_a, aggreg.dat, all = TRUE)  
 
-# 
+write.csv(dat.all.cols, "P:\\WQ\\Integrated Report\\Automation_Development\\elise\\AU_export_testing\\testing.csv", row.names = FALSE)
+write.csv(pre.split.cols_a, "P:\\WQ\\Integrated Report\\Automation_Development\\elise\\AU_export_testing\\presplitcols.csv", row.names = FALSE)
 
-# Functions to draw from:
-# Data prep
-# HF DO
-# Ecoli
-# Lake profiles
+
+intersecting_data = dat.all.cols[dat.all.cols$data_flag==1&dat.all.cols$predat_flag==1,]
+
 
