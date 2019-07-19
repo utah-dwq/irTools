@@ -1,8 +1,5 @@
 # Download export workbook from Shinyapp
 
-# TESTING
-AU_list = "UT-L-14060004-006_00"
-
 exportData <- function(AU_list, compiled_data){
   
   # Create styles for export headers
