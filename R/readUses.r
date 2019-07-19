@@ -1,9 +1,8 @@
 #' Read beneficial uses table from R317-2
 #'
 #' Note - This is not a fully self-sufficient function. Some substantial manual editing was performed on the file before reading see:
-#' P:\WQ\Integrated Report\IR_2020\standards_UAC_R3172\ben_uses_05232019.txt
-#' @import readr read_fwf
-#' @import readr fwf_empty
+#' @importFrom readr read_fwf
+#' @importFrom readr fwf_empty
 
 #' @export
 readUses=function(file, col_names = c('Name','1C','2A','2B','3A','3B','3C','3D','3E','4')){

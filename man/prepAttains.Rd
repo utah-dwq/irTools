@@ -9,7 +9,7 @@ prepAttains(current_assessment, trans_wb, pull_attains = TRUE,
   filesave = TRUE)
 }
 \arguments{
-\item{current_assessment}{A list of assessment output objects to be rolled up to a different spatial resolution.}
+\item{current_assessment}{A list of assessment output objects to be rolled up to the AU-use and (for cat 5 only) AU-use-parameter resolutions.}
 
 \item{trans_wb}{Excel workbook containing translation tables connecting irTools outputs to ATTAINS inputs. Currently resides in lookup tables repo.}
 
