@@ -20,6 +20,9 @@ source('helpers/initialDataProc.R')
 source('helpers/asmntMap.R')
 source('helpers/figuresMod.R')
 
+# IR Data
+load('compiled_data_test.R')
+
 # Load data & criteria
 load(system.file("extdata", "prepped_merged_data.Rdata", package = "irTools"))
 
@@ -61,8 +64,8 @@ ui <-fluidPage(
 		bsCollapsePanel(list(icon('plus-circle'), icon('chart-bar'), "Figures"),
 			figuresModUI('figures')
 		),
-		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "Data table"),
-			fluidRow(downloadButton('exp_dt', label = "Export data table", icon='download', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')),
+		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "View data and export"),
+			fluidRow(downloadButton('exp_dt', label = "Download data in Excel workbook", icon='download', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')),
 			br(),
 			fluidRow(div(DT::DTOutput("dt"), style = list("font-size:65%")))
 		),
