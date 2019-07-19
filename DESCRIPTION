@@ -17,7 +17,6 @@ Imports:
 	shinyWidgets,
 	readxl,
 	sf,
-	pushAttains
   shiny,
   shinyjs,
 	tidyr,
