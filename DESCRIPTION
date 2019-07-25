@@ -25,6 +25,7 @@ Imports:
     wqTools,
 	shinyjqui,
 	plotly,
+	plyr,
 	shinycssloaders,
 	writexl,
 	rgdal,

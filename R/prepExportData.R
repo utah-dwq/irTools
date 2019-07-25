@@ -1,20 +1,34 @@
+#' Create dataset for secondary reviewer export from assessment dashboard
+#'
+#' Pulls columns of interest from prepped data and calculates basic exceedance summaries for site-use-parameter assessments.
+#' @param prepped_data A list of objects produced by dataPrep function, including toxics, conventionals, and ecoli dataframes.
+#' @return A list composed of three dataframes: site-date-use-param records linked with aggregated daily values (if applicable), calculations, and exceedances, site-use-param summaries including sample and exceedance counts, and prepped E.coli data.
+#' @import plyr
+#' @import openxlsx
+#' @export
+
+
 # composeExport
 
 ### TESTING ###
 # See "P:\WQ\Integrated Report\Automation_Development\elise\AU_export_testing\au_export_testing_steps.R" for steps taken up to dataPrep
-load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\AU_export_testing\\au_export_resultdata.RData")
-prepped_data = result
+# load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\AU_export_testing\\au_export_resultdata.RData")
+# prepped_data = result
 
 composeExport <- function(prepped_data){
 
 compiled_data = list()
 
 # Watershed management units
-wmus = openxlsx::read.xlsx("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\AU_export_testing\\au_wmu.xlsx")
-wmus = wmus[,c("ASSESS_ID","Mgmt_Unit")]
+# wmus = openxlsx::read.xlsx("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\AU_export_testing\\au_wmu.xlsx")
+# wmus = wmus[,c("ASSESS_ID","Mgmt_Unit")]
+# save(wmus, file = "C:\\Users\\ehinman\\Documents\\GitHub\\irTools\\inst\\extdata\\wmus_aus.RData")
+
+load(system.file("extdata", "wmus_aus.Rdata", package = "irTools"))
 
 # Export translation workbook
-exp_wb = openxlsx::loadWorkbook("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\AU_export_testing\\IR_export_translations.xlsx")
+exp_file=system.file("extdata", "IR_export_translations.xlsx", package = "irTools")
+exp_wb = openxlsx::loadWorkbook(exp_file)
 
 # Read in columns from translation workbook
 columns = openxlsx::readWorkbook(exp_wb, sheet = 1)
