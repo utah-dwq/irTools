@@ -19,14 +19,14 @@ composeExport <- function(prepped_data){
 
 compiled_data = list()
 
-# Watershed management units
+### Load watershed management units
 # wmus = openxlsx::read.xlsx("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\AU_export_testing\\au_wmu.xlsx")
 # wmus = wmus[,c("ASSESS_ID","Mgmt_Unit")]
 # save(wmus, file = "C:\\Users\\ehinman\\Documents\\GitHub\\irTools\\inst\\extdata\\wmus_aus.RData")
 
 load(system.file("extdata", "wmus_aus.Rdata", package = "irTools"))
 
-# Export translation workbook
+### Upload export translation workbook
 exp_file=system.file("extdata", "IR_export_translations.xlsx", package = "irTools")
 exp_wb = openxlsx::loadWorkbook(exp_file)
 
@@ -35,19 +35,16 @@ columns = openxlsx::readWorkbook(exp_wb, sheet = 1)
 abbrev_cols = columns$COL_KEEP[columns$SHEET=="DA"]
 summ_cols = columns$COL_KEEP[columns$SHEET=="DS"]
 
-#### STEP 1: ACCEPTED DATA #####
-
-# dataPrep object with all columns, remove CF rows and add WMU
+# With all accepted data, remove CF rows and add WMU
 dat_accepted = prepped_data$acc_data[!prepped_data$acc_data$BeneficialUse=="CF",]
 
 dat_accepted = merge(dat_accepted, wmus, all.x = TRUE)
 
 dim(dat_accepted)
 
-#### LAKE PROFILES ###
-lake_profs = dat_accepted[!is.na(dat_accepted$DataLoggerLine) & dat_accepted$BeneficialUse %in% c("3A","3B","3C","3D","3E"),] # in test, is 400 records
-# dim(lake_profs)
-# 
+# Isolate lake profiles from accepted data
+lake_profs = dat_accepted[!is.na(dat_accepted$DataLoggerLine) & dat_accepted$BeneficialUse %in% c("3A","3B","3C","3D","3E"),] # EH: in test, 400 records fit this bill, but see below when remove logger line records.
+
 # profs_assessed = irTools::assessLakeProfiles(lake_profs)
 # 
 # # Profile data tab
@@ -62,8 +59,7 @@ lake_profs = dat_accepted[!is.na(dat_accepted$DataLoggerLine) & dat_accepted$Ben
 # Summary data for lake profiles *** missing criteria, dates, exceedance count
 # prof_summ_data = profs_assessed$profile_asmnts_mlid_param
 
-### TROPHIC DATA ###
-# Trophic data tab - needed? No assessment yet.
+# Isolate trophic data
 lake_troph = dat_accepted[dat_accepted$AU_Type=="Reservoir/Lake" & dat_accepted$R3172ParameterName %in% c("Chlorophyll a", "Total Phosphorus as P","Depth, Secchi disk depth"),]
 
 # columns of interest
@@ -72,7 +68,7 @@ lake_troph = dat_accepted[dat_accepted$AU_Type=="Reservoir/Lake" & dat_accepted$
 #openxlsx::addWorksheet(reviewer_export, sheetName = "Lake Trophic Data")
 #openxlsx::writeData(reviewer_export, sheet = "Lake Trophic Data", trophic_data_asmnt)
 
-### ECOLI
+# Isolate ecoli data
 ecoli = dat_accepted[dat_accepted$R3172ParameterName=="E. coli",]
 
 if(length(prepped_data$ecoli$OrganizationIdentifier)>0){
@@ -80,7 +76,7 @@ if(length(prepped_data$ecoli$OrganizationIdentifier)>0){
   ecoli_asmnt = irTools::assessEColi(prepped_data$ecoli) 
   
   # Merge to aggregated daily data
-  ecoli_data_asmnt = merge(ecoli, ecoli_asmnt$assessed_data, all.x = TRUE)
+  ecoli_data_asmnt = merge(ecoli, ecoli_asmnt$assessed_data, all.x = TRUE) # EH: could add other aspects of ecoli assessments, too.
   
   # Determine exceedances
   ecoli_data_asmnt$Exceeds = ifelse(ecoli_data_asmnt$IR_Value>ecoli_data_asmnt$NumericCriterion, 1, 0)
@@ -88,13 +84,13 @@ if(length(prepped_data$ecoli$OrganizationIdentifier)>0){
   # columns of interest
   ecoli_data_asmnt = ecoli_data_asmnt[,names(ecoli_data_asmnt)%in%abbrev_cols]
   
-  compiled_data$ecoli_data_asmnt = ecoli_data_asmnt
+  compiled_data$ecoli_data_asmnt = ecoli_data_asmnt 
   
 }else{warning("No E.coli data detected in prepped dataset.")}
 
-### TOXICS AND CONVENTIONALS
+### Isolate toxics and conventionals from other data in accepted dataset
 # Remove lake profile data from accepted dataset
-dat_accepted1 = dat_accepted[is.na(dat_accepted$DataLoggerLine),] # removes 1000 records (likely bc associated with uses that are not part of the profiles assessment)
+dat_accepted1 = dat_accepted[is.na(dat_accepted$DataLoggerLine),] # EH: removes 1000 records (likely bc associated with uses that are not part of the profiles assessment)
 dim(dat_accepted1)
 
 # Remove lake trophic data from accepted dataset
