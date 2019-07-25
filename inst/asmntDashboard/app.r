@@ -21,6 +21,7 @@ source('helpers/asmntMap.R')
 source('helpers/figuresMod.R')
 
 # IR Data
+# EDH NOTE: need to discuss how to store data from prepExportData in app. Currently way different from sample assessments.
 load('compiled_data_test.RData')
 
 # Load data & criteria
