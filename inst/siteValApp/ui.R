@@ -27,11 +27,11 @@ bsCollapse(multiple=T, open="Import sites file",
 	),
 	bsCollapsePanel(list(icon('map-marked-alt'),"Review map"),
 		fluidRow(
-			column(1),
+			column(2),
 			column(3, shinyWidgets::pickerInput("site_types","Site types to map:", choices=site_type_choices, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))),
 			column(3, uiOutput("review_reasons")),
 			column(3, uiOutput('ml_types')),
-			column(2, shinyWidgets::materialSwitch(inputId = "auto_zoom", label="Auto-zoom on", value = TRUE, right=T, status='primary'))
+			column(1, shinyWidgets::materialSwitch(inputId = "auto_zoom", label="Auto-zoom on", value = TRUE, right=T, status='primary'))
 		),
 
 		# Map

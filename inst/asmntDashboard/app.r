@@ -438,6 +438,7 @@ observeEvent(input$split_save, {
 			splits$Comment=input$split_comment
 			splits$Reviewer=input$rev_name
 			splits$geometry=st_as_text(splits$geometry)
+			splits$ReviewDate=Sys.Date()
 			reactive_objects$au_splits=plyr::rbind.fill(reactive_objects$au_splits, splits)
 			au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
 			view=sf::st_bbox(au_asmnt_poly)
@@ -643,6 +644,7 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 			names(reviews)=c('ASSESS_ID','R3172ParameterName')
 			reviews$Reviewer=input$rev_name
 			reviews$Comment=input$rev_comment
+			reviews$ReviewDate=Sys.Date()
 			reactive_objects$au_reviews=rbind(reactive_objects$au_reviews, reviews)
 			print(reactive_objects$au_reviews)
 			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
@@ -672,6 +674,7 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 			names(reviews)=c('IR_MLID', 'IR_MLNAME', 'ASSESS_ID','ML_Type', 'R3172ParameterName')
 			reviews$Reviewer=input$rev_name
 			reviews$Comment=input$rev_comment					
+			reviews$ReviewDate=Sys.Date()
 			if(input$flag_scope=='Site(s)'){
 				reactive_objects$site_reviews=rbind(reactive_objects$site_reviews, reviews)
 				print(reactive_objects$site_reviews)
@@ -698,6 +701,7 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 			}
 			sw_reviews$Reviewer=input$rev_name
 			sw_reviews$Comment=input$rev_comment		
+			sw_reviews$ReviewDate=Sys.Date()
 			reactive_objects$sw_reviews=rbind(reactive_objects$sw_reviews,sw_reviews)
 			print(reactive_objects$sw_reviews)
 			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))

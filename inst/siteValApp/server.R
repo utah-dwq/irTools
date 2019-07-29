@@ -95,7 +95,7 @@ observe({
 			reasons=plyr::rbind.fill(reasons, accepted)
 			
 			sites=sf::st_as_sf(sites, coords=c("long","lat"), crs=4326, remove=F)
-		
+			sites$ReviewDate=as.Date(sites$ReviewDate, format='%Y-%m-%d')
 			reactive_objects$reasons=reasons
 			reactive_objects$selected_sites=vector()
 			reactive_objects$sites=sites
@@ -315,12 +315,13 @@ observeEvent(input$accept_ok, {
 		IR_Long[MonitoringLocationIdentifier %in% accept_mlids] = LongitudeMeasure[MonitoringLocationIdentifier %in% accept_mlids]
 		color[MonitoringLocationIdentifier %in% accept_mlids]='green'
 		ReviewComment[MonitoringLocationIdentifier %in% accept_mlids]=input$accept_comment
+		ReviewDate[MonitoringLocationIdentifier %in% accept_mlids]=Sys.Date()
 		ValidationType[MonitoringLocationIdentifier %in% accept_mlids]="MANUAL"
 })
 
 	reactive_objects$reasons=within(reactive_objects$reasons,{
 		Reason[MonitoringLocationIdentifier %in% accept_mlids] = 'Accept'
-		FLAG[MonitoringLocationIdentifier %in% accept_mlids]="AVVEPT"
+		FLAG[MonitoringLocationIdentifier %in% accept_mlids]="ACCEPT"
 	})
 
 	### Re-build reactive_objects$map_sites
@@ -351,7 +352,27 @@ observeEvent(input$reject, {
 			)
 		}),
 		br(),
-		selectInput("reject_reason", label="Reason for rejecting (applied to all selected sites)", choices=reactive_objects$reject_reasons[order(reactive_objects$reject_reasons)]),
+		selectInput("reject_reason", label="Reason for rejecting (applied to all selected sites)", choices=c('',reactive_objects$reject_reasons[order(reactive_objects$reject_reasons)]), selected=''),
+		textInput('reject_comment', 'Additional comments (optional)'),
+		actionButton('reject_ok', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('minus-circle')),
+		actionButton('reject_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
+		))
+	}
+})
+observeEvent(input$rejres_ok, {
+	if(length(reactive_objects$table_selected_mlids)==0){
+		showModal(shinyjqui::draggableModalDialog(title="Error.",size="l",easyClose=T,
+			"Select site(s) in map & table to make a review.")
+	)}else{
+		showModal(shinyjqui::draggableModalDialog(title="OK to REJECT site(s)?",size="l", footer=NULL,
+		DT::renderDT({
+			DT::datatable(reactive_objects$table_selected_table,
+				selection='none', rownames=FALSE, filter="none",
+				options = list(scrollY = TRUE, paging = FALSE, scrollX=TRUE, dom="t")
+			)
+		}),
+		br(),
+		selectInput("reject_reason", label="Reason for rejecting (applied to all selected sites)", choices=c('',reactive_objects$reject_reasons[order(reactive_objects$reject_reasons)]), selected=''),
 		textInput('reject_comment', 'Additional comments (optional)'),
 		actionButton('reject_ok', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('minus-circle')),
 		actionButton('reject_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
@@ -363,33 +384,38 @@ observeEvent(input$reject, {
 ### Update attributes
 observeEvent(input$reject_cancel, {removeModal()})
 observeEvent(input$reject_ok, {
-	reject_mlids=reactive_objects$table_selected_mlids
-	reactive_objects$sites=within(reactive_objects$sites, {
-		IR_FLAG[MonitoringLocationIdentifier %in% reject_mlids] = "REJECT"
-		IR_MLID[MonitoringLocationIdentifier %in% reject_mlids] = "REJECT"
-		IR_MLNAME[MonitoringLocationIdentifier %in% reject_mlids] = "REJECT"
-		IR_COMMENT[MonitoringLocationIdentifier %in% reject_mlids] = paste("Manually rejected,",paste(input$reject_reason))
-		IR_FLAG_REASONS[MonitoringLocationIdentifier %in% reject_mlids]=paste(input$reject_reason)
-		ReviewComment[MonitoringLocationIdentifier %in% reject_mlids]=input$reject_comment
-		color[MonitoringLocationIdentifier %in% reject_mlids]='red'
-		ValidationType[MonitoringLocationIdentifier %in% reject_mlids]="MANUAL"
-	})
-	
-	reactive_objects$reasons=within(reactive_objects$reasons,{
-		Reason[MonitoringLocationIdentifier %in% reject_mlids] = paste(input$reject_reason)	
-		FLAG[MonitoringLocationIdentifier %in% reject_mlids]="REJECT"
-	})
-	
-	### Re-build reactive_objects$map_sites
-	reason_mlids=unique(reactive_objects$reasons[reactive_objects$reasons$Reason %in% input$review_reasons,'MonitoringLocationIdentifier'])
-	reactive_objects$map_sites=reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$site_types & reactive_objects$sites$MonitoringLocationIdentifier %in% reason_mlids,]
-	
-	### Clear table selection & update map highlights (via reactive_objects$selected_sites)
-	reactive_objects$selected_sites=reactive_objects$selected_sites[!reactive_objects$selected_sites %in% reactive_objects$table_selected_mlids]
-	
-	### Clear modal
-	removeModal()
-
+	if(input$reject_reason==""){
+		showModal(shinyjqui::draggableModalDialog(title="Error.",size="l",easyClose=F,'Select a rejection reason to proceed.', br(),
+			actionButton('rejres_ok', 'OK', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('check-circle'))))
+	}else{
+		reject_mlids=reactive_objects$table_selected_mlids
+		reactive_objects$sites=within(reactive_objects$sites, {
+			IR_FLAG[MonitoringLocationIdentifier %in% reject_mlids] = "REJECT"
+			IR_MLID[MonitoringLocationIdentifier %in% reject_mlids] = "REJECT"
+			IR_MLNAME[MonitoringLocationIdentifier %in% reject_mlids] = "REJECT"
+			IR_COMMENT[MonitoringLocationIdentifier %in% reject_mlids] = paste("Manually rejected,",paste(input$reject_reason))
+			IR_FLAG_REASONS[MonitoringLocationIdentifier %in% reject_mlids]=paste(input$reject_reason)
+			ReviewComment[MonitoringLocationIdentifier %in% reject_mlids]=input$reject_comment
+			ReviewDate[MonitoringLocationIdentifier %in% reject_mlids]=Sys.Date()
+			color[MonitoringLocationIdentifier %in% reject_mlids]='red'
+			ValidationType[MonitoringLocationIdentifier %in% reject_mlids]="MANUAL"
+		})
+		
+		reactive_objects$reasons=within(reactive_objects$reasons,{
+			Reason[MonitoringLocationIdentifier %in% reject_mlids] = paste(input$reject_reason)	
+			FLAG[MonitoringLocationIdentifier %in% reject_mlids]="REJECT"
+		})
+		
+		### Re-build reactive_objects$map_sites
+		reason_mlids=unique(reactive_objects$reasons[reactive_objects$reasons$Reason %in% input$review_reasons,'MonitoringLocationIdentifier'])
+		reactive_objects$map_sites=reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$site_types & reactive_objects$sites$MonitoringLocationIdentifier %in% reason_mlids,]
+		
+		### Clear table selection & update map highlights (via reactive_objects$selected_sites)
+		reactive_objects$selected_sites=reactive_objects$selected_sites[!reactive_objects$selected_sites %in% reactive_objects$table_selected_mlids]
+		
+		### Clear modal
+		removeModal()
+	}
 })
 
 
@@ -443,6 +469,7 @@ observeEvent(input$merge_ok, {
 		long[MonitoringLocationIdentifier %in% merge_mlids]  = merged_lat_long$LongitudeMeasure
 		IR_FLAG_REASONS[MonitoringLocationIdentifier %in% merge_mlids]="Merge"
 		ReviewComment[MonitoringLocationIdentifier %in% merge_mlids]=input$merge_comment
+		ReviewDate[MonitoringLocationIdentifier %in% merge_mlids]=Sys.Date()
 		color[MonitoringLocationIdentifier %in% merge_mlids]='green'
 		ValidationType[MonitoringLocationIdentifier %in% merge_mlids]="MANUAL"
 	})
@@ -495,6 +522,7 @@ observeEvent(input$flag_ok, {
 		IR_FLAG[MonitoringLocationIdentifier %in% flag_mlids] = "REVIEW"
 		IR_COMMENT[MonitoringLocationIdentifier %in% flag_mlids]="Flagged for further review"
 		ReviewComment[MonitoringLocationIdentifier %in% flag_mlids]=input$flag_further_comment
+		ReviewDate[MonitoringLocationIdentifier %in% flag_mlids]=Sys.Date()
 		color[MonitoringLocationIdentifier %in% flag_mlids]='purple'
 	})
 	
