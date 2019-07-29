@@ -11,20 +11,20 @@ server <- function(input, output, session){
 library(leaflet)
 library(wqTools)
 
-permits=read.csv(file='data/ut_facilities-04-09-2019.csv')
+permits=read.csv(system.file("extdata", "ut_facilities.csv", package = "irTools"))
 
 
 # empty reactive objects list
 reactive_objects=reactiveValues()
 
 observeEvent(input$example_input, {
-	showModal(urlModal('https://github.com/utah-dwq/irTools/blob/master/inst/siteValApp/data/IR_master_site_file-autoreview.xlsx', title = "Example data", subtitle = "An example data input for this application can be downloaded at this link."))
+	showModal(urlModal('https://github.com/utah-dwq/irTools/blob/master/inst/extdata/IR_master_site_file-autoreview.xlsx', title = "Example data", subtitle = "An example data input for this application can be downloaded at this link."))
 })
 
 
 # Demo data input
 observeEvent(input$demo_input, {
-	sites_file=system.file("extdata", "IR_master_site_file-autoreview.xlsx", package = "irTools")	
+	sites_file=system.file("extdata", "IR_master_site_file-autoreview.xlsx", package = "irTools")
 		sites=as.data.frame(readxl::read_excel(sites_file, 'sites'))
 		suppressWarnings({sites$IR_Lat=as.numeric(sites$IR_Lat)
 		sites$IR_Long=as.numeric(sites$IR_Long)
@@ -35,7 +35,7 @@ observeEvent(input$demo_input, {
 			color=NA
 			color[IR_FLAG=="REJECT"]="red"
 			color[IR_FLAG=="ACCEPT"]="green"
-			color[IR_FLAG=="REVIEW"]="orange"
+			color[IR_FLAG=="REVIEW"]="purple"
 		})
 		reactive_objects$sites_input=sites
 		reasons=as.data.frame(readxl::read_excel(sites_file, 'reasons'))
@@ -61,7 +61,7 @@ observeEvent(input$import_sites,{
 			color=NA
 			color[IR_FLAG=="REJECT"]="red"
 			color[IR_FLAG=="ACCEPT"]="green"
-			color[IR_FLAG=="REVIEW"]="orange"
+			color[IR_FLAG=="REVIEW"]="purple"
 		})
 		#sitestest<<-sites
 		reactive_objects$sites_input=sites
@@ -157,7 +157,7 @@ observe({
 # Map output
 session$onFlushed(once = T, function() {
 	output$map=renderLeaflet({
-		wqTools::buildMap(search="aus") %>%
+		wqTools::buildMap(search="") %>%
 		addMapPane("permits", zIndex = 417) %>%
 		addMapPane("highlight", zIndex = 418) %>%
 		addMapPane("labels", zIndex = 419) %>%
@@ -167,11 +167,11 @@ session$onFlushed(once = T, function() {
 				"<br> Permit name: ", permits$locationName,
 				"<br> Permit type: ", permits$locationType)
 		) %>%
-		addPolygons(data=wqTools::ut_poly,group="State boundary",smoothFactor=4,fillOpacity = 0.1,weight=3,color="purple", options = pathOptions(pane = "underlay_polygons"))  %>%
-		hideGroup('Permits') %>% hideGroup('State boundary') %>%	
+		#addPolygons(data=wqTools::ut_poly,group="State boundary",smoothFactor=4,fillOpacity = 0.1,weight=3,color="purple", options = pathOptions(pane = "underlay_polygons"))  %>%
+		hideGroup('Permits') %>%	
 		addLayersControl(
 			position ="topleft",
-			baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites","Site labels", "Permits", "Assessment units","Beneficial uses", "Site-specific standards", "State boundary"),
+			baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites","Site labels", "Permits", "Assessment units","Beneficial uses", "Site-specific standards", "Watershed management units", "UT boundary"),
 			options = layersControlOptions(collapsed = FALSE)
 		)
 	})
@@ -181,18 +181,35 @@ map_proxy=leafletProxy("map")
 
 # Add sites via proxy on site_types change
 observeEvent(reactive_objects$map_sites, ignoreNULL = F, ignoreInit=T, {
+	if(dim(reactive_objects$map_sites)[1]>0){
+		mlocs=unique(reactive_objects$map_sites[,c('MonitoringLocationIdentifier','MonitoringLocationName')])
 		map_proxy %>% clearGroup(group='Sites') %>% clearGroup(group='Site labels') %>% 
-		addCircleMarkers(data=reactive_objects$map_sites, layerId = ~MonitoringLocationIdentifier, group="Sites", color=~color, options = pathOptions(pane = "markers"))
+		addCircleMarkers(data=reactive_objects$map_sites, layerId=~MonitoringLocationIdentifier, group="Sites", color=~color, options = pathOptions(pane = "markers")) %>%
+		addCircles(data=mlocs, group="locationID", stroke=F, fill=F, label=~MonitoringLocationIdentifier,
+			popup = paste0(
+				mlocs$MonitoringLocationIdentifier,
+				"<br>", mlocs$MonitoringLocationName)) %>%
+		addCircles(data=mlocs, group="locationName", stroke=F, fill=F, label=~MonitoringLocationName,
+			popup = paste0(
+				mlocs$MonitoringLocationIdentifier,
+				"<br>", mlocs$MonitoringLocationName)) %>%
+		leaflet.extras::removeSearchFeatures() %>%
+		leaflet.extras::addSearchFeatures(
+					targetGroups = c('au_ids','au_names', 'locationID', 'locationName'),
+					options = leaflet.extras::searchFeaturesOptions(
+						zoom=12, openPopup = TRUE, firstTipSubmit = TRUE,
+						autoCollapse = TRUE, hideMarkerOnCollapse = TRUE ))
 		
-		if(dim(reactive_objects$map_sites)[1]>0 & input$auto_zoom){
-			map_proxy %>% fitBounds(min(reactive_objects$map_sites$long)*0.99, min(reactive_objects$map_sites$lat)*0.99, max(reactive_objects$map_sites$long)*1.01, max(reactive_objects$map_sites$lat)*1.01)
-		}
-		
-		if(!is.null(input$site_types) & !is.null(input$review_reasons) & dim(reactive_objects$map_sites)[1]>0){
-			map_proxy %>% addLabelOnlyMarkers(data=reactive_objects$map_sites, group="Site labels", lat=~lat, lng=~long, options = pathOptions(pane = "labels"),
-				label=~MonitoringLocationIdentifier,labelOptions = labelOptions(noHide = T, textsize = "15px"),
-				clusterOptions=markerClusterOptions(spiderfyOnMaxZoom=T))
-		}
+		#if(dim(reactive_objects$map_sites)[1]>0 & input$auto_zoom){
+		#	map_proxy %>% fitBounds(min(reactive_objects$map_sites$long)*0.99, min(reactive_objects$map_sites$lat)*0.99, max(reactive_objects$map_sites$long)*1.01, max(reactive_objects$map_sites$lat)*1.01)
+		#}
+		#
+		#if(!is.null(input$site_types) & !is.null(input$review_reasons) & dim(reactive_objects$map_sites)[1]>0){
+		#	map_proxy %>% addLabelOnlyMarkers(data=reactive_objects$map_sites, group="Site labels", lat=~lat, lng=~long, options = pathOptions(pane = "labels"),
+		#		label=~MonitoringLocationIdentifier,labelOptions = labelOptions(noHide = T, textsize = "15px"),
+		#		clusterOptions=markerClusterOptions(spiderfyOnMaxZoom=T))
+		#}
+	}	
 })
 
 
@@ -479,7 +496,7 @@ observeEvent(input$flag_ok, {
 		IR_FLAG[MonitoringLocationIdentifier %in% flag_mlids] = "REVIEW"
 		IR_COMMENT[MonitoringLocationIdentifier %in% flag_mlids]="Flagged for further review"
 		ReviewComment[MonitoringLocationIdentifier %in% flag_mlids]=input$flag_further_comment
-		color[MonitoringLocationIdentifier %in% flag_mlids]='orange'
+		color[MonitoringLocationIdentifier %in% flag_mlids]='purple'
 	})
 	
 	reactive_objects$reasons=within(reactive_objects$reasons,{

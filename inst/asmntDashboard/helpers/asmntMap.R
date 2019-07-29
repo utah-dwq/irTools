@@ -8,12 +8,30 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 	na_sites$AssessCat=NA
 	na_sites$col='grey'
 	
-	#site_asmnt=plyr::rbind.fill(site_asmnt,na_sites)
+	rejected_sites2=rejected_sites
+	names(rejected_sites2)[names(rejected_sites2)=='MonitoringLocationIdentifier'] = 'IR_MLID'
+	names(rejected_sites2)[names(rejected_sites2)=='MonitoringLocationName'] = 'IR_MLNAME'
+	names(rejected_sites2)[names(rejected_sites2)=='LatitudeMeasure'] = 'IR_Lat'
+	names(rejected_sites2)[names(rejected_sites2)=='LongitudeMeasure'] = 'IR_Long'
 	
+	site_asmnt<<-site_asmnt
+	na_sites<<-na_sites
+	rejected_sites2<<-rejected_sites2
+	
+	mlocs=plyr::rbind.fill(site_asmnt, na_sites, rejected_sites2)
+	mlocs=unique(mlocs[,c('IR_MLID','IR_MLNAME','IR_Lat', 'IR_Long')])
 	assessment_map <- 
-		buildMap(plot_polys = F, ...) %>%
+		buildMap(plot_polys = F, search='', ...) %>%
 			addMapPane("highlight", zIndex = 413) %>%
 			addMapPane("rejected_sites", zIndex = 414) %>%
+			addCircles(data=mlocs, lat=~IR_Lat, lng=~IR_Long, group="locationID", stroke=F, fill=F, label=~IR_MLID, 
+				popup = paste0(
+					mlocs$IR_MLID,
+					"<br>", mlocs$IR_MLNAME)) %>%
+			addCircles(data=mlocs, lat=~IR_Lat, lng=~IR_Long, group="locationName", stroke=F, fill=F, label=~IR_MLNAME, 
+				popup = paste0(
+					mlocs$IR_MLID,
+					"<br>", mlocs$IR_MLNAME)) %>%
 			leaflet::addCircleMarkers(data=site_asmnt, lat=~IR_Lat, lng=~IR_Long, group="Assessed sites",
 				color = ~col, opacity=0.8, layerId=~IR_MLID, options = pathOptions(pane = "markers"),
 				popup = paste0(
@@ -73,7 +91,12 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 			leaflet::addLegend(position = 'topright',
 						colors = c('green','yellow','orange','red','grey'), 
 						labels = c('Fully supporting', 'Insufficient data, no exceedances', 'Insufficient data, exceedances', 'Not supporting', 'Not assessed')) %>% 
-			fitBounds(-114.0187, 37.02012, -109.0555, 41.99088)
+			fitBounds(-114.0187, 37.02012, -109.0555, 41.99088) %>%
+			leaflet.extras::removeSearchFeatures() %>% leaflet.extras::addSearchFeatures(
+				targetGroups = c('au_ids','au_names', 'locationID', 'locationName'),
+				options = leaflet.extras::searchFeaturesOptions(
+					zoom=12, openPopup = TRUE, firstTipSubmit = TRUE,
+					autoCollapse = TRUE, hideMarkerOnCollapse = TRUE ))
 	
 return(assessment_map)	
 	
