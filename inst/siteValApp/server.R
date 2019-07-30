@@ -106,6 +106,14 @@ observe({
 	reactive_objects$reject_reasons=unique(reactive_objects$reasons$Reason[reactive_objects$reasons$FLAG=="REJECT"])
 })
 
+observeEvent(reactive_objects$sites, {
+	merged_sites=subset(reactive_objects$sites, IR_COMMENT=='Two or more sites merged')
+	if(dim(merged_sites)[1]>0){
+		merged_sites=sf::st_drop_geometry(merged_sites)
+		reactive_objects$merged_sites=sf::st_as_sf(merged_sites, coords=c("LongitudeMeasure","LatitudeMeasure"), crs=4326, remove=F)
+	}else{reactive_objects$merged_sites=subset(reactive_objects$sites, IR_COMMENT=='Two or more sites merged')}
+	print(dim(reactive_objects$merged_sites))
+})
 
 # Reasons checkbox
 observe({
@@ -160,7 +168,8 @@ session$onFlushed(once = T, function() {
 		wqTools::buildMap(search="") %>%
 		addMapPane("permits", zIndex = 417) %>%
 		addMapPane("highlight", zIndex = 418) %>%
-		addMapPane("labels", zIndex = 419) %>%
+		addMapPane("merged_sites", zIndex = 419) %>%
+		addMapPane("labels", zIndex = 420) %>%
 		addCircleMarkers(lat=permits$LatitudeMeasure, lng=permits$LongitudeMeasure, options = pathOptions(pane = "permits"), group="Permits", radius=5,
 			popup = paste0(
 				"Permit ID: ", permits$locationID,
@@ -168,12 +177,7 @@ session$onFlushed(once = T, function() {
 				"<br> Permit type: ", permits$locationType)
 		) %>%
 		#addPolygons(data=wqTools::ut_poly,group="State boundary",smoothFactor=4,fillOpacity = 0.1,weight=3,color="purple", options = pathOptions(pane = "underlay_polygons"))  %>%
-		hideGroup('Permits') %>%	
-		addLayersControl(
-			position ="topleft",
-			baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites", "Permits", "Assessment units","Beneficial uses", "Site-specific standards", "Watershed management units", "UT boundary"),
-			options = layersControlOptions(collapsed = FALSE)
-		)
+		hideGroup('Permits')
 	})
 })
 
@@ -198,7 +202,27 @@ observeEvent(reactive_objects$map_sites, ignoreNULL = F, ignoreInit=T, {
 					targetGroups = c('au_ids','au_names', 'locationID', 'locationName'),
 					options = leaflet.extras::searchFeaturesOptions(
 						zoom=12, openPopup = TRUE, firstTipSubmit = TRUE,
-						autoCollapse = TRUE, hideMarkerOnCollapse = TRUE ))	
+						autoCollapse = TRUE, hideMarkerOnCollapse = TRUE ))
+
+		if(dim(reactive_objects$merged_sites)[1]>0){
+			map_proxy %>% 
+			addCircleMarkers(data=reactive_objects$merged_sites, group="Merged sites", color='grey', options = pathOptions(pane = "merged_sites")) %>%
+			clearControls() %>%
+			addLayersControl(
+				position ="topleft",
+				baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites", "Merged sites", "Permits", "Assessment units","Beneficial uses", "Site-specific standards", "Watershed management units", "UT boundary"),
+				options = layersControlOptions(collapsed = FALSE)
+			)
+		}else{
+			map_proxy %>% 
+			clearControls() %>%
+			addLayersControl(
+				position ="topleft",
+				baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites", "Permits", "Assessment units","Beneficial uses", "Site-specific standards", "Watershed management units", "UT boundary"),
+				options = layersControlOptions(collapsed = FALSE)
+			)
+		}
+
 		if(input$auto_zoom){
 			map_proxy %>% fitBounds(min(reactive_objects$map_sites$long)*0.99, min(reactive_objects$map_sites$lat)*0.99, max(reactive_objects$map_sites$long)*1.01, max(reactive_objects$map_sites$lat)*1.01)
 		}
