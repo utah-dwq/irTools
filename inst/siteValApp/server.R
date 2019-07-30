@@ -171,7 +171,7 @@ session$onFlushed(once = T, function() {
 		hideGroup('Permits') %>%	
 		addLayersControl(
 			position ="topleft",
-			baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites","Site labels", "Permits", "Assessment units","Beneficial uses", "Site-specific standards", "Watershed management units", "UT boundary"),
+			baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites", "Permits", "Assessment units","Beneficial uses", "Site-specific standards", "Watershed management units", "UT boundary"),
 			options = layersControlOptions(collapsed = FALSE)
 		)
 	})
