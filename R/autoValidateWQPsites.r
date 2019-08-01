@@ -114,13 +114,13 @@ if(dim(master_site)[1]>0&dim(stn_new)[1]>0){
 
 # Read in polygons
 au_poly=wqTools::au_poly
-au_poly=au_poly[au_poly$Status=="ACTIVE",c("ASSESS_ID","AU_NAME","AU_Type")]
+au_poly=au_poly[,c("ASSESS_ID","AU_NAME","AU_Type")]
 bu_poly=wqTools::bu_poly
 bu_poly=bu_poly[,!names(bu_poly) %in% 'Status']
 names(bu_poly)[names(bu_poly)=='bu_class']='BEN_CLASS'
 ss_poly=wqTools::ss_poly
-ss_poly=ss_poly[ss_poly$Status=="ACTIVE","R317Descrp"]
-names(ss_poly)[names(ss_poly)=='R317Descrp']='ss_R317Descrp'
+ss_poly=ss_poly[,"ss_descrp"]
+names(ss_poly)[names(ss_poly)=='ss_descrp']='ss_R317Descrp'
 ut_poly=wqTools::ut_poly
 ut_poly=ut_poly[,"STATE_NAME"]
 #suppressWarnings({ut_poly=st_buffer(ut_poly, 0)})
