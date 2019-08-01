@@ -28,9 +28,10 @@ autoValidateWQPsites=function(sites_object,master_site_file,waterbody_type_file,
 #correct_longitude=FALSE
 ########
 
+
 # Polygon intersection function
   intpoly <- function(polygon, sites_object, sites){
-    isect=suppressMessages({suppressWarnings({st_intersection(sites, polygon)})})
+    isect=suppressMessages({suppressWarnings({st_intersection(sites, st_difference(st_make_valid(polygon)))})})
     st_geometry(isect)=NULL
     check=dim(sites_object)[1]
     sites_object=merge(sites_object,isect,all.x=TRUE)
