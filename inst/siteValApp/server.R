@@ -13,11 +13,6 @@ observeEvent(input$collapse_panels, {
 })
 
 
-#observe({
-#	filename=paste0('site-reviews-', input$reviewer,'-', Sys.Date(),'.xlsx')
-#	print(filename)
-#})
-
 # empty reactive objects list
 reactive_objects=reactiveValues()
 
@@ -687,9 +682,9 @@ observeEvent(input$add_reject_reason_cancel, {
 
 
 # Export reviews
-
+export_file=reactive(paste0('site-reviews-', input$reviewer,'-', Sys.Date(),'.xlsx'))
 output$exp_rev <- downloadHandler(
-	filename=paste0('site-reviews-', input$reviewer,'-', Sys.Date(),'.xlsx'),
+	filename=function(){export_file()},
 	content = function(file) {writexl::write_xlsx(
 		list(sites=as.data.frame(sf::st_drop_geometry(reactive_objects$sites)[,!names(reactive_objects$sites) %in% c('long','lat','IR_FLAG_REASONS','color','geometry')]), reasons=reactive_objects$reasons[reactive_objects$reasons$FLAG!="ACCEPT",]),
 		path = file, format_headers=F, col_names=T)}
