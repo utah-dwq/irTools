@@ -4,13 +4,6 @@ options(warn=0)
 # site validation app server
 server <- function(input, output, session){
 
-#setwd('C:\\Users\\jvander\\Documents\\R\\irTools\\inst\\siteValApp')
-#sites=read.csv(file='data/IR_master_site_file.csv', stringsAsFactors=F)
-#reasons=read.csv(file='data/rev_rej_reasons.csv', stringsAsFactors=F)
-
-library(leaflet)
-library(wqTools)
-
 permits=read.csv(system.file("extdata", "ut_facilities.csv", package = "irTools"))
 
 observeEvent(input$collapse_panels, {
