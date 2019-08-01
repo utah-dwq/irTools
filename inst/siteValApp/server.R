@@ -13,6 +13,17 @@ library(wqTools)
 
 permits=read.csv(system.file("extdata", "ut_facilities.csv", package = "irTools"))
 
+observeEvent(input$collapse_panels, {
+	if((2 %in% input$collapse_panels | 3 %in% input$collapse_panels) & (input$reviewer=="" | is.null(reactive_objects$sites_input))){
+			showModal(modalDialog(easyClose=F, title='Inputs needed', "Please input your name and upload a sites file under the 'Start' box above before proceeding."))
+		}	
+})
+
+
+#observe({
+#	filename=paste0('site-reviews-', input$reviewer,'-', Sys.Date(),'.xlsx')
+#	print(filename)
+#})
 
 # empty reactive objects list
 reactive_objects=reactiveValues()
@@ -63,12 +74,8 @@ observeEvent(input$import_sites,{
 			color[IR_FLAG=="ACCEPT"]="green"
 			color[IR_FLAG=="REVIEW"]="purple"
 		})
-		#sitestest<<-sites
 		reactive_objects$sites_input=sites
 		reasons=as.data.frame(readxl::read_excel(sites_file, 'reasons'))
-		#reasonstest<<-reasons
-
-
 		reactive_objects$reasons_input=reasons
 			
 	}
@@ -97,8 +104,10 @@ observe({
 			sites=sf::st_as_sf(sites, coords=c("long","lat"), crs=4326, remove=F)
 			sites$ReviewDate=as.Date(sites$ReviewDate, format='%Y-%m-%d')
 			reactive_objects$reasons=reasons
+			reactive_objects$reasons_orig=reasons
 			reactive_objects$selected_sites=vector()
 			reactive_objects$sites=sites
+			reactive_objects$sites_orig=sites
 		})
 })
 
@@ -111,8 +120,7 @@ observeEvent(reactive_objects$sites, {
 	if(dim(merged_sites)[1]>0){
 		merged_sites=sf::st_drop_geometry(merged_sites)
 		reactive_objects$merged_sites=sf::st_as_sf(merged_sites, coords=c("LongitudeMeasure","LatitudeMeasure"), crs=4326, remove=F)
-	}else{reactive_objects$merged_sites=subset(reactive_objects$sites, IR_COMMENT=='Two or more sites merged')}
-	print(dim(reactive_objects$merged_sites))
+	}else{reactive_objects$merged_sites=NULL}
 })
 
 # Reasons checkbox
@@ -184,10 +192,12 @@ session$onFlushed(once = T, function() {
 map_proxy=leafletProxy("map")
 
 # Add sites via proxy on site_types change
-observeEvent(reactive_objects$map_sites, ignoreNULL = F, ignoreInit=T, {
+observeEvent({
+	reactive_objects$map_sites
+	reactive_objects$merged_sites}, ignoreNULL = F, ignoreInit=T, {
 	if(dim(reactive_objects$map_sites)[1]>0){
 		mlocs=unique(reactive_objects$map_sites[,c('MonitoringLocationIdentifier','MonitoringLocationName')])
-		map_proxy %>% clearGroup(group='Sites') %>% clearGroup(group='Site labels') %>% 
+		map_proxy %>% clearGroup(group='Sites') %>% clearGroup(group='Merged sites') %>% clearGroup(group='Site labels') %>% 
 		addCircleMarkers(data=reactive_objects$map_sites, layerId=~MonitoringLocationIdentifier, group="Sites", color=~color, options = pathOptions(pane = "markers")) %>%
 		addCircles(data=mlocs, group="locationID", stroke=F, fill=F, label=~MonitoringLocationIdentifier,
 			popup = paste0(
@@ -197,6 +207,12 @@ observeEvent(reactive_objects$map_sites, ignoreNULL = F, ignoreInit=T, {
 			popup = paste0(
 				mlocs$MonitoringLocationIdentifier,
 				"<br>", mlocs$MonitoringLocationName)) %>%
+		addLabelOnlyMarkers(data=reactive_objects$map_sites, group="Site IDs", lat=~lat, lng=~long, options = pathOptions(pane = "labels"),
+			label=~MonitoringLocationIdentifier,labelOptions = labelOptions(noHide = T, textsize = "15px"),
+			clusterOptions=markerClusterOptions(spiderfyOnMaxZoom=T)) %>%
+		addLabelOnlyMarkers(data=reactive_objects$map_sites, group="Site names", lat=~lat, lng=~long, options = pathOptions(pane = "labels"),
+			label=~MonitoringLocationName,labelOptions = labelOptions(noHide = T, textsize = "15px"),
+			clusterOptions=markerClusterOptions(spiderfyOnMaxZoom=T)) %>%
 		leaflet.extras::removeSearchFeatures() %>%
 		leaflet.extras::addSearchFeatures(
 					targetGroups = c('au_ids','au_names', 'locationID', 'locationName'),
@@ -204,34 +220,42 @@ observeEvent(reactive_objects$map_sites, ignoreNULL = F, ignoreInit=T, {
 						zoom=12, openPopup = TRUE, firstTipSubmit = TRUE,
 						autoCollapse = TRUE, hideMarkerOnCollapse = TRUE ))
 
-		if(dim(reactive_objects$merged_sites)[1]>0){
-			map_proxy %>% 
-			addCircleMarkers(data=reactive_objects$merged_sites, group="Merged sites", color='grey', options = pathOptions(pane = "merged_sites")) %>%
-			clearControls() %>%
-			addLayersControl(
-				position ="topleft",
-				baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites", "Merged sites", "Permits", "Assessment units","Beneficial uses", "Site-specific standards", "Watershed management units", "UT boundary"),
-				options = layersControlOptions(collapsed = FALSE)
-			)
+		if(!is.null(reactive_objects$merged_sites)){
+			if(dim(reactive_objects$merged_sites)[1]>0){
+				map_proxy %>% 
+				addCircleMarkers(data=reactive_objects$merged_sites, group="Merged sites", color='grey', options = pathOptions(pane = "merged_sites")) %>%
+				clearControls() %>%
+				addLayersControl(
+					position ="topleft",
+					baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites", "Merged sites", "Permits", "Site IDs", "Site names", "Assessment units","Beneficial uses", "Site-specific standards", "Watershed management units", "UT boundary"),
+					options = layersControlOptions(collapsed = FALSE)
+				)
+			}else{
+				map_proxy %>% 
+				clearControls() %>%
+				addLayersControl(
+					position ="topleft",
+					baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites", "Permits", "Site IDs", "Site names", "Assessment units","Beneficial uses", "Site-specific standards", "Watershed management units", "UT boundary"),
+					options = layersControlOptions(collapsed = FALSE)
+				)
+			}
 		}else{
 			map_proxy %>% 
 			clearControls() %>%
 			addLayersControl(
 				position ="topleft",
-				baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites", "Permits", "Assessment units","Beneficial uses", "Site-specific standards", "Watershed management units", "UT boundary"),
+				baseGroups = c("Topo","Satellite"),overlayGroups = c("Sites", "Permits", "Site IDs", "Site names", "Assessment units","Beneficial uses", "Site-specific standards", "Watershed management units", "UT boundary"),
 				options = layersControlOptions(collapsed = FALSE)
-			)
+			)		
 		}
-
+		
 		if(input$auto_zoom){
 			map_proxy %>% fitBounds(min(reactive_objects$map_sites$long)*0.99, min(reactive_objects$map_sites$lat)*0.99, max(reactive_objects$map_sites$long)*1.01, max(reactive_objects$map_sites$lat)*1.01)
 		}
 		
-		#if(!is.null(input$site_types) & !is.null(input$review_reasons) & dim(reactive_objects$map_sites)[1]>0){
-		#	map_proxy %>% addLabelOnlyMarkers(data=reactive_objects$map_sites, group="Site labels", lat=~lat, lng=~long, options = pathOptions(pane = "labels"),
-		#		label=~MonitoringLocationIdentifier,labelOptions = labelOptions(noHide = T, textsize = "15px"),
-		#		clusterOptions=markerClusterOptions(spiderfyOnMaxZoom=T))
-		#}
+		
+		map_proxy %>% hideGroup("Site IDs") %>% hideGroup("Site names")
+		
 	}	
 })
 
@@ -270,11 +294,12 @@ observeEvent(reactive_objects$selected_sites, ignoreNULL=F, {
 # Selected sites table
 output$selected_sites_table=DT::renderDT({
 	req(reactive_objects$selected_sites)
-	reactive_objects$selected_sites_table=as.data.frame(reactive_objects$map_sites[reactive_objects$map_sites$MonitoringLocationIdentifier %in% reactive_objects$selected_sites,
+	reactive_objects$selected_sites_table=as.data.frame(sf::st_drop_geometry(reactive_objects$map_sites[reactive_objects$map_sites$MonitoringLocationIdentifier %in% reactive_objects$selected_sites,
 		c("MonitoringLocationIdentifier","OrganizationIdentifier","MonitoringLocationName","MonitoringLocationTypeName",
 		  "IR_FLAG_REASONS","IR_FLAG", "OrganizationFormalName","ProviderName","IR_MLID","IR_MLNAME","ASSESS_ID",
 		  "AU_NAME","AU_Type","Water_Type","R317Descrp","ss_R317Descrp",
-		  "BEN_CLASS","LatitudeMeasure","LongitudeMeasure","IR_Lat","IR_Long","IR_COMMENT", "ReviewComment")])
+		  "BEN_CLASS","LatitudeMeasure","LongitudeMeasure","IR_Lat","IR_Long","IR_COMMENT", "ReviewComment")]))
+	table_data<<-reactive_objects$selected_sites_table
 	DT::datatable(reactive_objects$selected_sites_table,
 		selection='multiple', rownames=FALSE, filter="top",
 		options = list(scrollY = TRUE, paging = FALSE, scrollX=TRUE, dom="ltipr")
@@ -318,7 +343,7 @@ observeEvent(input$accept, {
 		}),
 		br(),
 		br(),
-		textInput('accept_comment', 'Additional comments (optional)'),
+		textInput('accept_comment', 'Additional comments & documentation'),
 		actionButton('accept_ok', 'Accept', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('check-circle')),
 		actionButton('accept_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
 		))
@@ -340,6 +365,7 @@ observeEvent(input$accept_ok, {
 		color[MonitoringLocationIdentifier %in% accept_mlids]='green'
 		ReviewComment[MonitoringLocationIdentifier %in% accept_mlids]=input$accept_comment
 		ReviewDate[MonitoringLocationIdentifier %in% accept_mlids]=Sys.Date()
+		Reviewer[MonitoringLocationIdentifier %in% accept_mlids]=input$reviewer
 		ValidationType[MonitoringLocationIdentifier %in% accept_mlids]="MANUAL"
 })
 
@@ -377,7 +403,7 @@ observeEvent(input$reject, {
 		}),
 		br(),
 		selectInput("reject_reason", label="Reason for rejecting (applied to all selected sites)", choices=c('',reactive_objects$reject_reasons[order(reactive_objects$reject_reasons)]), selected=''),
-		textInput('reject_comment', 'Additional comments (optional)'),
+		textInput('reject_comment', 'Additional comments & documentation'),
 		actionButton('reject_ok', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('minus-circle')),
 		actionButton('reject_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
 		))
@@ -397,7 +423,7 @@ observeEvent(input$rejres_ok, {
 		}),
 		br(),
 		selectInput("reject_reason", label="Reason for rejecting (applied to all selected sites)", choices=c('',reactive_objects$reject_reasons[order(reactive_objects$reject_reasons)]), selected=''),
-		textInput('reject_comment', 'Additional comments (optional)'),
+		textInput('reject_comment', 'Additional comments & documentation'),
 		actionButton('reject_ok', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('minus-circle')),
 		actionButton('reject_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
 		))
@@ -409,8 +435,9 @@ observeEvent(input$rejres_ok, {
 observeEvent(input$reject_cancel, {removeModal()})
 observeEvent(input$reject_ok, {
 	if(input$reject_reason==""){
-		showModal(shinyjqui::draggableModalDialog(title="Error.",size="l",easyClose=F,'Select a rejection reason to proceed.', br(),
-			actionButton('rejres_ok', 'OK', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('check-circle'))))
+		showModal(shinyjqui::draggableModalDialog(title="Error.", footer=actionButton('rejres_ok', 'OK', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('check-circle')), 
+		size="l",easyClose=F,'Select a rejection reason to proceed.'
+			))
 	}else{
 		reject_mlids=reactive_objects$table_selected_mlids
 		reactive_objects$sites=within(reactive_objects$sites, {
@@ -421,6 +448,7 @@ observeEvent(input$reject_ok, {
 			IR_FLAG_REASONS[MonitoringLocationIdentifier %in% reject_mlids]=paste(input$reject_reason)
 			ReviewComment[MonitoringLocationIdentifier %in% reject_mlids]=input$reject_comment
 			ReviewDate[MonitoringLocationIdentifier %in% reject_mlids]=Sys.Date()
+			Reviewer[MonitoringLocationIdentifier %in% reject_mlids]=input$reviewer
 			color[MonitoringLocationIdentifier %in% reject_mlids]='red'
 			ValidationType[MonitoringLocationIdentifier %in% reject_mlids]="MANUAL"
 		})
@@ -462,7 +490,7 @@ observeEvent(input$merge, {
 			selectInput("merge_mlname", label="ML name to merge TO:", choices=reactive_objects$table_selected_table$MonitoringLocationName,
 				selected=reactive_objects$merge_select_mlname)
 		}),
-		textInput('merge_comment', 'Additional comments (optional)'),
+		textInput('merge_comment', 'Additional comments & documentation'),
 		actionButton('merge_ok', 'Merge', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('object-group')),
 		actionButton('merge_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
 		))
@@ -493,6 +521,7 @@ observeEvent(input$merge_ok, {
 		long[MonitoringLocationIdentifier %in% merge_mlids]  = merged_lat_long$LongitudeMeasure
 		IR_FLAG_REASONS[MonitoringLocationIdentifier %in% merge_mlids]="Merge"
 		ReviewComment[MonitoringLocationIdentifier %in% merge_mlids]=input$merge_comment
+		Reviewer[MonitoringLocationIdentifier %in% merge_mlids]=input$reviewer
 		ReviewDate[MonitoringLocationIdentifier %in% merge_mlids]=Sys.Date()
 		color[MonitoringLocationIdentifier %in% merge_mlids]='green'
 		ValidationType[MonitoringLocationIdentifier %in% merge_mlids]="MANUAL"
@@ -516,7 +545,7 @@ observeEvent(input$merge_ok, {
 })
 
 ## Flag for further review
-observeEvent(input$flag_further, {
+observeEvent(input$flag_further, ignoreNULL=T, ignoreInit=T, {
 	if(length(reactive_objects$table_selected_mlids)==0){
 		showModal(shinyjqui::draggableModalDialog(title="Error.",size="l",easyClose=T,
 			"Select site(s) in map & table to make a review.")
@@ -529,9 +558,94 @@ observeEvent(input$flag_further, {
 			)
 		}),
 		br(),
-		textInput('flag_further_comment', 'Additional comments (optional)'),
+		textInput('flag_further_comment', 'Additional comments & documentation'),
 		actionButton('flag_ok', 'Flag', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('flag')),
 		actionButton('flag_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
+		))
+	}
+})
+observeEvent(input$flag_dialog, ignoreNULL=T, ignoreInit=T, {
+	if(length(reactive_objects$table_selected_mlids)==0){
+		showModal(shinyjqui::draggableModalDialog(title="Error.",size="l",easyClose=T, footer=NULL,
+			"Select site(s) in map & table to make a review.")
+	)}else{
+		showModal(shinyjqui::draggableModalDialog(title="FLAG site(s) for additional review?",size="l", footer=NULL,
+		DT::renderDT({
+			DT::datatable(reactive_objects$table_selected_table,
+				selection='none', rownames=FALSE, filter="none",
+				options = list(scrollY = TRUE, paging = FALSE, scrollX=TRUE, dom="t")
+			)
+		}),
+		br(),
+		textInput('flag_further_comment', 'Additional comments & documentation'),
+		actionButton('flag_ok', 'Flag', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('flag')),
+		actionButton('flag_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
+		))
+	}
+})
+
+### Update attributes
+observeEvent(input$flag_cancel, {removeModal()})
+observeEvent(input$flag_ok, {
+	if(input$flag_further_comment==""){
+		showModal(shinyjqui::draggableModalDialog(title="Please make a comment.",size="l",easyClose=F,
+			"Please explain the need for further review in the additional comments box to proceed.",
+			footer=actionButton('flag_dialog', 'OK', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('check-circle'))
+			))
+	}else{
+		flag_mlids=reactive_objects$table_selected_mlids
+		reactive_objects$sites=within(reactive_objects$sites, {
+			IR_FLAG[MonitoringLocationIdentifier %in% flag_mlids] = "REVIEW"
+			IR_COMMENT[MonitoringLocationIdentifier %in% flag_mlids]="Flagged for further review"
+			ReviewComment[MonitoringLocationIdentifier %in% flag_mlids]=input$flag_further_comment
+			ReviewDate[MonitoringLocationIdentifier %in% flag_mlids]=Sys.Date()
+			Reviewer[MonitoringLocationIdentifier %in% flag_mlids]=input$reviewer
+			color[MonitoringLocationIdentifier %in% flag_mlids]='purple'
+		})
+		
+		reactive_objects$reasons=within(reactive_objects$reasons,{
+			FLAG[MonitoringLocationIdentifier %in% flag_mlids] = "REVIEW"
+			#Reason[MonitoringLocationIdentifier %in% flag_mlids] = "Flagged for further review"
+		})
+		
+		#### Append "Flagged for further review" to reasons for flag_mlids
+		flag_reasons=data.frame(flag_mlids, 'Flagged for further review', 'Attribute', 'REVIEW')
+		names(flag_reasons) = c('MonitoringLocationIdentifier','Reason','ReasonType','FLAG')
+		reactive_objects$reasons=rbind(reactive_objects$reasons, flag_reasons)
+		
+		#### Re-build reactive_objects$map_sites
+		reason_mlids=unique(reactive_objects$reasons[reactive_objects$reasons$Reason %in% input$review_reasons,'MonitoringLocationIdentifier'])
+		reactive_objects$map_sites=reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$site_types & reactive_objects$sites$MonitoringLocationIdentifier %in% reason_mlids,]
+		
+		#### Clear table selection & update map highlights (via reactive_objects$selected_sites)
+		reactive_objects$selected_sites=reactive_objects$selected_sites[!reactive_objects$selected_sites %in% reactive_objects$table_selected_mlids]
+		
+		#### Clear modal
+		removeModal()
+	}
+})
+
+
+
+
+
+## Reset sites to input
+observeEvent(input$reset, {
+	if(length(reactive_objects$table_selected_mlids)==0){
+		showModal(shinyjqui::draggableModalDialog(title="Error.",size="l",easyClose=T,
+			"Select site(s) in map & table to make a review.")
+	)}else{
+		showModal(shinyjqui::draggableModalDialog(title="RESET site(s) to input values?",size="l", footer=NULL,
+		DT::renderDT({
+			DT::datatable(reactive_objects$table_selected_table,
+				selection='none', rownames=FALSE, filter="none",
+				options = list(scrollY = TRUE, paging = FALSE, scrollX=TRUE, dom="t")
+			)
+		}),
+		br(),
+		textInput('reset_comment', 'Additional comments & documentation'),
+		actionButton('reset_ok', 'Reset', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('undo')),
+		actionButton('reset_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
 		))
 	}
 
@@ -539,25 +653,19 @@ observeEvent(input$flag_further, {
 })
 
 ### Update attributes
-observeEvent(input$flag_cancel, {removeModal()})
-observeEvent(input$flag_ok, {
-	flag_mlids=reactive_objects$table_selected_mlids
-	reactive_objects$sites=within(reactive_objects$sites, {
-		IR_FLAG[MonitoringLocationIdentifier %in% flag_mlids] = "REVIEW"
-		IR_COMMENT[MonitoringLocationIdentifier %in% flag_mlids]="Flagged for further review"
-		ReviewComment[MonitoringLocationIdentifier %in% flag_mlids]=input$flag_further_comment
-		ReviewDate[MonitoringLocationIdentifier %in% flag_mlids]=Sys.Date()
-		color[MonitoringLocationIdentifier %in% flag_mlids]='purple'
-	})
+observeEvent(input$reset_cancel, {removeModal()})
+observeEvent(input$reset_ok, {
+	reset_mlids=reactive_objects$table_selected_mlids
+	sites=reactive_objects$sites[!reactive_objects$sites$MonitoringLocationIdentifier %in% reset_mlids,]
+	reactive_objects$sites=rbind(sites, reactive_objects$sites_orig[reactive_objects$sites_orig$MonitoringLocationIdentifier %in% reset_mlids,])
 	
-	reactive_objects$reasons=within(reactive_objects$reasons,{
-		FLAG[MonitoringLocationIdentifier %in% flag_mlids] = "REVIEW"
-		Reason[MonitoringLocationIdentifier %in% flag_mlids] = "Flagged for further review"
-	})
+	reasons=reactive_objects$reasons[!reactive_objects$reasons$MonitoringLocationIdentifier %in% reset_mlids,]
+	reactive_objects$reasons=rbind(reasons, reactive_objects$reasons_orig[reactive_objects$reasons_orig$MonitoringLocationIdentifier %in% reset_mlids,])	
 	
 	### Re-build reactive_objects$map_sites
 	reason_mlids=unique(reactive_objects$reasons[reactive_objects$reasons$Reason %in% input$review_reasons,'MonitoringLocationIdentifier'])
-	reactive_objects$map_sites=reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$site_types & reactive_objects$sites$MonitoringLocationIdentifier %in% reason_mlids,]
+	reactive_objects$map_sites=NULL
+	#reactive_objects$map_sites=reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$site_types & reactive_objects$sites$MonitoringLocationIdentifier %in% reason_mlids,]
 	
 	### Clear table selection & update map highlights (via reactive_objects$selected_sites)
 	reactive_objects$selected_sites=reactive_objects$selected_sites[!reactive_objects$selected_sites %in% reactive_objects$table_selected_mlids]
@@ -588,7 +696,7 @@ observeEvent(input$add_reject_reason_cancel, {
 # Export reviews
 
 output$exp_rev <- downloadHandler(
-	filename=paste0('master-site-reviews-', Sys.Date(),'.xlsx'),
+	filename=paste0('site-reviews-', input$reviewer,'-', Sys.Date(),'.xlsx'),
 	content = function(file) {writexl::write_xlsx(
 		list(sites=as.data.frame(sf::st_drop_geometry(reactive_objects$sites)[,!names(reactive_objects$sites) %in% c('long','lat','IR_FLAG_REASONS','color','geometry')]), reasons=reactive_objects$reasons[reactive_objects$reasons$FLAG!="ACCEPT",]),
 		path = file, format_headers=F, col_names=T)}
