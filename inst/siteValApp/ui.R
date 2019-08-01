@@ -24,7 +24,7 @@ bsCollapse(id='collapse_panels', multiple=T, open=1,
 		fluidRow(textInput('reviewer', 'Reviewer')),
 		fluidRow(
 			column(2, fileInput("import_sites", "Import site file", accept=".xlsx")),
-			column(2, actionButton('demo_input', icon=icon('upload'), label='Use demo input', style = "margin-top: 25px; color: #fff; background-color: #337ab7; border-color: #2e6da4%")),
+			#column(2, actionButton('demo_input', icon=icon('upload'), label='Use demo input', style = "margin-top: 25px; color: #fff; background-color: #337ab7; border-color: #2e6da4%")),
 			column(2, actionButton('example_input', icon=icon('question'), label='', style = "margin-top: 25px;"))
 		)		
 	),
