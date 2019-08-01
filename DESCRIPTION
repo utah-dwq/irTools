@@ -30,6 +30,7 @@ Imports:
 	shinycssloaders,
 	writexl,
 	rgdal,
-	mapedit
+	mapedit,
+	lwgeom
 Remotes:
 	utah-dwq/wqTools

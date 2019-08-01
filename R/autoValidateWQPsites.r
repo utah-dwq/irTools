@@ -11,6 +11,7 @@
 #' @return Exports a new, undated master site list to the location & filename provided by the user.
 
 #' @import sp
+#' @import lwgeom
 #' @import sf
 #' @import wqTools
 #' @importFrom plyr rbind.fill
