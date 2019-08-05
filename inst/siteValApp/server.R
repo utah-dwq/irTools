@@ -35,6 +35,7 @@ observeEvent(input$demo_input, {
 			color[IR_FLAG=="REJECT"]="red"
 			color[IR_FLAG=="ACCEPT"]="green"
 			color[IR_FLAG=="REVIEW"]="purple"
+			color[IR_FLAG=="FURTHER"]="orange"
 		})
 		reactive_objects$sites_input=sites
 		reasons=as.data.frame(readxl::read_excel(sites_file, 'reasons'))
@@ -61,6 +62,7 @@ observeEvent(input$import_sites,{
 			color[IR_FLAG=="REJECT"]="red"
 			color[IR_FLAG=="ACCEPT"]="green"
 			color[IR_FLAG=="REVIEW"]="purple"
+			color[IR_FLAG=="FURTHER"]="orange"
 		})
 		reactive_objects$sites_input=sites
 		reasons=as.data.frame(readxl::read_excel(sites_file, 'reasons'))
@@ -185,7 +187,7 @@ observeEvent({
 	reactive_objects$merged_sites}, ignoreNULL = F, ignoreInit=T, {
 	if(dim(reactive_objects$map_sites)[1]>0){
 		mlocs=unique(reactive_objects$map_sites[,c('MonitoringLocationIdentifier','MonitoringLocationName')])
-		map_proxy %>% clearGroup(group='Sites') %>% clearGroup(group='Merged sites') %>% clearGroup(group='Site labels') %>% 
+		map_proxy %>% clearGroup(group='Sites') %>% clearGroup(group='Merged sites') %>% clearGroup(group='Site IDs') %>%  clearGroup(group='Site names') %>% 
 		addCircleMarkers(data=reactive_objects$map_sites, layerId=~MonitoringLocationIdentifier, group="Sites", color=~color, options = pathOptions(pane = "markers")) %>%
 		addCircles(data=mlocs, group="locationID", stroke=F, fill=F, label=~MonitoringLocationIdentifier,
 			popup = paste0(
@@ -583,7 +585,7 @@ observeEvent(input$flag_ok, {
 	}else{
 		flag_mlids=reactive_objects$table_selected_mlids
 		reactive_objects$sites=within(reactive_objects$sites, {
-			IR_FLAG[MonitoringLocationIdentifier %in% flag_mlids] = "REVIEW"
+			IR_FLAG[MonitoringLocationIdentifier %in% flag_mlids] = "FURTHER"
 			IR_COMMENT[MonitoringLocationIdentifier %in% flag_mlids]="Flagged for further review"
 			ReviewComment[MonitoringLocationIdentifier %in% flag_mlids]=input$flag_further_comment
 			ReviewDate[MonitoringLocationIdentifier %in% flag_mlids]=Sys.Date()
@@ -592,12 +594,12 @@ observeEvent(input$flag_ok, {
 		})
 		
 		reactive_objects$reasons=within(reactive_objects$reasons,{
-			FLAG[MonitoringLocationIdentifier %in% flag_mlids] = "REVIEW"
+			FLAG[MonitoringLocationIdentifier %in% flag_mlids] = "FURTHER"
 			#Reason[MonitoringLocationIdentifier %in% flag_mlids] = "Flagged for further review"
 		})
 		
 		#### Append "Flagged for further review" to reasons for flag_mlids
-		flag_reasons=data.frame(flag_mlids, 'Flagged for further review', 'Attribute', 'REVIEW')
+		flag_reasons=data.frame(flag_mlids, 'Flagged for further review', 'Attribute', 'FURTHER')
 		names(flag_reasons) = c('MonitoringLocationIdentifier','Reason','ReasonType','FLAG')
 		reactive_objects$reasons=rbind(reactive_objects$reasons, flag_reasons)
 		

@@ -5,8 +5,8 @@ library(wqTools)
 library(irTools)
 library(leaflet)
 
-site_type_choices=c("REVIEW","ACCEPT","REJECT")
-names(site_type_choices)=c("Review needed","Accepted","Rejected")
+site_type_choices=c("REVIEW","ACCEPT","REJECT", "FURTHER")
+names(site_type_choices)=c("Review needed","Accepted","Rejected", "Further review")
 
 options(warn = -1)
 
