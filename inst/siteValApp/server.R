@@ -321,10 +321,10 @@ observeEvent(input$clear_all, {
 ## Accept selected sites
 observeEvent(input$accept, {
 	if(length(reactive_objects$table_selected_mlids)==0){
-		showModal(shinyjqui::draggableModalDialog(title="Error.",size="l",easyClose=T,
+		showModal(modalDialog(title="Error.",size="l",easyClose=T,
 			"Select site(s) in map & table to make a review.")
 	)}else{
-		showModal(shinyjqui::draggableModalDialog(title="OK to ACCEPT site(s)?",size="l", footer=NULL,
+		showModal(modalDialog(title="OK to ACCEPT site(s)?",size="l", footer=NULL,
 		DT::renderDT({
 			DT::datatable(reactive_objects$table_selected_table,
 				selection='none', rownames=FALSE, filter="none",
@@ -381,10 +381,10 @@ observeEvent(input$accept_ok, {
 ## Reject selected sites
 observeEvent(input$reject, {
 	if(length(reactive_objects$table_selected_mlids)==0){
-		showModal(shinyjqui::draggableModalDialog(title="Error.",size="l",easyClose=T,
+		showModal(modalDialog(title="Error.",size="l",easyClose=T,
 			"Select site(s) in map & table to make a review.")
 	)}else{
-		showModal(shinyjqui::draggableModalDialog(title="OK to REJECT site(s)?",size="l", footer=NULL,
+		showModal(modalDialog(title="OK to REJECT site(s)?",size="l", footer=NULL,
 		DT::renderDT({
 			DT::datatable(reactive_objects$table_selected_table,
 				selection='none', rownames=FALSE, filter="none",
@@ -401,10 +401,10 @@ observeEvent(input$reject, {
 })
 observeEvent(input$rejres_ok, {
 	if(length(reactive_objects$table_selected_mlids)==0){
-		showModal(shinyjqui::draggableModalDialog(title="Error.",size="l",easyClose=T,
+		showModal(modalDialog(title="Error.",size="l",easyClose=T,
 			"Select site(s) in map & table to make a review.")
 	)}else{
-		showModal(shinyjqui::draggableModalDialog(title="OK to REJECT site(s)?",size="l", footer=NULL,
+		showModal(modalDialog(title="OK to REJECT site(s)?",size="l", footer=NULL,
 		DT::renderDT({
 			DT::datatable(reactive_objects$table_selected_table,
 				selection='none', rownames=FALSE, filter="none",
@@ -425,7 +425,7 @@ observeEvent(input$rejres_ok, {
 observeEvent(input$reject_cancel, {removeModal()})
 observeEvent(input$reject_ok, {
 	if(input$reject_reason==""){
-		showModal(shinyjqui::draggableModalDialog(title="Error.", footer=actionButton('rejres_ok', 'OK', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('check-circle')), 
+		showModal(modalDialog(title="Error.", footer=actionButton('rejres_ok', 'OK', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('check-circle')), 
 		size="l",easyClose=F,'Select a rejection reason to proceed.'
 			))
 	}else{
@@ -464,10 +464,10 @@ observeEvent(input$reject_ok, {
 ## Merge selected sites
 observeEvent(input$merge, {
 	if(length(reactive_objects$table_selected_mlids)<2){
-		showModal(shinyjqui::draggableModalDialog(title="Error.",size="l",easyClose=T,
+		showModal(modalDialog(title="Error.",size="l",easyClose=T,
 			"Select two or more site in map & table to merge.")
 	)}else{
-		showModal(shinyjqui::draggableModalDialog(title="OK to MERGE site(s)?",size="l", footer=NULL,
+		showModal(modalDialog(title="OK to MERGE site(s)?",size="l", footer=NULL,
 		DT::renderDT({
 			DT::datatable(reactive_objects$table_selected_table,
 				selection='none', rownames=FALSE, filter="none",
@@ -537,10 +537,10 @@ observeEvent(input$merge_ok, {
 ## Flag for further review
 observeEvent(input$flag_further, ignoreNULL=T, ignoreInit=T, {
 	if(length(reactive_objects$table_selected_mlids)==0){
-		showModal(shinyjqui::draggableModalDialog(title="Error.",size="l",easyClose=T,
+		showModal(modalDialog(title="Error.",size="l",easyClose=T,
 			"Select site(s) in map & table to make a review.")
 	)}else{
-		showModal(shinyjqui::draggableModalDialog(title="FLAG site(s) for additional review?",size="l", footer=NULL,
+		showModal(modalDialog(title="FLAG site(s) for additional review?",size="l", footer=NULL,
 		DT::renderDT({
 			DT::datatable(reactive_objects$table_selected_table,
 				selection='none', rownames=FALSE, filter="none",
@@ -556,10 +556,10 @@ observeEvent(input$flag_further, ignoreNULL=T, ignoreInit=T, {
 })
 observeEvent(input$flag_dialog, ignoreNULL=T, ignoreInit=T, {
 	if(length(reactive_objects$table_selected_mlids)==0){
-		showModal(shinyjqui::draggableModalDialog(title="Error.",size="l",easyClose=T, footer=NULL,
+		showModal(modalDialog(title="Error.",size="l",easyClose=T, footer=NULL,
 			"Select site(s) in map & table to make a review.")
 	)}else{
-		showModal(shinyjqui::draggableModalDialog(title="FLAG site(s) for additional review?",size="l", footer=NULL,
+		showModal(modalDialog(title="FLAG site(s) for additional review?",size="l", footer=NULL,
 		DT::renderDT({
 			DT::datatable(reactive_objects$table_selected_table,
 				selection='none', rownames=FALSE, filter="none",
@@ -578,7 +578,7 @@ observeEvent(input$flag_dialog, ignoreNULL=T, ignoreInit=T, {
 observeEvent(input$flag_cancel, {removeModal()})
 observeEvent(input$flag_ok, {
 	if(input$flag_further_comment==""){
-		showModal(shinyjqui::draggableModalDialog(title="Please make a comment.",size="l",easyClose=F,
+		showModal(modalDialog(title="Please make a comment.",size="l",easyClose=F,
 			"Please explain the need for further review in the additional comments box to proceed.",
 			footer=actionButton('flag_dialog', 'OK', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('check-circle'))
 			))
@@ -622,10 +622,10 @@ observeEvent(input$flag_ok, {
 ## Reset sites to input
 observeEvent(input$reset, {
 	if(length(reactive_objects$table_selected_mlids)==0){
-		showModal(shinyjqui::draggableModalDialog(title="Error.",size="l",easyClose=T,
+		showModal(modalDialog(title="Error.",size="l",easyClose=T,
 			"Select site(s) in map & table to make a review.")
 	)}else{
-		showModal(shinyjqui::draggableModalDialog(title="RESET site(s) to input values?",size="l", footer=NULL,
+		showModal(modalDialog(title="RESET site(s) to input values?",size="l", footer=NULL,
 		DT::renderDT({
 			DT::datatable(reactive_objects$table_selected_table,
 				selection='none', rownames=FALSE, filter="none",
@@ -667,7 +667,7 @@ observeEvent(input$reset_ok, {
 
 ## Add rejection reason
 observeEvent(input$add_reject_reason, {
-	showModal(shinyjqui::draggableModalDialog(title="Add rejection reason", size="l",
+	showModal(modalDialog(title="Add rejection reason", size="l",
 		textInput('rej_reason_to_add', 'Add rejection reason'),
 		actionButton('add_reject_reason_add', 'Add', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('plus-circle')),
 		actionButton('add_reject_reason_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('window-close'))
