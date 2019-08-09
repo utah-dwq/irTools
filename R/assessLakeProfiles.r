@@ -20,7 +20,7 @@ assessLakeProfiles <- function(data, do_crit=list("3A"=4, "3B"=3), temp_crit=lis
 
 ##### Testing setup
 #load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
-#data=test
+#data=profile_data_all
 #uses_assessed=c("3A","3B")
 #do_crit=list("3A"=4, "3B"=3)
 #temp_crit=list("3A"=20, "3B"=27)
@@ -113,6 +113,7 @@ profs_exc$do_temp_exc[profs_exc$do_exc==1 | profs_exc$temp_exc==1]=1
 
 assessOneProfile=function(x){
 	x=x[order(x$Profile.depth),]
+	x=x[!is.na(x$Profile.depth),]
 	x$Profile.depth[x$DataLoggerLine=="1-Line 1"]=0
 	samp_count=dim(x)[1]
 	pct10=ceiling(dim(x)[1] *0.1)
