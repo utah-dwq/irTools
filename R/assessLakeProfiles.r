@@ -20,7 +20,7 @@ assessLakeProfiles <- function(data, do_crit=list("3A"=4, "3B"=3), temp_crit=lis
 
 ##### Testing setup
 #load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
-#data=prepped_data$lake_profiles
+#data=test
 #uses_assessed=c("3A","3B")
 #do_crit=list("3A"=4, "3B"=3)
 #temp_crit=list("3A"=20, "3B"=27)
@@ -33,7 +33,7 @@ if(class(data$NumericCriterion)=="factor"){data$NumericCriterion=wqTools::facToN
 # Subset data to desired criteria & uses
 do_crit=data.frame(unlist(do_crit))
 do_crit$BeneficialUse=row.names(do_crit)
-do_crit$R3172ParameterName="Minimum Dissolved Oxygen"
+do_crit$R3172ParameterName="Dissolved oxygen (DO)"
 names(do_crit)[names(do_crit)=="unlist.do_crit."]="input_crit"
 
 temp_crit=data.frame(unlist(temp_crit))
@@ -69,7 +69,7 @@ exc_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_
 					data=profs_long, value.var="exc", fun.aggregate=max, fill=NaN)
 
 exc_wide=exc_wide[,names(exc_wide)!="Profile depth"]
-exc_wide=dplyr::rename(exc_wide,do_exc="Minimum Dissolved Oxygen", pH_exc=pH, temp_exc="Temperature, water")
+exc_wide=dplyr::rename(exc_wide,do_exc="Dissolved oxygen (DO)", pH_exc=pH, temp_exc="Temperature, water")
 
 profs_exc=merge(profs_wide,exc_wide,all=T)
 
@@ -170,7 +170,7 @@ profile_asmnts_flat=reshape2::melt(profile_asmnts,nar.rm=T,value.name="IR_Cat",
 profile_asmnts_flat=within(profile_asmnts_flat,{
 	R3172ParameterName=as.character(NA)
 	R3172ParameterName[variable=="do_temp_asmnt"]="DO-temperature habitat profile width"
-	R3172ParameterName[variable=="do_asmnt"]="Minimum Dissolved Oxygen"
+	R3172ParameterName[variable=="do_asmnt"]="Dissolved oxygen (DO)"
 	R3172ParameterName[variable=="temp_asmnt"]="Temperature, water"
 	R3172ParameterName[variable=="pH_asmnt"]="pH"
 })
@@ -183,7 +183,7 @@ names(profile_asmnts_rolledUp)[names(profile_asmnts_rolledUp)=="AssessCat"]="IR_
 
 # Gather objects to return
 profile_asmnts_individual=profile_asmnts
-profs_exc=dplyr::rename(profs_exc,DO_mgL="Minimum.Dissolved.Oxygen", Temp_degC="Temperature..water", Depth_m="Profile.depth",Thermocline_depth_m="tc_depth_m")
+profs_exc=dplyr::rename(profs_exc,DO_mgL="Dissolved.oxygen..DO.", Temp_degC="Temperature..water", Depth_m="Profile.depth",Thermocline_depth_m="tc_depth_m")
 profiles_wide=profs_exc
 
 result=list(profile_asmnts_mlid_param=profile_asmnts_rolledUp,profile_asmnts_individual=profile_asmnts_individual,profiles_wide=profiles_wide, profiles_long=profs_long, profile_criteria=crit)
