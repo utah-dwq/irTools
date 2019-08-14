@@ -159,7 +159,7 @@ profile_asmnts=plyr::ddply(profs_exc,
 profile_asmnts=merge(profile_asmnts, thermo_depths)
 
 profile_asmnts[c("do_temp_asmnt","do_asmnt","temp_asmnt","pH_asmnt")]=lapply(profile_asmnts[c("do_temp_asmnt","do_asmnt","temp_asmnt","pH_asmnt")], factor, 
-            levels=c("NS","FS","idE","idNE"))
+            levels=c("NS","FS","IDEX","IDNE"))
 
 # Flatten assessments
 profile_asmnts_flat=reshape2::melt(profile_asmnts,nar.rm=T,value.name="IR_Cat",

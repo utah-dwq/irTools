@@ -32,12 +32,13 @@ if(expand_uses & !"BEN_CLASS" %in% group_vars){group_vars=append(group_vars, "BE
 # Represent categories numerically so we can select the "max" category to define the AU
 names(dat_all)[names(dat_all)==cat_var]="IR_Cat"
 dat_all=subset(dat_all, !is.na(IR_Cat))
-# Hierarchy of decision making within each subset: NS>TMDLa>idE>idNE>FS
+# Hierarchy of decision making within each subset: NS>TMDLa>IDEX>IDNE>FS
 dat_all$AssessCat[dat_all$IR_Cat=="NS"]<-5
 #dat_all$AssessCat[dat_all$IR_Cat=="TMDLa"]<- 4 - (JV) turning off TMDL approved for now. Not sure if we want to include this here yet or as a sort of "secondary review" type step
-dat_all$AssessCat[dat_all$IR_Cat=="idE"]<-3
+dat_all$AssessCat[dat_all$IR_Cat=="IDEX"]<-3
 dat_all$AssessCat[dat_all$IR_Cat=="FS"]<-2
-dat_all$AssessCat[dat_all$IR_Cat=="idNE"]<-1
+dat_all$AssessCat[dat_all$IR_Cat=="IDNE"]<-1
+dat_all$AssessCat[dat_all$IR_Cat=="ID"]<-0
 
 
 # Turn group_vars into a formula argument
@@ -55,9 +56,10 @@ rollup$AssessCat=as.character(rollup$AssessCat)
 rollup=within(rollup,{
 	AssessCat[AssessCat=="5"]="NS"
 	AssessCat[AssessCat=="4"]="TMDLa"
-	AssessCat[AssessCat=="3"]="idE"
+	AssessCat[AssessCat=="3"]="IDEX"
 	AssessCat[AssessCat=="2"]="FS"
-	AssessCat[AssessCat=="1"]="idNE"
+	AssessCat[AssessCat=="1"]="IDNE"
+	AssessCat[AssessCat=="0"]="ID"
 })
 
 # rollup[rollup$ASSESS_ID=="UT14070003-001_00",]
