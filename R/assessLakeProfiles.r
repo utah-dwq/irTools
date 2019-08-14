@@ -61,11 +61,11 @@ data_exc=within(data_exc, {
 	})
 
 # Cast to wide (note - values averaged when more than 1 value per line recorded)
-profs_long=unique(data_exc[,c("DataLoggerLine","ActivityIdentifier","ActivityStartDate","IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","AU_Type",
-							  "BeneficialUse","BEN_CLASS","R3172ParameterName","IR_Value","IR_Unit","NumericCriterion","exc")])
-profs_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+IR_MLNAME+R317Descrp+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse+BEN_CLASS~R3172ParameterName,
+profs_long=unique(data_exc[,c("DataLoggerLine","ActivityIdentifier","ActivityStartDate","IR_MLID","IR_MLNAME","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","AU_Type",
+							  "BeneficialUse","R3172ParameterName","IR_Value","IR_Unit","NumericCriterion","exc")])
+profs_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+IR_MLNAME+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse~R3172ParameterName,
 					data=profs_long, value.var="IR_Value", fun.aggregate=mean, na.rm=T)
-exc_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+IR_MLNAME+R317Descrp+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse+BEN_CLASS~R3172ParameterName,
+exc_wide=reshape2::dcast(DataLoggerLine+ActivityIdentifier+ActivityStartDate+IR_MLID+IR_MLNAME+IR_Lat+IR_Long+ASSESS_ID+AU_NAME+AU_Type+BeneficialUse~R3172ParameterName,
 					data=profs_long, value.var="exc", fun.aggregate=max, fill=NaN)
 
 exc_wide=exc_wide[,names(exc_wide)!="Profile depth"]
