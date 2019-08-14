@@ -136,10 +136,10 @@ assessOneProfile=function(x){
 	if(any(strat$rles.values==0)){
 		max_hab_width=max(strat$layer_width[strat$rles.values==0])
 	}else{max_hab_width=0}
-	if(x$stratified[1]==1 & max(x$Profile.depth)>3){ #stratified
+	if(x$stratified[1]==1 & max(x$Profile.depth)>6){ #stratified
 		do_temp_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
-		do_asmnt=as.factor(NA)
-		temp_asmnt=as.factor(NA)
+		do_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
+		temp_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
 	
 	}else{ #non-stratified
 		do_temp_asmnt=as.factor(NA)
@@ -170,7 +170,7 @@ profile_asmnts_flat=reshape2::melt(profile_asmnts,nar.rm=T,value.name="IR_Cat",
 # Rename Variables
 profile_asmnts_flat=within(profile_asmnts_flat,{
 	R3172ParameterName=as.character(NA)
-	R3172ParameterName[variable=="do_temp_asmnt"]="DO-temperature habitat profile width"
+	#R3172ParameterName[variable=="do_temp_asmnt"]="DO-temperature habitat profile width"
 	R3172ParameterName[variable=="do_asmnt"]="Dissolved oxygen (DO)"
 	R3172ParameterName[variable=="temp_asmnt"]="Temperature, water"
 	R3172ParameterName[variable=="pH_asmnt"]="pH"
