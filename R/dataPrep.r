@@ -409,7 +409,8 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 	#Calculate hardness (will need to update for different hardness parameters, max of 400?):
 	toxics=within(toxics,{
 			hardness=100*(`cf_min_Calcium_mg/l`/40.08 + `cf_min_Magnesium_mg/l`/24.3)
-			#hardness[is.na(hardness)]=OTHER HARDNESS COLUMNS HERE...
+			hardness[is.na(hardness)]=`cf_min_Hardness_mg/l`
+			hardness=ifelse(hardness>400,400,hardness) 
 		})
 
 
