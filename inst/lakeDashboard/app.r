@@ -8,6 +8,7 @@ library(magrittr)
 
 heatmap_param_choices=c("Dissolved oxygen (DO)","Temperature, water","pH","DO-temperature habitat profile width")
 names(heatmap_param_choices)=c("Dissolved oxygen", "Temperature", "pH", "DO/temperature lens")
+au_poly=wqTools::au_poly
 
 ui <-fluidPage(
 tags$head(
@@ -21,15 +22,13 @@ tags$head(
 		tags$head(tags$link(rel = "icon", type = "image/png", href = "dwq_logo_small.png"), windowTitle="Lake profile dashboard")
 	),
 
-	#,
-
 	# Input widgets
 	fluidRow(
 		column(5,
 			conditionalPanel(condition="input.plot_tabs!='User guide'",
 				tabsetPanel(id="ui_tab",
 					tabPanel("Map",
-						column(12,h4("Click a site"),shinycssloaders::withSpinner(leaflet::leafletOutput("map", height="600px"),size=2, color="#0080b7"))
+						column(12,h4("Click a site or AU"),shinycssloaders::withSpinner(leaflet::leafletOutput("map", height="600px"),size=2, color="#0080b7"))
 					),
 					tabPanel("Table",
 						column(12, h4("Click a site"), div(DT::dataTableOutput("table_input"), style = "font-size:70%"))
@@ -93,7 +92,7 @@ server <- function(input, output, session){
 	})
 
 	# Load data
-	load("./data/assessed_profs.rdata")
+	load("./data/lake_data.rdata")
 
 
 	# Subset polygons to lake polygons
@@ -101,12 +100,12 @@ server <- function(input, output, session){
 	lake_aus=au_poly[au_poly$AU_Type=="Reservoir/Lake",]
 
 	# Extract site locations
-	prof_sites=unique(assessed_profs$profile_asmnts_mlid_param[,c("ASSESS_ID","AU_NAME","R317Descrp","BEN_CLASS","IR_MLID","IR_MLNAME","IR_Lat","IR_Long")])
+	prof_sites=unique(prof_asmnts_all$profile_asmnts_mlid_param[,c("ASSESS_ID","AU_NAME","IR_MLID","IR_MLNAME","IR_Lat","IR_Long")])
 	prof_sites$MonitoringLocationTypeName="Lake/Reservoir"
 	prof_sites=plyr::rename(prof_sites, c("IR_Lat"="LatitudeMeasure", "IR_Long"="LongitudeMeasure","IR_MLID"="MonitoringLocationIdentifier","IR_MLNAME"="MonitoringLocationName"))
-
+	
 	# Extract profiles long
-	profiles_long=assessed_profs$profiles_long
+	profiles_long=prof_asmnts_all$profiles_long
 	profiles_long$MonitoringLocationIdentifier=profiles_long$IR_MLID
 	profiles_long=unique(profiles_long[,c("DataLoggerLine","ActivityIdentifier","ActivityStartDate","R3172ParameterName","IR_Value","IR_Unit","NumericCriterion","MonitoringLocationIdentifier")])
 	profiles_long$ActivityStartDate=as.Date(profiles_long$ActivityStartDate,format='%Y-%m-%d')
@@ -120,7 +119,7 @@ server <- function(input, output, session){
 	prof_sites=prof_sites[prof_sites$MonitoringLocationIdentifier %in% profiles_long$MonitoringLocationIdentifier,]
 
 	# Extract profiles wide
-	profiles_wide=assessed_profs$profiles_wide
+	profiles_wide=prof_asmnts_all$profiles_wide
 	profiles_wide=profiles_wide[profiles_wide$ActivityIdentifier %in% profiles_long$ActivityIdentifier,]
 	profiles_wide$ActivityStartDate=as.Date(profiles_wide$ActivityStartDate,format='%Y-%m-%d')
 
@@ -129,7 +128,7 @@ server <- function(input, output, session){
 	names(max_depth)[names(max_depth)=="Depth_m"]="max_depth_m"
 
 	# Extract individual profile assessments
-	ind_prof_asmnts=assessed_profs$profile_asmnts_individual
+	ind_prof_asmnts=prof_asmnts_all$profile_asmnts_individual
 	ind_prof_asmnts=ind_prof_asmnts[ind_prof_asmnts$ActivityIdentifier %in% profiles_long$ActivityIdentifier,]
 	ind_prof_asmnts$ActivityStartDate=as.Date(ind_prof_asmnts$ActivityStartDate,format='%Y-%m-%d')
 	ind_prof_asmnts=merge(ind_prof_asmnts,max_depth,all.x=T)
@@ -140,24 +139,19 @@ server <- function(input, output, session){
 	})
 
 	# Extract mlid/param level assessments
-	mlid_param_asmnts=assessed_profs$profile_asmnts_mlid_param
-	mlid_param_asmnts=mlid_param_asmnts[,!names(mlid_param_asmnts) %in% c("IR_Lat","IR_Long","BEN_CLASS","R317Descrp","IR_MLNAME","ASSESS_ID")]
+	mlid_param_asmnts=prof_asmnts_all$profile_asmnts_mlid_param
+	mlid_param_asmnts=mlid_param_asmnts[,!names(mlid_param_asmnts) %in% c("IR_Lat","IR_Long","IR_MLNAME")]
 	names(mlid_param_asmnts)[names(mlid_param_asmnts)=='IR_Cat']='prelim_asmnt'
 	
 	# Empty reactive values object
 	reactive_objects=reactiveValues()
-
-	# Resources for returning site info on click:
-	## https://stackoverflow.com/questions/28938642/marker-mouse-click-event-in-r-leaflet-for-shiny
-	## https://stackoverflow.com/questions/42613984/how-to-implement-inputmap-marker-click-correctly?noredirect=1&lq=1
-
 
 	# Select map set up
     map = leaflet::createLeafletMap(session, 'map')
 
     session$onFlushed(once = T, function() {
 		output$map <- leaflet::renderLeaflet({
-			buildMap(sites=prof_sites, plot_polys=TRUE, au_poly=lake_aus)
+			buildMap(sites=prof_sites, plot_polys=TRUE, au_poly=lake_aus) %>% leaflet::showGroup('Assessment units')
 		})
     })
 
@@ -171,14 +165,34 @@ server <- function(input, output, session){
 	})
 
 	# Map marker click (to identify selected site)
-	observe({
+	observeEvent(input$map_marker_click, {
 		req(profiles_long)
 		site_click <- input$map_marker_click
 		if (is.null(site_click)){return()}
 		siteid=site_click$id
 		reactive_objects$sel_mlid=siteid
+		reactive_objects$selected_au=as.character(mlid_param_asmnts[mlid_param_asmnts$IR_MLID==siteid,"ASSESS_ID"][1])
 	})
 
+	# Map AU click (to identify selected AU and site)
+	observeEvent(input$map_shape_click,{
+		au_click = input$map_shape_click$id
+		if(!is.null(au_click)){
+			reactive_objects$selected_au=as.character(unique(au_poly$ASSESS_ID[au_poly$polyID==au_click]))
+			if(is.null(reactive_objects$sel_mlid)){
+				reactive_objects$sel_mlid=mlid_param_asmnts[mlid_param_asmnts$ASSESS_ID==reactive_objects$selected_au,"IR_MLID"][1]
+			}else{
+				if(!prof_sites[prof_sites$MonitoringLocationIdentifier==reactive_objects$sel_mlid,"ASSESS_ID"]==reactive_objects$selected_au){
+					reactive_objects$sel_mlid=mlid_param_asmnts[mlid_param_asmnts$ASSESS_ID==reactive_objects$selected_au,"IR_MLID"][1]
+				}
+			}
+		}
+	})
+	
+	observe({
+		print(reactive_objects$selected_au)
+	})
+	
 	# Table row click (to identify selected site & parameter)
 	observe({
 		req(input$table_input_rows_selected)
@@ -198,12 +212,9 @@ server <- function(input, output, session){
 	})
 
 
-	#
-
 	# Select profiles & date options based on selected site ID
 	observe({
 		req(reactive_objects$sel_mlid)
-		#print(reactive_objects$sel_mlid)
 		reactive_objects$sel_profiles=profiles_long[profiles_long$MonitoringLocationIdentifier==reactive_objects$sel_mlid,]
 		profile_dates=unique(reactive_objects$sel_profiles$ActivityStartDate)
 		profile_dates=profile_dates[order(profile_dates)]
@@ -213,19 +224,9 @@ server <- function(input, output, session){
 
 	# Filter table to match clicked site from map
 	input_table_proxy = DT::dataTableProxy('table_input')
-	observeEvent(input$map_marker_click,{
+	observeEvent(reactive_objects$sel_mlid,{
 		input_table_proxy %>% DT::clearSearch() %>% DT::updateSearch(keywords = list(global = "", columns=c("",paste(reactive_objects$sel_mlid))))
 	})
-
-
-	## Map polygon click
-	#observe({
-	#	req(profiles_long)
-	#	au_click <- input$map_shape_click
-	#	#if (is.null(au_click)){return()}
-	#	auid=au_click$id
-	#	print(au_click$id)
-	#})
 
 	# Profile date selection
 	output$date_select <- renderUI({
@@ -250,7 +251,7 @@ server <- function(input, output, session){
 		req(reactive_objects$sel_profiles,reactive_objects$selectedActID)
 		one_profile=reactive_objects$sel_profiles[reactive_objects$sel_profiles$ActivityIdentifier==reactive_objects$selectedActID,]
 
-		do_crit=one_profile[one_profile$R3172ParameterName=="Minimum Dissolved Oxygen","NumericCriterion"][1]
+		do_crit=one_profile[one_profile$R3172ParameterName=="Dissolved oxygen (DO)","NumericCriterion"][1]
 		temp_crit=one_profile[one_profile$R3172ParameterName=="Temperature, water","NumericCriterion"][1]
 
 		one_profile=unique(one_profile[,c("DataLoggerLine","ActivityIdentifier","ActivityStartDate","R3172ParameterName","IR_Value","IR_Unit","MonitoringLocationIdentifier")])
@@ -258,7 +259,7 @@ server <- function(input, output, session){
 
 		profilePlot(one_profile, parameter = "R3172ParameterName",
 			units = "IR_Unit",
-			depth = "Profile depth", do = "Minimum Dissolved Oxygen",
+			depth = "Profile depth", do = "Dissolved oxygen (DO)",
 			temp = "Temperature, water", pH = "pH",
 			value_var = "IR_Value", line_no = "DataLoggerLine",
 			pH_crit=c(6.5,9), do_crit=do_crit, temp_crit=temp_crit)
@@ -361,14 +362,14 @@ server <- function(input, output, session){
 	output$heatmap=renderPlot({
 		req(reactive_objects$sel_profs_wide, reactive_objects$sel_profiles)
 		if(dim(reactive_objects$sel_profs_wide)[1]>0){
-			if(length(unique(reactive_objects$sel_profs_wide$ActivityStartDate))==1){
+			if(length(unique(reactive_objects$sel_profs_wide$ActivityStartDate))==1 | dim(reactive_objects$sel_profs_wide)[1]<=2){
 				plot.new()
-				text(0.5,0.5,"Only one profile date available. Cannot interpolate.")
+				text(0.5,0.5,"Cannot interpolate. See individual profiles.")
 				box()
 			}else{
 				# Define heatmap inputs based on selected parameter
-				if(input$heatmap_param=="Minimum Dissolved Oxygen"){
-					name="Minimum Dissolved Oxygen"
+				if(input$heatmap_param=="Dissolved oxygen (DO)"){
+					name="Dissolved oxygen (DO)"
 					parameter="DO_mgL"
 					param_units="mg/L"
 					param_lab="Dissolved oxygen"
