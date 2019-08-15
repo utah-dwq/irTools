@@ -136,7 +136,7 @@ assessOneProfile=function(x){
 	if(any(strat$rles.values==0)){
 		max_hab_width=max(strat$layer_width[strat$rles.values==0])
 	}else{max_hab_width=0}
-	if(x$stratified[1]==1 & max(x$Profile.depth)>6){ #stratified
+	if(x$stratified[1]==1 & max(x$Profile.depth)>4){ #stratified
 		do_temp_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
 		do_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
 		temp_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
