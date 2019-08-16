@@ -95,6 +95,8 @@ tags$head(
 
 server <- function(input, output, session){
 
+	options(warn=-1)
+
 	# Loading modal to keep user out of trouble while map draws...
 	showModal(modalDialog(title="MAP LOADING - PLEASE WAIT...","Please wait for map to draw before proceeding.",size="l",footer=NULL))
 
@@ -199,10 +201,6 @@ server <- function(input, output, session){
 				}
 			}
 		}
-	})
-
-	observe({
-		print(reactive_objects$sel_mlid)
 	})
 	
 	
