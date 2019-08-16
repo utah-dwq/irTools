@@ -1,26 +1,37 @@
 ---
-title: "Utah DWQ Lake Profile Dashboard - User Guide"
+title: "Utah DWQ Lake Dashboard - User Guide"
 author: "Jake Vander Laan, Utah Division of Water Quality"
 date: "Aug 16 2019"
 ---
 
 ## Introduction
 This application is designed to interactively visualize lake profile & trophic indicator data collected by DWQ and cooperators and provide a platform for performing and reviewing aquatic life use based water quality assessments based on lake profile data.  
-Source code and additional information for this application are available via the [DWQ irTools GitHub repository](https://github.com/utah-dwq/irTools/).
-This application is available under an [MIT license](https://github.com/utah-dwq/irTools/blob/master/LICENSE) .  
+Source code and additional information for this application are available via the [DWQ irTools GitHub repository](https://github.com/utah-dwq/irTools/tree/master/inst/lakeDashboard){target="_blank"}.
+This application is available under an [MIT license](https://github.com/utah-dwq/irTools/blob/master/LICENSE){target="_blank"} .  
 <br>
 
 ## Data
-All data used by this application are available through either [Utah DWQ AWQMS](https://awqms.utah.gov) or [EPA WQP](https://www.waterqualitydata.us/) .
-The data used in this application are collected as water column profiles at lake sites throughout Utah.
+All data used by this application are available through either [Utah DWQ AWQMS](https://awqms.utah.gov){target="_blank"} or [EPA WQP](https://www.waterqualitydata.us/){target="_blank"} .
+Profile data used in this application are collected as water column profiles at lake sites throughout Utah.
 Lake profiles consist of measurements of dissolved oxygen, temperature, and pH at regular depth intervals through the water column. Intervals of 1 meter are typical
 for Utah DWQ sampling, but may be adjusted depending on the depth at any individual site. Data have been pre-processed to ensure consistency in parameter names and units
 and to calculate frequencies of exceedance of water quality criteria and widths of suitable habitat for fish based on
-areas meeting dissolved oxygen and temperature criteria for that waterbody (see the [DWQ integrated report methods](https://deq.utah.gov/legacy/programs/water-quality/monitoring-reporting/assessment/draft-2020-methodology-for-integrated-report.htm) for more details).
+areas meeting dissolved oxygen and temperature criteria for that waterbody (see the [DWQ integrated report methods](https://documents.deq.utah.gov/water-quality/monitoring-reporting/integrated-report/DWQ-2019-005601.pdf){target="_blank"} for more details).
 <br>
 
+## Running the application
+There are two ways to run the lake dashboard application. The application can be run remotely via the (DWQ Shiny server app link)[https://udwq.shinyapps.io/lakeprofiledashboard]{target="_blank"}. Running the app remotely does not require 
+a local R installation. However, remote instances time out after 15 minutes. To run the application locally, you will need to install R & the DWQ irTools package. Once installed, the app can be run via:
+```{r, eval=F}
+library(irTools)
+lakeDashboard()
+```
+
+The application will launch in your default browser.
+
 ## Application usage
-The application has two main inputs: a map and a table. To build plots for any individual site, click on your desired site in either the map or the table.  
+The application has two main inputs: a map and a table. To build plots for any individual site or assessment unit (AU), click on your desired site or AU in either the map or the table. When you click on an AU, the first site 
+within that AU is shown in the profile plots.  
 
 The map shows all sites with profile data available. The table shows all of those sites and their associated uses and assessments for each parameter.  
 
@@ -60,8 +71,8 @@ This polygon shows the boundaries and applicable criteria for those site specifi
 
 
 ## Outputs
-### Time series
-The "Time series" tab shows three outputs summarizing patterns in temperature, dissolved oxygen, and pH across depth and time at the selected site.
+### Profile time series
+The "Profile time series" tab shows three outputs summarizing patterns in temperature, dissolved oxygen, and pH across depth and time at the selected site.
 <br>
 
 #### Heatmap
@@ -70,9 +81,9 @@ lines if within the scale of the plot (figure 2). When DO/temp lens is the selec
 where either DO, temperature, or both does not meet the applicable water quality criteria. Zero represents zones of habitable water column.  
 
 <br>
-> **NOTES:**  
-> 1. The heatmap figure will interpolate across the entire time period for which data are available. Interpolations across time periods with few measured profiles should be interpreted carefully.  Use the 'Show all profile dates' checkbox to identify individual profile measurements on the figure.  
-> 2. Depending on the relative frequency and duration of exceedances, water quality standards may not always be visible in the interpolated figure.  
+**NOTES:**  
+1. The heatmap figure will interpolate across the entire time period for which data are available. Interpolations across time periods with few measured profiles should be interpreted carefully.  Use the 'Show all profile dates' checkbox to identify individual profile measurements on the figure.  
+2. Depending on the relative frequency and duration of exceedances, water quality standards may not always be visible in the interpolated figure.  
 
 <br>  
 ![](heatmap.png)  
@@ -102,27 +113,26 @@ with colors corresponding to the colors used for plotting parameter points. The 
 In the profile table, cells are colored orange when a water quality criteron is exceeded for that parameter at that depth.
 <br>
 
-## Package dependencies & credits
-This application depends on functions contained within the [DWQ wqTools R-package](https://github.com/utah-dwq/wqTools).
-Special thanks to R packages leaflet, leaflet.extras, and Shiny.  
 
-### Package dependencies:  
-```
-	leaflet,
-	RColorBrewer,
-	akima,
-	jsonlite,
-	leaflet.extras,
-	lubridate,
-	mapedit,
-	magrittr,  
-	plyr,
-	rLakeAnalyzer,
-	reshape2,
-	sf,  
-	shinycssloaders,  
-	DT
-```
+### Trophic indicators
+The "Trophic indicators" tab shows a series of plots summarizing trophic state indicator (TSI) values for the selected AU. The boxplots on this tab are interactive - you can zoom, pan, and toggle plotted values via the legend.  
+
+Carlson's TSI values are calculated using Secchi disk transparency, total phosphorus, and chlorophyll a. TSI value ranges from 0 to about 100, with increasing values indicating a more eutrophic condition, as follows (Table 14).
+Carlson's TSI estimates are calculated using the following equations:
+* Trophic Status Based on Secchi Disk (TSI-SDD): TSI-SDD = 60 - 14.41 ln (SDD), where SDD = Secchi disk transparency in meters.
+* Trophic Status Based on Total Phosphorus (TSI-TP): TSI-TP = 14.20 ln (TP) + 4.15, where TP = total phosphorus concentration in µg/l.
+* Trophic Status Based on Chlorophyll a (TSI-Chl-a): TSI-Chl-a = 9.81 ln (Chl-a) + 30.60, where Chl-a = chlorophyll a concentrations in μg/l.
+TSIs are calculated independently for each indicator (i.e., Secchi disk, chlorophyll a, and total phosphorus) and are not averaged. 
+Chlorophyll a (TSI-Chl-a) is generally considered the most reliable indicator of trophic status, followed by Secchi disk (TSI-SDD), and total phosphorus (TSI-TP) (Carlson, 1977). 
+In some lakes, the TSIs for each index are similar. For other lakes, significant differences may be observed. These differences can provide important insight into lake ecosystem processes and factors limiting algal growth or water clarity. 
+TSI-SDD and TSI-TP are not directly used for assessment purposes, but are calculated to aid in the interpretation of a lake’s trophic status and characteristics.
+Once calculated, these independent TSI indicators can be used to interpret how various factors interact to influence lake production.
+![](tsi_table.png)  
+Figure 4. Relationships between TSI values and suggested interpretations (from Carlson and Havens 2005).  
+<br>
+<br>
+
+
 
 ## Help & feedback
 For additional help or to submit feedback or bug reports, please contact:  
