@@ -31,7 +31,7 @@ tags$head(
 						column(12,h4("Click a site or AU"),shinycssloaders::withSpinner(leaflet::leafletOutput("map", height="600px"),size=2, color="#0080b7"))
 					),
 					tabPanel("Table",
-						column(12, h4("Click a site"), div(DT::dataTableOutput("table_input"), style = "font-size:70%"))
+						column(12, h4("Click a row"), div(DT::dataTableOutput("table_input"), style = "font-size:70%"))
 					)
 				)
 			),
@@ -70,7 +70,14 @@ tags$head(
 				)
 			),
 			tabPanel("Trophic indicators",
-				plotOutput('tsi3d', height="600px", width="600px")
+				shinyWidgets::radioGroupButtons('trophic_type', 'Plot type:', choices=c('Time series','Boxplot','Scatter plot'), checkIcon = list(yes = icon("check"))),
+				conditionalPanel(condition="input.trophic_type=='Time series'"),
+				conditionalPanel(condition="input.trophic_type=='Boxplot'",
+					plotlyOutput('tsi_boxplot', height="600px", width="900px")
+				),
+				conditionalPanel(condition="input.trophic_type=='Scatter plot'",
+					plotOutput('tsi3d', height="600px", width="600px")
+				)
 			),
 			tabPanel("User guide",
 				fluidRow(
@@ -98,7 +105,7 @@ server <- function(input, output, session){
 	load("./data/lake_data.rdata")
 
 	# Subset polygons to lake polygons
-	data(au_poly)
+	au_poly=wqTools::au_poly
 	lake_aus=au_poly[au_poly$AU_Type=="Reservoir/Lake",]
 
 	# Extract site locations
@@ -153,7 +160,7 @@ server <- function(input, output, session){
 
     session$onFlushed(once = T, function() {
 		output$map <- leaflet::renderLeaflet({
-			buildMap(sites=prof_sites, plot_polys=TRUE, au_poly=lake_aus) %>% leaflet::showGroup('Assessment units')
+			buildMap(sites=prof_sites, plot_polys=TRUE, au_poly=lake_aus) %>% leaflet::showGroup('Assessment units') %>% leaflet::clearControls()
 		})
     })
 
@@ -184,11 +191,15 @@ server <- function(input, output, session){
 			if(is.null(reactive_objects$sel_mlid)){
 				reactive_objects$sel_mlid=mlid_param_asmnts[mlid_param_asmnts$ASSESS_ID==reactive_objects$selected_au,"IR_MLID"][1]
 			}else{
-				if(!prof_sites[prof_sites$MonitoringLocationIdentifier==reactive_objects$sel_mlid,"ASSESS_ID"]==reactive_objects$selected_au){
+				if((!prof_sites[prof_sites$MonitoringLocationIdentifier==reactive_objects$sel_mlid,"ASSESS_ID"][1]==reactive_objects$selected_au) | (is.na(reactive_objects$sel_mlid))){
 					reactive_objects$sel_mlid=mlid_param_asmnts[mlid_param_asmnts$ASSESS_ID==reactive_objects$selected_au,"IR_MLID"][1]
 				}
 			}
 		}
+	})
+
+	observe({
+		print(reactive_objects$sel_mlid)
 	})
 	
 	
@@ -406,14 +417,15 @@ server <- function(input, output, session){
 
 	# Trophic indicators tab
 	## Extract trophic data
-	observe({
-		#reactive_objects=list()
-		#reactive_objects$selected_au='UT-L-16010204-033_00'
+	observeEvent(reactive_objects$selected_au, ignoreInit=T, {
 		
-		req(reactive_objects$selected_au)
-		reactive_objects$trophic_data_flat=trophic_data[trophic_data$ASSESS_ID==reactive_objects$selected_au,]
-		reactive_objects$trophic_data_flat$TSI[reactive_objects$trophic_data_flat$TSI<1]=1
-		tsi_wide=reshape2::dcast(reactive_objects$trophic_data_flat, MonitoringLocationIdentifier+ActivityStartDate+AU_NAME+ASSESS_ID~CharacteristicName, value.var='TSI', fun.aggregate=mean, na.rm=T)
+		#reactive_objects=list()
+		#reactive_objects$selected_au='UT-L-16020201-004_01'
+		
+		trophic_data_flat=trophic_data[trophic_data$ASSESS_ID==reactive_objects$selected_au,]
+		trophic_data_flat$TSI[trophic_data_flat$TSI<1]=1
+		tsi_wide=reshape2::dcast(trophic_data_flat, MonitoringLocationIdentifier+ActivityStartDate+AU_NAME+ASSESS_ID~CharacteristicName, value.var='TSI', fun.aggregate=mean, na.rm=T)
+		reactive_objects$trophic_data_flat=trophic_data_flat
 		reactive_objects$tsi_wide=plyr::rename(tsi_wide, c('Chlorophyll a'='TSIchl', 'Depth, Secchi disk depth'='TSIsd', 'Phosphate-phosphorus'='TSItp'))
 	})
 	
@@ -466,7 +478,41 @@ server <- function(input, output, session){
 		plot3dTSI(reactive_objects$tsi_wide, title=reactive_objects$tsi_wide$AU_NAME[1])
 	})
 
-
+	output$tsi_boxplot=renderPlotly({
+		
+		req(reactive_objects$trophic_data_flat)
+		title=reactive_objects$trophic_data_flat$AU_NAME[1]
+		au_vis=as.list(append(T, rep(F, length(unique(reactive_objects$trophic_data_flat$MonitoringLocationIdentifier)))))
+		site_vis=as.list(append(F, rep(T, length(unique(reactive_objects$trophic_data_flat$MonitoringLocationIdentifier)))))
+		suppressWarnings(suppressMessages(
+			plot_ly(data=reactive_objects$trophic_data_flat) %>%
+				add_trace(type = 'box', y = ~TSI, x=~CharacteristicName, visible=T, name='TSI') %>%
+				add_trace(type = 'box', y = ~TSI, x=~CharacteristicName, color=~MonitoringLocationIdentifier, visible=F) %>%
+				layout(title = title,
+					boxmode = "group",
+					yaxis = list(side = 'left', title = 'TSI'),
+					updatemenus = list(
+						list(
+							buttons = list(
+								list(method = "update", label='Group to AU', 
+									args = list(list(visible = au_vis))
+								),
+								list(method = "update", label='Split by site', 
+									args = list(list(visible = site_vis))
+								)
+							)
+						)
+					)
+				) %>% 
+				config(displaylogo = FALSE, collaborate = FALSE,
+					modeBarButtonsToRemove = c(
+						'sendDataToCloud',
+						'select2d',
+						'lasso2d'
+					)
+				)
+		))
+	})
 
 
 
