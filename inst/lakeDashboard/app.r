@@ -9,7 +9,6 @@ library(plotly)
 
 heatmap_param_choices=c("Dissolved oxygen (DO)","Temperature, water","pH","DO-temperature habitat profile width")
 names(heatmap_param_choices)=c("Dissolved oxygen", "Temperature", "pH", "DO/temperature lens")
-au_poly=wqTools::au_poly
 
 ui <-fluidPage(
 tags$head(
@@ -83,14 +82,7 @@ tags$head(
 				conditionalPanel(condition="input.trophic_type=='Scatter plot'",
 					plotOutput('tsi3d', height="600px", width="600px")
 				)
-			)#,
-			#tabPanel("User guide",
-			#	fluidRow(
-			#		column(8,
-			#			includeMarkdown('./user_guide/user_guide.rmd')
-			#		)
-			#	)
-			#)
+			)
 		))
 	)
 )
@@ -110,7 +102,7 @@ server <- function(input, output, session){
 	})
 
 	# Load data
-	load("./data/lake_data.rdata")
+	load("data/lake_data.Rdata")
 
 	# Subset polygons to lake polygons
 	au_poly=wqTools::au_poly

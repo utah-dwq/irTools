@@ -20,7 +20,7 @@ areas meeting dissolved oxygen and temperature criteria for that waterbody (see 
 <br>
 
 ## Running the application
-There are two ways to run the lake dashboard application. The application can be run remotely via the (DWQ Shiny server app link)[https://udwq.shinyapps.io/lakeprofiledashboard]{target="_blank"}. Running the app remotely does not require 
+There are two ways to run the lake dashboard application. The application can be run remotely via the (DWQ Shiny server app link)[https://udwq.shinyapps.io/lakedashboard]{target="_blank"}. Running the app remotely does not require 
 a local R installation. However, remote instances time out after 15 minutes. To run the application locally, you will need to install R & the DWQ irTools package. Once installed, the app can be run via:
 ```{r, eval=F}
 library(irTools)
