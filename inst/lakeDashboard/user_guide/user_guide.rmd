@@ -1,13 +1,13 @@
 ---
-title: "Utah DWQ Lake Profile Dashboard"
+title: "Utah DWQ Lake Profile Dashboard - User Guide"
 author: "Jake Vander Laan, Utah Division of Water Quality"
-date: "Feb 5 2019"
+date: "Aug 16 2019"
 ---
 
 ## Introduction
-This application is designed to interactively visualize lake profile data collected by DWQ and cooperators and provide a platform for performing and reviewing aquatic life use based water quality assessments based on lake profile data.  
-Source code and additional information for this application are available via the [DWQ Lake Profile Dashboard GitHub repository](https://github.com/utah-dwq/LakeProfileDashboard) .  
-This application is available under an [MIT license](https://github.com/utah-dwq/LakeProfileDashboard/blob/master/LICENSE) .  
+This application is designed to interactively visualize lake profile & trophic indicator data collected by DWQ and cooperators and provide a platform for performing and reviewing aquatic life use based water quality assessments based on lake profile data.  
+Source code and additional information for this application are available via the [DWQ irTools GitHub repository](https://github.com/utah-dwq/irTools/).
+This application is available under an [MIT license](https://github.com/utah-dwq/irTools/blob/master/LICENSE) .  
 <br>
 
 ## Data

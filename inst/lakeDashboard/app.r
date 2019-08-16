@@ -81,14 +81,14 @@ tags$head(
 				conditionalPanel(condition="input.trophic_type=='Scatter plot'",
 					plotOutput('tsi3d', height="600px", width="600px")
 				)
-			),
-			tabPanel("User guide",
-				fluidRow(
-					column(8,
-						includeMarkdown('./user_guide/user_guide.rmd')
-					)
-				)
-			)
+			)#,
+			#tabPanel("User guide",
+			#	fluidRow(
+			#		column(8,
+			#			includeMarkdown('./user_guide/user_guide.rmd')
+			#		)
+			#	)
+			#)
 		))
 	)
 )
