@@ -16,7 +16,7 @@
 
 ## TESTING ###
 # library(irTools)
-# ecoli_data=read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
+# ecoli_data=read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\z_archives\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
 # table(ecoli_data$IR_MLID)
 # asmnt_rec=assessEColi(ecoli_data)
 # recmlids <- as.character(unique(asmnt_rec$ecoli_allscenario_asmnts$IR_MLID))
@@ -86,7 +86,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   # Aggregate to daily values.
   daily_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_rec,FUN=function(x){exp(mean(log(x)))})
   data_processed <- merge(daily_agg,unique(data_rec[,!names(data_rec)%in%c("ActivityStartTime.Time")]), all.x=TRUE)
-
+  ecoli_assessments$assessed_data = data_processed
 
   # maxSamps48hr function - counts the maximum number of samples collected over the rec season that were not collected within 48 hours of another sample(s).
   maxSamps48hr = function(x){
