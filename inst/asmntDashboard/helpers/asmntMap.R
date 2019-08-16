@@ -1,4 +1,6 @@
 asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
+	permits=read.csv(system.file("extdata", "ut_facilities.csv", package = "irTools"))
+
 	na_sites$IR_Lat=as.numeric(na_sites$IR_Lat)
 	na_sites$IR_Long=as.numeric(na_sites$IR_Long)
 	ss_poly=wqTools::ss_poly
@@ -8,12 +10,33 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 	na_sites$AssessCat=NA
 	na_sites$col='grey'
 	
-	#site_asmnt=plyr::rbind.fill(site_asmnt,na_sites)
+	rejected_sites2=rejected_sites
+	names(rejected_sites2)[names(rejected_sites2)=='MonitoringLocationIdentifier'] = 'IR_MLID'
+	names(rejected_sites2)[names(rejected_sites2)=='MonitoringLocationName'] = 'IR_MLNAME'
+	names(rejected_sites2)[names(rejected_sites2)=='LatitudeMeasure'] = 'IR_Lat'
+	names(rejected_sites2)[names(rejected_sites2)=='LongitudeMeasure'] = 'IR_Long'
 	
+	mlocs=plyr::rbind.fill(site_asmnt, na_sites, rejected_sites2)
+	mlocs=unique(mlocs[,c('IR_MLID','IR_MLNAME','IR_Lat', 'IR_Long')])
 	assessment_map <- 
-		buildMap(plot_polys = F, ...) %>%
+		buildMap(plot_polys = F, search='', ...) %>%
 			addMapPane("highlight", zIndex = 413) %>%
 			addMapPane("rejected_sites", zIndex = 414) %>%
+			addMapPane("permits", zIndex = 417) %>%
+			addCircleMarkers(lat=permits$LatitudeMeasure, lng=permits$LongitudeMeasure, options = pathOptions(pane = "permits"), group="Permits", radius=5,
+				popup = paste0(
+					"Permit ID: ", permits$locationID,
+					"<br> Permit name: ", permits$locationName,
+					"<br> Permit type: ", permits$locationType)
+			) %>%
+			addCircles(data=mlocs, lat=~IR_Lat, lng=~IR_Long, group="locationID", stroke=F, fill=F, label=~IR_MLID, 
+				popup = paste0(
+					mlocs$IR_MLID,
+					"<br>", mlocs$IR_MLNAME)) %>%
+			addCircles(data=mlocs, lat=~IR_Lat, lng=~IR_Long, group="locationName", stroke=F, fill=F, label=~IR_MLNAME, 
+				popup = paste0(
+					mlocs$IR_MLID,
+					"<br>", mlocs$IR_MLNAME)) %>%
 			leaflet::addCircleMarkers(data=site_asmnt, lat=~IR_Lat, lng=~IR_Long, group="Assessed sites",
 				color = ~col, opacity=0.8, layerId=~IR_MLID, options = pathOptions(pane = "markers"),
 				popup = paste0(
@@ -61,7 +84,7 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 				popup=paste0("SS std: ", ss_poly$SiteSpecif)
 			) %>%
 			leaflet::addLayersControl(position ="topleft",
-				baseGroups = c("Topo","Satellite"),overlayGroups = c("Assessed sites", "Not-assessed sites", "Rejected sites", "Assessment units","Beneficial uses", "Site-specific standards"),
+				baseGroups = c("Topo","Satellite"),overlayGroups = c("Assessed sites", "Not-assessed sites", "Rejected sites", "Assessment units","Beneficial uses", "Site-specific standards", "Permits"),
 				options = leaflet::layersControlOptions(collapsed = TRUE, autoZIndex=FALSE)) %>%
 			#hideGroup("Assessment units") %>%
 			hideGroup("Not-assessed sites") %>%
@@ -70,10 +93,16 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 			hideGroup("Beneficial uses") %>%
 			hideGroup("Assessed sites") %>%
 			hideGroup("WQP sites") %>%
+			hideGroup("Permits") %>%
 			leaflet::addLegend(position = 'topright',
 						colors = c('green','yellow','orange','red','grey'), 
 						labels = c('Fully supporting', 'Insufficient data, no exceedances', 'Insufficient data, exceedances', 'Not supporting', 'Not assessed')) %>% 
-			fitBounds(-114.0187, 37.02012, -109.0555, 41.99088)
+			fitBounds(-114.0187, 37.02012, -109.0555, 41.99088) %>%
+			leaflet.extras::removeSearchFeatures() %>% leaflet.extras::addSearchFeatures(
+				targetGroups = c('au_ids','au_names', 'locationID', 'locationName'),
+				options = leaflet.extras::searchFeaturesOptions(
+					zoom=12, openPopup = TRUE, firstTipSubmit = TRUE,
+					autoCollapse = TRUE, hideMarkerOnCollapse = TRUE ))
 	
 return(assessment_map)	
 	

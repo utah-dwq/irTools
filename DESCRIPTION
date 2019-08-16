@@ -20,6 +20,8 @@ Imports:
     shiny,
     shinyjs,
     jsonlite,
+	tidyr,
+	readr,
     openxlsx,
     leaflet,
     wqTools,
@@ -29,6 +31,7 @@ Imports:
 	shinycssloaders,
 	writexl,
 	rgdal,
-	mapedit
+	mapedit,
+	lwgeom
 Remotes:
 	utah-dwq/wqTools

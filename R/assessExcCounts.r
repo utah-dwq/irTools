@@ -47,15 +47,15 @@ assessExcCounts=function(data, min_n, max_exc_count=NA, max_exc_pct=NA, max_exc_
 			data=within(data,{
 				IR_Cat[SampleCount>=min_n & ExcCount>max_allow_exc]="NS"
 				IR_Cat[SampleCount>=min_n & ExcCount<=max_allow_exc]="FS"
-				IR_Cat[SampleCount<min_n & ExcCount>max_exc_count_id]="idE"
-				IR_Cat[SampleCount<min_n & ExcCount<=max_exc_count_id]="idNE"
+				IR_Cat[SampleCount<min_n & ExcCount>max_exc_count_id]="IDEX"
+				IR_Cat[SampleCount<min_n & ExcCount<=max_exc_count_id]="IDNE"
 			})
 		}else{  #Exceedance pct based insufficient data assessments
 			data=within(data,{
 				IR_Cat[SampleCount>=min_n & ExcCount>max_allow_exc]="NS"
 				IR_Cat[SampleCount>=min_n & ExcCount<=max_allow_exc]="FS"
-				IR_Cat[SampleCount<min_n & ExcCount>max_allow_exc_id]="idE"
-				IR_Cat[SampleCount<min_n & ExcCount<=max_allow_exc_id]="idNE"
+				IR_Cat[SampleCount<min_n & ExcCount>max_allow_exc_id]="IDEX"
+				IR_Cat[SampleCount<min_n & ExcCount<=max_allow_exc_id]="IDNE"
 			})
 		}
 
@@ -64,15 +64,15 @@ assessExcCounts=function(data, min_n, max_exc_count=NA, max_exc_pct=NA, max_exc_
 			data=within(data,{
 				IR_Cat[SampleCount>=min_n & ExcCount>max_exc_count]="NS"
 				IR_Cat[SampleCount>=min_n & ExcCount<=max_exc_count]="FS"
-				IR_Cat[SampleCount<min_n & ExcCount>max_exc_count_id]="idE"
-				IR_Cat[SampleCount<min_n & ExcCount<=max_exc_count_id]="idNE"
+				IR_Cat[SampleCount<min_n & ExcCount>max_exc_count_id]="IDEX"
+				IR_Cat[SampleCount<min_n & ExcCount<=max_exc_count_id]="IDNE"
 			})
 		}else{  #Exceedance pct based insufficient data assessments
 			data=within(data,{
 				IR_Cat[SampleCount>=min_n & ExcCount>max_exc_count]="NS"
 				IR_Cat[SampleCount>=min_n & ExcCount<=max_exc_count]="FS"
-				IR_Cat[SampleCount<min_n & ExcCount>max_allow_exc_id]="idE"
-				IR_Cat[SampleCount<min_n & ExcCount<=max_allow_exc_id]="idNE"
+				IR_Cat[SampleCount<min_n & ExcCount>max_allow_exc_id]="IDEX"
+				IR_Cat[SampleCount<min_n & ExcCount<=max_allow_exc_id]="IDNE"
 			})
 		}
 	}

@@ -107,7 +107,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     out$ExcCountLim = ifelse(out_48_hr>=5,ceiling(out_48_hr*.1),1)
     out$ExcCount = length(x$IR_Value[x$IR_Value>stdcrit])
     if(out$SampleCount<5){
-      out$IR_Cat = ifelse(out$ExcCount>out$ExcCountLim,"idE","idNE")
+      out$IR_Cat = ifelse(out$ExcCount>out$ExcCountLim,"IDEX","IDNE")
     }else{
       out$IR_Cat = ifelse(out$ExcCount>out$ExcCountLim,"NS","ScenB")
     }
@@ -161,7 +161,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
       out$SampleCount = length(x$ActivityStartDate)
       geomean <- gmean(x$IR_Value)
       if(out$SampleCount<10){
-        out$IR_Cat = ifelse(geomean>stdcrit,"idE","idNE")
+        out$IR_Cat = ifelse(geomean>stdcrit,"IDEX","IDNE")
       }else{
         out$IR_Cat = ifelse(geomean>stdcrit,"NS","FS")
       }
@@ -204,16 +204,16 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   # Using all scenarios for MLID/Use roll-up
   ecoli.assessed <- merge(ecoli_assessments$ecoli_allscenario_asmnts,data_raw1, all.x=TRUE)
   ecoli.assessed <- ecoli.assessed[ecoli.assessed$IR_Cat=="NS"|
-                                    ecoli.assessed$IR_Cat=="idNE"|
-                                    ecoli.assessed$IR_Cat=="idE"|
+                                    ecoli.assessed$IR_Cat=="IDNE"|
+                                    ecoli.assessed$IR_Cat=="IDEX"|
                                      ecoli.assessed$IR_Cat=="FS",]
   
   # Represent categories numerically so we can select the "max" category to define the AU
-  # Hierarchy of decision making within each subset: NS>TMDLa>idE>FS>idNE
+  # Hierarchy of decision making within each subset: NS>TMDLa>IDEX>FS>IDNE
   ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="NS"]<-5
-  ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="idE"]<-3
+  ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="IDEX"]<-3
   ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="FS"]<-2
-  ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="idNE"]<-1
+  ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="IDNE"]<-1
   
   ecoli.assess.agg <- aggregate(AssessCat~IR_MLID+ASSESS_ID+BeneficialUse+BEN_CLASS+R3172ParameterName, data=ecoli.assessed, FUN=max)
   
@@ -223,9 +223,9 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   ecoli.assess.agg$IR_Cat=as.character(ecoli.assess.agg$IR_Cat)
   ecoli.assess.agg=within(ecoli.assess.agg,{
     IR_Cat[IR_Cat=="5"]="NS"
-    IR_Cat[IR_Cat=="3"]="idE"
+    IR_Cat[IR_Cat=="3"]="IDEX"
     IR_Cat[IR_Cat=="2"]="FS"
-    IR_Cat[IR_Cat=="1"]="idNE"
+    IR_Cat[IR_Cat=="1"]="IDNE"
   })
   
   ecoli_assessments$ecoli_mlid_asmnts = ecoli.assess.agg
