@@ -1,4 +1,4 @@
-### Utah DWQ Lake Profile Dashboard
+### Utah DWQ Lake Dashboard
 ### Jake Vander Laan, Utah DWQ, jvander@utah.gov
 ### Version 2.0, 8/14/2019
 
@@ -24,6 +24,8 @@ tags$head(
 	),
 
 	# Input widgets
+	uiOutput('guide_url'),
+	br(),
 	fluidRow(
 		column(5,
 			conditionalPanel(condition="input.plot_tabs!='User guide'",
@@ -96,6 +98,7 @@ tags$head(
 server <- function(input, output, session){
 
 	options(warn=-1)
+	output$guide_url <-renderUI(a(href=paste0('https://bookdown.org/jakevl/user_guide'),"User guide",target="_blank"))
 
 	# Loading modal to keep user out of trouble while map draws...
 	showModal(modalDialog(title="MAP LOADING - PLEASE WAIT...","Please wait for map to draw before proceeding.",size="l",footer=NULL))
