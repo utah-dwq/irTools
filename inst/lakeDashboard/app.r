@@ -3,7 +3,8 @@
 ### Version 2.0, 8/14/2019
 
 library(wqTools)
-library(magrittr)
+library(leaflet)
+library(plotly)
 
 
 heatmap_param_choices=c("Dissolved oxygen (DO)","Temperature, water","pH","DO-temperature habitat profile width")
