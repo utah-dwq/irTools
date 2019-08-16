@@ -71,7 +71,9 @@ tags$head(
 			),
 			tabPanel("Trophic indicators",
 				shinyWidgets::radioGroupButtons('trophic_type', 'Plot type:', choices=c('Time series','Boxplot','Scatter plot'), checkIcon = list(yes = icon("check"))),
-				conditionalPanel(condition="input.trophic_type=='Time series'"),
+				conditionalPanel(condition="input.trophic_type=='Time series'",
+					plotlyOutput('tsi_timeseries', height="600px", width="1100px")
+				),
 				conditionalPanel(condition="input.trophic_type=='Boxplot'",
 					plotlyOutput('tsi_boxplot', height="600px", width="900px")
 				),
@@ -298,11 +300,6 @@ server <- function(input, output, session){
 		prof_table_proxy %>% DT::hideCols(hide=which(names(reactive_objects$table_data) %in% c("do_exc","pH_exc","temp_exc")))
 	})
 
-	# Extract selected rows...
-	#observeEvent(input$profile_table_rows_selected,{
-	#	print(input$profile_table_rows_selected)
-	#})
-
 
 	# Extract profile assessments & profiles_wide for selected site
 	observe({
@@ -424,6 +421,9 @@ server <- function(input, output, session){
 		
 		trophic_data_flat=trophic_data[trophic_data$ASSESS_ID==reactive_objects$selected_au,]
 		trophic_data_flat$TSI[trophic_data_flat$TSI<1]=1
+		trophic_data_flat$TSI[trophic_data_flat$TSI>100]=100
+		trophic_data_flat$year=lubridate::year(trophic_data_flat$ActivityStartDate)
+		trophic_data_flat$month=lubridate::month(trophic_data_flat$ActivityStartDate)
 		tsi_wide=reshape2::dcast(trophic_data_flat, MonitoringLocationIdentifier+ActivityStartDate+AU_NAME+ASSESS_ID~CharacteristicName, value.var='TSI', fun.aggregate=mean, na.rm=T)
 		reactive_objects$trophic_data_flat=trophic_data_flat
 		reactive_objects$tsi_wide=plyr::rename(tsi_wide, c('Chlorophyll a'='TSIchl', 'Depth, Secchi disk depth'='TSIsd', 'Phosphate-phosphorus'='TSItp'))
@@ -479,42 +479,77 @@ server <- function(input, output, session){
 	})
 
 	output$tsi_boxplot=renderPlotly({
-		
 		req(reactive_objects$trophic_data_flat)
 		title=reactive_objects$trophic_data_flat$AU_NAME[1]
 		au_vis=as.list(append(T, rep(F, length(unique(reactive_objects$trophic_data_flat$MonitoringLocationIdentifier)))))
 		site_vis=as.list(append(F, rep(T, length(unique(reactive_objects$trophic_data_flat$MonitoringLocationIdentifier)))))
-		suppressWarnings(suppressMessages(
-			plot_ly(data=reactive_objects$trophic_data_flat) %>%
-				add_trace(type = 'box', y = ~TSI, x=~CharacteristicName, visible=T, name='TSI') %>%
-				add_trace(type = 'box', y = ~TSI, x=~CharacteristicName, color=~MonitoringLocationIdentifier, visible=F) %>%
-				layout(title = title,
-					boxmode = "group",
-					yaxis = list(side = 'left', title = 'TSI'),
-					updatemenus = list(
-						list(
-							buttons = list(
-								list(method = "update", label='Group to AU', 
-									args = list(list(visible = au_vis))
-								),
-								list(method = "update", label='Split by site', 
-									args = list(list(visible = site_vis))
-								)
+		plot_ly(data=reactive_objects$trophic_data_flat) %>%
+			add_trace(type = 'box', y = ~TSI, x=~CharacteristicName, visible=T, name='TSI') %>%
+			add_trace(type = 'box', y = ~TSI, x=~CharacteristicName, color=~MonitoringLocationIdentifier, visible=F) %>%
+			layout(title = title,
+				boxmode = "group",
+				yaxis = list(side = 'left', title = 'TSI'),
+				xaxis = list(title = ''),
+				updatemenus = list(
+					list(
+						buttons = list(
+							list(method = "update", label='Group to AU', 
+								args = list(list(visible = au_vis))
+							),
+							list(method = "update", label='Split by site', 
+								args = list(list(visible = site_vis))
 							)
 						)
 					)
-				) %>% 
-				config(displaylogo = FALSE, collaborate = FALSE,
-					modeBarButtonsToRemove = c(
-						'sendDataToCloud',
-						'select2d',
-						'lasso2d'
-					)
 				)
-		))
+			) %>% 
+			config(displaylogo = FALSE,
+				modeBarButtonsToRemove = c(
+					'sendDataToCloud',
+					'select2d',
+					'lasso2d'
+				)
+			)
 	})
 
-
+	output$tsi_timeseries=renderPlotly({
+		req(reactive_objects$trophic_data_flat)
+		title=reactive_objects$trophic_data_flat$AU_NAME[1]
+ 		param_length=length(unique(reactive_objects$trophic_data_flat$CharacteristicName))		
+		year_vis=as.list(append(rep(T, param_length), rep(F, param_length)))
+		month_vis=as.list(append(rep(F, param_length), rep(T, param_length)))
+		plot_ly(data=reactive_objects$trophic_data_flat) %>%
+		add_trace(type = 'box', y = ~TSI, x=~year, color=~CharacteristicName, visible=T) %>%
+		add_trace(type = 'box', y = ~TSI, x=~month, color=~CharacteristicName, visible=F) %>%
+		layout(title = title,
+			boxmode = "group",
+			yaxis = list(side = 'left', title = 'TSI'),
+			xaxis = list(title = 'Year'),
+			updatemenus = list(
+				list(
+					buttons = list(
+						list(method = "update", label='Year', 
+							args = list(list(visible = year_vis),
+								   list(xaxis = list(title = 'Year'))
+								   )
+						),
+						list(method = "update", label='Month', 
+							args = list(list(visible = month_vis),
+								   list(xaxis = list(title = 'Month'))
+								   )
+							)
+					)
+				)
+			)
+		) %>% 
+		config(displaylogo = FALSE,
+			modeBarButtonsToRemove = c(
+				'sendDataToCloud',
+				'select2d',
+				'lasso2d'
+			)
+		)
+	})
 
 
 }
