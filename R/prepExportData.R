@@ -3,18 +3,16 @@
 #' Pulls columns of interest from prepped data and calculates basic exceedance summaries for site-use-parameter assessments.
 #' @param prepped_data A list of objects produced by dataPrep function, including toxics, conventionals, and ecoli dataframes.
 #' @return A list composed of three dataframes: site-date-use-param records linked with aggregated daily values (if applicable), calculations, and exceedances, site-use-param summaries including sample and exceedance counts, and prepped E.coli data.
-#' @import plyr
+#' @importFrom dplyr anti_join
+#' @importFrom plyr rbind.fill
 #' @import openxlsx
-#' @export
-
-
-# composeExport
 
 ### TESTING ###
 # See "P:\WQ\Integrated Report\Automation_Development\elise\AU_export_testing\au_export_testing_steps.R" for steps taken up to dataPrep
 # load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\AU_export_testing\\au_export_resultdata.RData")
 # prepped_data = result
 
+#' @export
 composeExport <- function(prepped_data){
 
 compiled_data = list()
