@@ -111,7 +111,7 @@ server <- function(input, output, session){
 	# Extract site locations
 	prof_sites=unique(prof_asmnts_all$profile_asmnts_mlid_param[,c("ASSESS_ID","AU_NAME","IR_MLID","IR_MLNAME","IR_Lat","IR_Long")])
 	prof_sites$MonitoringLocationTypeName="Lake/Reservoir"
-	prof_sites=plyr::rename(prof_sites, c("IR_Lat"="LatitudeMeasure", "IR_Long"="LongitudeMeasure","IR_MLID"="MonitoringLocationIdentifier","IR_MLNAME"="MonitoringLocationName"))
+	prof_sites=dplyr::rename(prof_sites, LatitudeMeasure="IR_Lat", LongitudeMeasure="IR_Long", MonitoringLocationIdentifier= "IR_MLID",MonitoringLocationName="IR_MLNAME")
 	
 	# Extract profiles long
 	profiles_long=prof_asmnts_all$profiles_long
@@ -420,7 +420,7 @@ server <- function(input, output, session){
 		trophic_data_flat$month=lubridate::month(trophic_data_flat$ActivityStartDate)
 		tsi_wide=reshape2::dcast(trophic_data_flat, MonitoringLocationIdentifier+ActivityStartDate+AU_NAME+ASSESS_ID~CharacteristicName, value.var='TSI', fun.aggregate=mean, na.rm=T)
 		reactive_objects$trophic_data_flat=trophic_data_flat
-		reactive_objects$tsi_wide=plyr::rename(tsi_wide, c('Chlorophyll a'='TSIchl', 'Depth, Secchi disk depth'='TSIsd', 'Phosphate-phosphorus'='TSItp'))
+		reactive_objects$tsi_wide=dplyr::rename(tsi_wide, TSIchl='Chlorophyll a', TSIsd='Depth, Secchi disk depth', TSItp='Phosphate-phosphorus')
 	})
 	
 	## 3D TSI plot
