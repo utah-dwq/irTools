@@ -32,7 +32,7 @@ assessHFDO <- function(data, min_n=10){
   
   HFDO_assessed <- list()
  
-  data$time=as.Date(lubridate::hm(data$ActivityStartTime.Time), origin=lubridate::origin)
+  data$time=as.Date(lubridate::hms(data$ActivityStartTime.Time), origin=lubridate::origin)
   data$hour=lubridate::hour(data$time)
   head(data)
  
@@ -119,6 +119,7 @@ assessHFDO <- function(data, min_n=10){
   adeq_space <- function(x){
     
     # Order by date
+    x$ActivityStartDate = as.Date(x$ActivityStartDate, format = "%Y-%m-%d")
     x = x[order(x$ActivityStartDate),]
     agg_period = x$AsmntAggPeriod[1]
     
