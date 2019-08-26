@@ -75,14 +75,14 @@ assessHFDO <- function(data, min_n=10){
   }
   
   # Aggregate to daily means/mins for complete days of MLID/Use/Assessment Type....
-  daily_values <- plyr::ddply(.data=data,c("IR_MLID","BEN_CLASS","ASSESS_ID", "BeneficialUse","R3172ParameterName","IR_Unit", "DailyAggFun", "AsmntAggPeriod","AsmntAggFun", "AsmntAggPeriodUnit","NumericCriterion", "CriterionUnits","ParameterQualifier"),.fun=agg_full_days)
+  daily_values <- plyr::ddply(.data=data,c("IR_MLID","BEN_CLASS","ASSESS_ID", "ss_R317Descrp","BeneficialUse","R3172ParameterName","IR_Unit", "DailyAggFun", "AsmntAggPeriod","AsmntAggFun", "AsmntAggPeriodUnit","NumericCriterion", "CriterionUnits","ParameterQualifier"),.fun=agg_full_days)
   
   # Split off daily mins
   daily_values_min <- daily_values[daily_values$AsmntAggPeriod==1,]
   
   ## Assess daily minima
   min.do <- function(x){
-    out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","ParameterQualifier","NumericCriterion","AsmntAggPeriod","AsmntAggFun","IR_Unit","CriterionUnits","AsmntAggPeriodUnit")]
+    out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","ss_R317Descrp","ParameterQualifier","NumericCriterion","AsmntAggPeriod","AsmntAggFun","IR_Unit","CriterionUnits","AsmntAggPeriodUnit")]
     if(length(x$ActivityStartDate)<10){
       out$SampleCount = length(x$ActivityStartDate)
       out$ExcCount = NA
@@ -100,7 +100,7 @@ assessHFDO <- function(data, min_n=10){
     return(out) 
   }
   
-  min_do_assessed <- plyr::ddply(.data=daily_values_min, c("IR_MLID","BEN_CLASS", "ASSESS_ID", "BeneficialUse","R3172ParameterName","ParameterQualifier"), .fun=min.do)
+  min_do_assessed <- plyr::ddply(.data=daily_values_min, c("IR_MLID","BEN_CLASS", "ASSESS_ID", "ss_R317Descrp","BeneficialUse","R3172ParameterName","ParameterQualifier"), .fun=min.do)
   
   # Moving window (7- and 30-day) assessments - determine which data fit adequate spacing requirement
   # EH NOTE: Have "MinContig" as column in standards table to specify spacing? Or could create input for it. Many options
@@ -165,11 +165,11 @@ assessHFDO <- function(data, min_n=10){
     
   }
  
-adeq_space_values <- plyr::ddply(.data=daily_values_mean, c("IR_MLID", "BeneficialUse", "IR_Unit", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit","AsmntAggFun"), .fun=adeq_space)
+adeq_space_values <- plyr::ddply(.data=daily_values_mean, c("IR_MLID", "BeneficialUse", "ss_R317Descrp","IR_Unit", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit","AsmntAggFun","ParameterQualifier"), .fun=adeq_space)
 
 # Moving window assessments function - 7 and 30 day 
 movingwindow_assess <- function(x){
-  out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","AsmntAggPeriod")]
+  out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","ss_R317Descrp","AsmntAggPeriod")]
   out$Min_Date <- min(x$ActivityStartDate)
   out$Max_Date <- max(x$ActivityStartDate)
   datmean = c()
@@ -203,7 +203,7 @@ movingwindow_assess <- function(x){
 }
 # EH note: removed "group" as a variable. I do not think it's needed anymore.
 #thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, c("IR_MLID", "BeneficialUse", "IR_Unit", "NumericCriterion", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit", "group","AsmntAggFun"), .fun=movingwindow_assess)
-thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, c("IR_MLID", "BeneficialUse", "IR_Unit", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit","AsmntAggFun"), .fun=movingwindow_assess)
+thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, c("IR_MLID", "BeneficialUse", "ss_R317Descrp","IR_Unit", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit","AsmntAggFun","ParameterQualifier"), .fun=movingwindow_assess)
 
 #Extract 30 & 7 d means
 thirty_seven_means=tidyr::unnest(thirty_seven_assessed,.drop=FALSE)
