@@ -289,7 +289,6 @@ output$selected_sites_table=DT::renderDT({
 		  "IR_FLAG_REASONS","IR_FLAG", "OrganizationFormalName","ProviderName","IR_MLID","IR_MLNAME","ASSESS_ID",
 		  "AU_NAME","AU_Type","Water_Type","R317Descrp","ss_R317Descrp",
 		  "BEN_CLASS","LatitudeMeasure","LongitudeMeasure","IR_Lat","IR_Long","IR_COMMENT", "ReviewComment")]))
-	table_data<<-reactive_objects$selected_sites_table
 	DT::datatable(reactive_objects$selected_sites_table,
 		selection='multiple', rownames=FALSE, filter="top",
 		options = list(scrollY = TRUE, paging = FALSE, scrollX=TRUE, dom="ltipr")
