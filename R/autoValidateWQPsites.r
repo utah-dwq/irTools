@@ -147,11 +147,12 @@ if(dim(master_site)[1]>0){
 	mst2=merge(master_site, stn2, all.x=T)
 	mst2=subset(mst2,
 		(!is.na(type) & MonitoringLocationTypeName!=type) |
-		(!is.na(LatitudeMeasure) & LatitudeMeasure!=lat) |
-		(!is.na(LongitudeMeasure) & LongitudeMeasure!=long)
+		(!is.na(LatitudeMeasure) & round(LatitudeMeasure, 5)!=round(lat, 5)) |
+		(!is.na(LongitudeMeasure) & round(LongitudeMeasure, 5)!=round(long, 5))
 	)
 	master_site$ValidationType[master_site$UID %in% mst2$UID]="AUTO"
 	rm(mst2, stn2)
+	table(master_site$ValidationType)
 		
 	
 	#Remove ASSESS_ID, & AU_NAME cols from master_site before re-assigning (this updates master list in case polygons change)
