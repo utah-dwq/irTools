@@ -169,7 +169,7 @@ adeq_space_values <- plyr::ddply(.data=daily_values_mean, c("IR_MLID", "Benefici
 
 # Moving window assessments function - 7 and 30 day 
 movingwindow_assess <- function(x){
-  out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","ss_R317Descrp","AsmntAggPeriod")]
+  out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","ss_R317Descrp","AsmntAggPeriod", "ParameterQualifier")]
   out$Min_Date <- min(x$ActivityStartDate)
   out$Max_Date <- max(x$ActivityStartDate)
   datmean = c()
