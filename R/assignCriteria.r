@@ -1,6 +1,6 @@
 #' Assign numeric criteria to WQP data
 #'
-#' Assigns general & site-specific numeric WQ criteria to WQP data. Does not calculate criteria w/ correction factors. See calcCriteria (function in development).
+#' Assigns general & site-specific numeric WQ criteria to WQP data. Does not calculate criteria w/ correction factors - this occurrs in dataPrep.
 #' @param data A merged, parameter translated, spatially referenced WQP result object. Must be post parameter translation step.
 #' @param crit_wb Full path and filename for workbook containing criteria.
 #' @param crit_sheetname Name of sheet in workbook holding criteria to be assigned.
