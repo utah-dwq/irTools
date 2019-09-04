@@ -71,6 +71,10 @@ ss_table=data.frame(openxlsx::readWorkbook(crit_wb, sheet=ss_sheetname, startRow
 cf=crit_table[crit_table$BeneficialUse=="CF",]
 data$BEN_CLASS[data$R3172ParameterName %in% cf$R3172ParameterName]=paste0(data$BEN_CLASS[data$R3172ParameterName %in% cf$R3172ParameterName],",CF")
 
+#Identify supplemental parameters (SUP) parameters in crit_table, append ",SUP" to BEN_CLASS for all of these parameters (note, this is so target units can be defined for correction factors)
+sup=crit_table[crit_table$BeneficialUse=="SUP",]
+data$BEN_CLASS[data$R3172ParameterName %in% sup$R3172ParameterName]=paste0(data$BEN_CLASS[data$R3172ParameterName %in% sup$R3172ParameterName],",SUP")
+
 #Expand comma separated uses (BEN_CLASS)
 max_use_count=max(sapply(strsplit(data$BEN_CLASS,","),FUN="length"))
 use_colnames=paste0(rep("use",max_use_count),seq(1:max_use_count))
@@ -91,8 +95,9 @@ dim_check=dim(data_uses_flat_crit)[1]
 
 head(data_uses_flat_crit[which(data_uses_flat_crit$R3172ParameterName=="Magnesium" & is.na(data_uses_flat_crit$NumericCriteria) & data_uses_flat_crit$BeneficialUse=="CF"),])
 
-#Remove "CF" from comma-separated BEN_CLASS column (for future use in rollUp)
+#Remove "CF" & SUP from comma-separated BEN_CLASS column (for future use in rollUp)
 data_uses_flat_crit$BEN_CLASS=gsub(",CF","",data_uses_flat_crit$BEN_CLASS)
+data_uses_flat_crit$BEN_CLASS=gsub(",SUP","",data_uses_flat_crit$BEN_CLASS)
 
 #4. Site specific standards
 #ID records w/ SS criteria (by SSCLocDescription)
@@ -154,8 +159,8 @@ if(rm_nocrit==TRUE){
 }
 
 # Show user table of parameters and the number of records with (and without) standards criteria for each use.
-temp <- data_uses_flat_crit[!is.na(data_uses_flat_crit$NumericCriterion) | data_uses_flat_crit$BeneficialUse=="CF",]
-temp1 <- data_uses_flat_crit[is.na(data_uses_flat_crit$NumericCriterion)&!data_uses_flat_crit$BeneficialUse=="CF",]
+temp <- data_uses_flat_crit[!is.na(data_uses_flat_crit$NumericCriterion) | data_uses_flat_crit$BeneficialUse=="CF" |  data_uses_flat_crit$BeneficialUse=="SUP",]
+temp1 <- data_uses_flat_crit[is.na(data_uses_flat_crit$NumericCriterion)& !data_uses_flat_crit$BeneficialUse=="CF" &  !data_uses_flat_crit$BeneficialUse=="SUP",]
 if(print){
 	print("Data record counts for each parameter with standards criteria and associated beneficial use:")
 	print(table(temp$R3172ParameterName, temp$BeneficialUse))
