@@ -54,7 +54,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   data_raw <- unique(data_raw)
   
   # Convert dates to R dates
-  data_raw$ActivityStartDate=as.Date(data_raw$ActivityStartDate,format='%m/%d/%Y')
+  data_raw$ActivityStartDate=as.Date(data_raw$ActivityStartDate,format='%Y-%m-%d')
   
   # Create year column for scenario calculations
   data_raw$Year=lubridate::year(data_raw$ActivityStartDate)
