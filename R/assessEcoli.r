@@ -59,6 +59,12 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   # Create year column for scenario calculations
   data_raw$Year=lubridate::year(data_raw$ActivityStartDate)
   
+  # JV NOTE - <1 & >2419.6 are coerced to numeric in fillMaskedValues. Simplest solution I can think of right now is to do the conversions in 65 & 66 before coercing to numeric in fillMaskedValues.
+  # EH NOTE: <1 and >2419.6 now handled in readWQP data, before data are coerced to numeric. However, retained in this assessment tool for (potential) data that bypass other segments of irTools.
+  # Should we manually set anything over 2420 to 2420 for assessment? Some over-detect results in WQP have higher limits reported.
+  data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
+  data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
+  
   # Restrict assessments to data collected during recreation season.
   if(rec_season){
     data_raw$Rec_Season=ifelse(lubridate::month(data_raw$ActivityStartDate)>=lubridate::month(as.Date(SeasonStartDate,format='%m-%d'))
@@ -76,17 +82,13 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     }else{
       data_rec = data_raw
     }
-
-  # JV NOTE - <1 & >2419.6 are coerced to numeric in fillMaskedValues. Simplest solution I can think of right now is to do the conversions in 65 & 66 before coercing to numeric in fillMaskedValues.
-  # EH NOTE: <1 and >2419.6 now handled in readWQP data, before data are coerced to numeric. However, retained in this assessment tool for (potential) data that bypass other segments of irTools.
-  # Should we manually set anything over 2420 to 2420 for assessment? Some over-detect results in WQP have higher limits reported.
-  data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
-  data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
+  
+  ecoli_assessments$assessed_data = data_rec
   
   # Aggregate to daily values.
-  daily_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_rec,FUN=function(x){exp(mean(log(x)))})
-  data_processed <- merge(daily_agg,unique(data_rec[,!names(data_rec)%in%c("ActivityStartTime.Time","IR_Value")]), all.x=TRUE)
-  ecoli_assessments$assessed_data = data_processed
+  data_processed=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate+Year,data=data_rec,FUN=function(x){exp(mean(log(x)))})
+  #data_processed <- merge(daily_agg,unique(data_rec[,!names(data_rec)%in%c("ActivityStartTime.Time","IR_Value")]), all.x=TRUE)
+  ecoli_assessments$dailyaggregated_data = data_processed
 
   # maxSamps48hr function - counts the maximum number of samples collected over the rec season that were not collected within 48 hours of another sample(s).
   maxSamps48hr = function(x){
@@ -137,7 +139,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
       }
     # Create output dataframe with MLID/Use/Year/SampleCount...etc.
       out <- samps[1,c("IR_MLID","BeneficialUse","Year")]
-      out$SampleCount = length(geomeans)
+      out$SampleCount = length(geomeans[geomeans>0])
       out$ExcCountLim = 1
       out$ExcCount = length(geomeans[geomeans>=stdcrit])
       out$IR_Cat = ifelse(any(geomeans>=stdcrit),"NS","ScenC")
