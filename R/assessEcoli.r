@@ -85,7 +85,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   
   # Aggregate to daily values.
   daily_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_rec,FUN=function(x){exp(mean(log(x)))})
-  data_processed <- merge(daily_agg,unique(data_rec[,!names(data_rec)%in%c("ActivityStartTime.Time")]), all.x=TRUE)
+  data_processed <- merge(daily_agg,unique(data_rec[,!names(data_rec)%in%c("ActivityStartTime.Time","IR_Value")]), all.x=TRUE)
   ecoli_assessments$assessed_data = data_processed
 
   # maxSamps48hr function - counts the maximum number of samples collected over the rec season that were not collected within 48 hours of another sample(s).
