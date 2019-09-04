@@ -303,7 +303,7 @@ result$accepted_data=acc_data
 result$lakes_trophic=acc_data[acc_data$AU_Type=="Reservoir/Lake" & acc_data$R3172ParameterName %in% c("Chlorophyll a", "Total Phosphorus as P","Depth, Secchi disk depth"),]
 
 #Extract e coli
-result$ecoli=acc_data[acc_data$R3172ParameterName=="E. Coli",] #Note, need to name parameter in param translation table and update here.
+result$ecoli=acc_data[acc_data$R3172ParameterName=="E. coli",]
 
 #x=toxics_strms
 #value_var="IR_Value"
