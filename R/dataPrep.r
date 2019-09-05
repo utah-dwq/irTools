@@ -24,17 +24,17 @@
 #' @export
 dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb, cf_formulas_sheetname, startRow_unit=1, startRow_formulas=1, split_agg_tds=TRUE){
 
-###SETUP#####
-##rm(list=ls(all=TRUE))
-##load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
-#data=data_crit
-#translation_wb="00-lookup-tables\\ir_translation_workbook.xlsx"
+####SETUP#####
+###rm(list=ls(all=TRUE))
+###load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
+#data=acc_data_criteria
+##translation_wb="00-lookup-tables\\ir_translation_workbook.xlsx"
 #split_agg_tds=TRUE
 #unit_sheetname="unitConvTable"
 #startRow_unit=1
-#crit_wb="00-lookup-tables\\IR_uses_standards.xlsx"
+#crit_wb="IR_uses_standards_working.xlsx"
 #cf_formulas_sheetname="cf_formulas"
-#startRow_formulas=1
+#startRow_formulas=3
 ########
 
 result=list()
@@ -47,13 +47,14 @@ count=length(data$CriterionUnits[is.na(data$CriterionUnits)])
 if(count>0){warning(paste(count, 'records being removed due to lack of criteria & units in standards table. These may have been purposely passed through in assign criteria.'))}
 data=data[!is.na(data$CriterionUnits),]# | data$BeneficialUse=="CF" | data$R3172ParameterName=="Profile depth",]
 
+
 ####################################
 ######Activity type check###########
 ####################################
 data_n=data
 data_n$reason=NA
 data_n=within(data_n,{
-	reason[IR_ActivityType!=TargetActivityType]="Non-assessed activity type for parameter"
+	reason[IR_ActivityType!=TargetActivityType & BeneficialUse!='SUP']="Non-assessed activity type for parameter"
 	})
 data_n=data_n[!is.na(data_n$reason),]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
@@ -100,8 +101,9 @@ reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
 print(table(reasons$reason))
 rm(data_n)
 
+with(subset(reasons, reason=='Non-assessed fraction or fraction not defined, & fraction specified by criterion'), {table(ResultSampleFractionText, TargetFraction)})
 
-#Load translation workbook updated from comparison of TOTAL/DISSOLVED units above.
+#Load translation workbook
 trans_wb=openxlsx::loadWorkbook(translation_wb)
 
 #Remove filters from all sheets in trans_wb (filtering seems to cause file corruption occassionally...)
@@ -205,6 +207,12 @@ data[data==""]=NA
 data=merge(data,unit_convs,all.x=T)
 dim(data)
 
+#Manually convert deg F to C
+data=within(data, {
+	IR_Value=ifelse(IR_Unit=='deg F' & CriterionUnits=='C',  (IR_Value − 32)*5/9, IR_Value)
+	IR_Unit=ifelse(IR_Unit=='deg F' & CriterionUnits=='C',  'deg C', IR_Unit)
+})
+
 #Reject records where IR_UnitConv_FLAG is REJECT
 data_n=data
 data_n$reason=NA
@@ -216,7 +224,6 @@ reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
 print(table(reasons$reason))
 rm(data_n)
 
-#JV - in hindsight, shouldn't really be needed. Converted to warning.
 #When IR_Unit = CriterionUnit, make UnitConversionFactor 1
 if(any(na.omit(data[data$IR_Unit==data$CriterionUnits,"UnitConversionFactor"]!=1))){
 	warning("WARNING: Potential error in unit conversion table. Conversion factor !=1 for record where IR_Unit==CriterionUnits.")
@@ -279,19 +286,18 @@ col_names=c("OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","A
 													"ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS","CharacteristicName",
 													"R3172ParameterName","IR_Value","IR_Unit","IR_DetCond","IR_Fraction","CriterionUnits","TargetFraction",
 													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
-													"AssessmentType","CriterionLabel","CriterionType","DailyAggFun","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","NumericCriterion","SSC_StartMon","SSC_EndMon","SSC_MLID"
+													"AssessmentType","TableDescription","CriterionLabel","CriterionType","ParameterQualifier", "FrequencyCombined", "FrequencyNumber", "FrequencyUnit",
+													"DailyAggFun","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","NumericCriterion","SSC_StartMon","SSC_EndMon","SSC_MLID"
 													)
-
-
 acc_data=acc_data[, col_names]
 dim(acc_data)
 
-######
-###Extract lake profiles
-result$lake_profiles=acc_data[!is.na(acc_data$DataLoggerLine) & acc_data$BeneficialUse %in% c("3A","3B","3C","3D","3E"),]
-
-table(result$lake_profiles$R3172ParameterName)
-
+#######
+####Extract lake profiles
+#result$lake_profiles=acc_data[!is.na(acc_data$DataLoggerLine) & acc_data$BeneficialUse %in% c("3A","3B","3C","3D","3E"),]
+#
+#table(result$lake_profiles$R3172ParameterName)
+#
 #Remove profiles from acc_data
 acc_data=acc_data[is.na(acc_data$DataLoggerLine),]
 dim(acc_data)
@@ -299,9 +305,9 @@ dim(acc_data)
 #Return accepted data (minus lake profiles)
 result$accepted_data=acc_data
 
-#Extract lakes trophic data
-result$lakes_trophic=acc_data[acc_data$AU_Type=="Reservoir/Lake" & acc_data$R3172ParameterName %in% c("Chlorophyll a", "Total Phosphorus as P","Depth, Secchi disk depth"),]
-
+##Extract lakes trophic data
+#result$lakes_trophic=acc_data[acc_data$AU_Type=="Reservoir/Lake" & acc_data$R3172ParameterName %in% c("Chlorophyll a", "Total Phosphorus as P","Depth, Secchi disk depth"),]
+#
 #Extract e coli
 result$ecoli=acc_data[acc_data$R3172ParameterName=="E. coli",]
 
@@ -409,7 +415,7 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 	#Calculate hardness (will need to update for different hardness parameters, max of 400?):
 	toxics=within(toxics,{
 			hardness=100*(`cf_min_Calcium_mg/l`/40.08 + `cf_min_Magnesium_mg/l`/24.3)
-			hardness[is.na(hardness)]=`cf_min_Hardness_mg/l`
+			hardness[is.na(hardness)]=`cf_min_Hardness_mg/l`[is.na(hardness)]
 			hardness=ifelse(hardness>400,400,hardness) 
 		})
 
@@ -428,7 +434,10 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 	#Read formula table
 	cf_formulas=data.frame(openxlsx::readWorkbook(criterion_wb, sheet=cf_formulas_sheetname, startRow=startRow_formulas, detectDates=TRUE))
 	
+	names(toxics)[names(toxics) %in% names(cf_formulas)]
+
 	toxics=merge(toxics, cf_formulas, all.x=T)
+	table(toxics$R3172ParameterName, toxics$CriterionFormula)[rowSums(table(toxics$R3172ParameterName, toxics$CriterionFormula))>0,]
 	
 	calc=toxics$NumericCriterion
 	
@@ -456,8 +465,8 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 		NumericCriterion[calc=="calc"]=CalculatedCrit[calc=="calc"]
 	})
 	
-	head(toxics[toxics$R3172ParameterName=='Ammonia',])
-	#boxplot(toxics[toxics$R3172ParameterName=='Ammonia','CalculatedCrit'])
+	#head(toxics[toxics$R3172ParameterName=='Total ammonia as N',])
+	#boxplot(toxics[toxics$R3172ParameterName=='Total ammonia as N','CalculatedCrit'])
 	#Generate toxics result
 	result$toxics=toxics
 	
@@ -534,11 +543,6 @@ if(any(acc_data$AssessmentType=="Conventional")){
 }
 
 objects(result)
-
-
-#Other possible return objects:
-#2. HF do
-
 
 
 #Other possible checks - execution TBD
