@@ -155,7 +155,7 @@ dim(data_uses_flat_crit)
 
 #Remove records w/o criteria or not conversion factor if rm_nocrit==TRUE
 if(rm_nocrit==TRUE){
-	data_uses_flat_crit=data_uses_flat_crit[!is.na(data_uses_flat_crit$NumericCriterion) | data_uses_flat_crit$BeneficialUse=="CF",]
+	data_uses_flat_crit=data_uses_flat_crit[!is.na(data_uses_flat_crit$NumericCriterion) | data_uses_flat_crit$BeneficialUse=="CF" | data_uses_flat_crit$BeneficialUse=="SUP",]
 }
 
 # Show user table of parameters and the number of records with (and without) standards criteria for each use.
