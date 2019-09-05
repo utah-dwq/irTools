@@ -58,7 +58,7 @@ data_n=within(data_n,{
 	})
 data_n=data_n[!is.na(data_n$reason),]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
-print(table(reasons$reason))
+#print(table(reasons$reason))
 rm(data_n)
 
 
@@ -72,7 +72,7 @@ data_n=within(data_n,{
 	})
 data_n=data_n[!is.na(data_n$reason),]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
-print(table(reasons$reason))
+#print(table(reasons$reason))
 rm(data_n)
 
 
@@ -98,7 +98,7 @@ data_n=within(data_n,{
 	reason[(IR_Fraction!=TargetFraction | is.na(IR_Fraction)) & !is.na(TargetFraction)]="Non-assessed fraction or fraction not defined, & fraction specified by criterion"
 	})
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
-print(table(reasons$reason))
+#print(table(reasons$reason))
 rm(data_n)
 
 with(subset(reasons, reason=='Non-assessed fraction or fraction not defined, & fraction specified by criterion'), {table(ResultSampleFractionText, TargetFraction)})
@@ -193,7 +193,7 @@ if(dim(diss_tot)[1]>0){
 	dim(diss_tot_units)
 	
 	reasons=rbind(reasons, diss_tot_units[!is.na(diss_tot_units$reason),])
-	print(table(reasons$reason))
+	#print(table(reasons$reason))
 }
 
 ##################################
@@ -221,7 +221,7 @@ data_n=within(data_n,{
 	})
 data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
-print(table(reasons$reason))
+#print(table(reasons$reason))
 rm(data_n)
 
 #When IR_Unit = CriterionUnit, make UnitConversionFactor 1
