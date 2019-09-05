@@ -87,7 +87,12 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   
   # Aggregate to daily values.
   data_processed=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate+Year,data=data_rec,FUN=function(x){exp(mean(log(x)))})
-  #data_processed <- merge(daily_agg,unique(data_rec[,!names(data_rec)%in%c("ActivityStartTime.Time","IR_Value")]), all.x=TRUE)
+  
+  cols2keep = c("ActivityStartDate","IR_MLID","IR_MLNAME","ASSESS_ID","AU_NAME","AU_Type","BEN_CLASS","R3172ParameterName",
+                "IR_Value","IR_Unit","IR_DetCond","IR_Fraction","IR_ActivityType","IR_Lat","IR_Long","DataLoggerLine",
+                "ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","R317Descrp","ActivityDepthHeightMeasure.MeasureUnitCode")
+  
+  data_processed_allcols <- merge(data_processed,unique(data_rec[,cols2keep]), all.x=TRUE)
   ecoli_assessments$dailyaggregated_data = data_processed
 
   # maxSamps48hr function - counts the maximum number of samples collected over the rec season that were not collected within 48 hours of another sample(s).
@@ -184,15 +189,19 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
 
 ### Rank and Roll Up By Scenarios (one scenario assessment by MLID/use/year as determined by E. coli scenario hierarchy)###
   
-  ScenABC = ScenABC[!(ScenABC$IR_Cat=="ScenB"|ScenABC$IR_Cat=="ScenC"|ScenABC$IR_Cat=="Not Assessed"),]
-  ScenABC$S.rank = 3
-  ScenABC$S.rank[ScenABC$Scenario=="B"] = 2
-  ScenABC$S.rank[ScenABC$Scenario=="C"] = 1
+  ScenABC = ScenABC[!(ScenABC$IR_Cat=="ScenB"|ScenABC$IR_Cat=="ScenC"),]
+  ScenABC$S.rank = 4
+  ScenABC$S.rank[ScenABC$Scenario=="B"] = 3
+  ScenABC$S.rank[ScenABC$Scenario=="C"] = 2
+  ScenABC$S.rank[ScenABC$IR_Cat=="Not Assessed"] = 1
   
   ScenABC_agg <- aggregate(S.rank~IR_MLID+BeneficialUse+Year, data=ScenABC, FUN=max)
   ScenABC_agg$Scenario = "A"
-  ScenABC_agg$Scenario[ScenABC_agg$S.rank==2]="B"
+  ScenABC_agg$Scenario[ScenABC_agg$S.rank==3]="B"
+  ScenABC_agg$Scenario[ScenABC_agg$S.rank==2]="C"
   ScenABC_agg$Scenario[ScenABC_agg$S.rank==1]="C"
+  ScenABC_agg = ScenABC_agg[,!names(ScenABC_agg)%in%"S.rank"]
+  
   ScenABC_assess <- merge(ScenABC_agg, ScenABC, all.x=TRUE)
   ScenABC_assess = ScenABC_assess[,!names(ScenABC_assess)%in%c("S.rank")]
   
