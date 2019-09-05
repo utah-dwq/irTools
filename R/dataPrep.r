@@ -457,7 +457,7 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 		CriterionFormula=stringr::str_replace_all(CriterionFormula, "hardness", as.character(hardness))
 		CriterionFormula=stringr::str_replace_all(CriterionFormula, "min_pH", as.character(`cf_min_pH_pH units`))
 		CriterionFormula=stringr::str_replace_all(CriterionFormula, "max_pH", as.character(`cf_max_pH_pH units`))
-		CriterionFormula=stringr::str_replace_all(CriterionFormula, "T", as.character(`cf_max_Temperature, water_deg C`))
+		CriterionFormula=stringr::str_replace_all(CriterionFormula, "T", as.character(`cf_max_Max. Temperature_C`))
 		CalculatedCrit=sapply(CriterionFormula, function(x) eval(parse(text=x)))
 		suppressWarnings({
 			NumericCriterion=wqTools::facToNum(NumericCriterion)
@@ -468,8 +468,8 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 	#head(toxics[toxics$R3172ParameterName=='Total ammonia as N',])
 	#boxplot(toxics[toxics$R3172ParameterName=='Total ammonia as N','CalculatedCrit'])
 	#Generate toxics result
-	result$toxics=toxics
-	
+	toxics=toxics[,!names(toxics) %in% 'CF']
+	result$toxics=toxics	
 }
 
 
