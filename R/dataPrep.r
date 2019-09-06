@@ -276,7 +276,7 @@ table(data[data$IR_DataPrep_FLAG=="ACCEPT","IR_UnitConv_FLAG"])
 
 ###Pull out accepted data
 acc_data=data[data$IR_DataPrep_FLAG=="ACCEPT",]
-result$acc_data=acc_data
+#result$acc_data=acc_data
 result$rej_data=data[data$IR_DataPrep_FLAG!="ACCEPT",]
 dim(acc_data)
 table(is.na(acc_data$DataLoggerLine))
