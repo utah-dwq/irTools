@@ -27,15 +27,15 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb,
 ####SETUP#####
 ###rm(list=ls(all=TRUE))
 ###load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
-#data=acc_data_criteria
-##translation_wb="00-lookup-tables\\ir_translation_workbook.xlsx"
-#split_agg_tds=TRUE
-#unit_sheetname="unitConvTable"
-#startRow_unit=1
-#crit_wb="IR_uses_standards_working.xlsx"
-#cf_formulas_sheetname="cf_formulas"
-#startRow_formulas=3
-########
+data=acc_data_criteria
+#translation_wb="00-lookup-tables\\ir_translation_workbook.xlsx"
+split_agg_tds=TRUE
+unit_sheetname="unitConvTable"
+startRow_unit=1
+crit_wb="IR_uses_standards_working.xlsx"
+cf_formulas_sheetname="cf_formulas"
+startRow_formulas=3
+#######
 
 result=list()
 
@@ -197,7 +197,7 @@ if(dim(diss_tot)[1]>0){
 }
 
 ##################################
-###Unit conversions for IR data###   ###Need work around for Temperature, water, deg F if it occurs (I just rejected it in paramTransTable for now)
+###Unit conversions for IR data###
 ##################################
 
 #Double check that blanks are all NA in data (shouldn't really need this at this point)
@@ -246,14 +246,25 @@ data=within(data,{
 #Reject non-detect records where IR_LowerLimitValue > NumericCriterion
 data_n=data
 data_n$reason=NA
-data_n=within(data_n,{
-	reason[IR_DetCond=="ND" & IR_LowerLimitValue>NumericCriterion]="Non-detect result with detection limit > criterion."
+suppressWarnings({
+	data_n=within(data_n,{
+		reason[IR_DetCond=="ND" & which(as.numeric(IR_LowerLimitValue)>as.numeric(NumericCriterion))]="Non-detect result with detection limit > criterion."
 	})
+})
 data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
 print(table(reasons$reason))
 rm(data_n)
 
+# Reject records non-detect records when a detection is available on the same day
+nd=data[data$IR_DetCond=='ND',]
+det=unique(data[data$IR_DetCond=='DET', c('ActivityIdentifier', 'IR_MLID', 'R3172ParameterName', 'IR_Fraction', 'ActivityStartDate')])
+det$reason='Non detect value with a detection value also associated with this activity identifier, parameter, and fraction'
+nd=merge(nd, det)
+nd=nd[!is.na(nd$reason),names(nd) %in% names(reasons)]
+reasons=rbind(reasons, nd[!is.na(nd$reason),])
+print(table(reasons$reason))
+rm(nd)
 
 ####Apply rejections to flag column in data
 flags=reasons
@@ -471,6 +482,14 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 	#boxplot(toxics[toxics$R3172ParameterName=='Total ammonia as N','CalculatedCrit'])
 	#Generate toxics result
 	toxics=toxics[,!names(toxics) %in% 'CF']
+	
+	# Check for non-detect IR_Value > NumericCriterion (this second check is needed for calculated criteria)
+	# To do this, need to join detection conditions back to daily aggregated data by IR_Value.
+	#det_cond=unique(acc_data[,c('IR_MLID','IR_MLNAME','ActivityStartDate','CharacteristicName','R3172ParameterName','IR_Value','IR_DetCond')])
+	
+	
+	
+	
 	result$toxics=toxics	
 }
 
