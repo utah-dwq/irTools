@@ -347,10 +347,12 @@ drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "Act
 ######
 if(any(acc_data$AssessmentType=="Toxic")){
 
+## Extract radium data
+result$radium=acc_data[acc_data$R3172ParameterName=='Radium 226, 228 (Combined)',]
+acc_data=acc_data[acc_data$R3172ParameterName!='Radium 226, 228 (Combined)',]
+
 toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$BeneficialUse=="CF"),]
 
-
-	
 	#split streams & lakes
 	toxics_strms=toxics_raw[which(toxics_raw$AU_Type=="River/Stream"),]
 	toxics_lakes=toxics_raw[which(toxics_raw$AU_Type=="Reservoir/Lake"),]
@@ -471,7 +473,6 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 	toxics=toxics[,!names(toxics) %in% 'CF']
 	result$toxics=toxics	
 }
-
 
 #############
 #######Conventionals
