@@ -45,12 +45,12 @@ assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startR
 ##library(openxlsx)
 ##library(reshape2)
 ##library(plyr)
-#data=accepted_data
-#crit_wb="C:\\Users\\jvander\\Documents\\R\\irTools-test-16\\lookup-tables\\IR_uses_standards.xlsx"
+#data=acc_data
+#crit_wb="IR_uses_standards_working_v4_ef.xlsx"
 #crit_sheetname="criteria"
 #ss_sheetname="ss_criteria"
-#crit_startRow=1
-#ss_startRow=1
+#crit_startRow=3
+#ss_startRow=4
 
 
 
@@ -58,7 +58,7 @@ assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startR
 if(!any(names(data)=="R3172ParameterName")){
 	stop("Error: input data must be post-parameter translation and contain translated parameter names in R3172ParameterName column.")
 	}
-
+data=data[,!names(data) %in% "R3172ParameterName"]
 
 #Load workbook
 crit_wb=openxlsx::loadWorkbook(crit_wb)
@@ -66,6 +66,14 @@ crit_wb=openxlsx::loadWorkbook(crit_wb)
 #Read selected sheets in workbook table - note, these tables should be simplified/harmonized to just needed columns & eliminate overlap w/ parameter translation table (consider putting assessment & activity types here instead of param translation)
 crit_table=data.frame(openxlsx::readWorkbook(crit_wb, sheet=crit_sheetname, startRow=crit_startRow, detectDates=TRUE))
 ss_table=data.frame(openxlsx::readWorkbook(crit_wb, sheet=ss_sheetname, startRow=ss_startRow, detectDates=TRUE))
+
+if(any(names(data) =='CASLinked')){
+	names(data)[names(data) =='CASLinked']='CAS'
+}
+
+names(data)[names(data) %in% names(crit_table)]
+names(data)[names(data) %in% names(ss_table)]
+
 
 #Identify correction factor (CF) parameters in crit_table, append ",CF" to BEN_CLASS for all of these parameters (note, this is so target units can be defined for correction factors)
 cf=crit_table[crit_table$BeneficialUse=="CF",]
@@ -93,8 +101,6 @@ data_uses_flat=merge(data,uses_flat,all=T)
 data_uses_flat_crit=merge(data_uses_flat,crit_table,all.x=T)
 dim_check=dim(data_uses_flat_crit)[1]
 
-head(data_uses_flat_crit[which(data_uses_flat_crit$R3172ParameterName=="Magnesium" & is.na(data_uses_flat_crit$NumericCriteria) & data_uses_flat_crit$BeneficialUse=="CF"),])
-
 #Remove "CF" & SUP from comma-separated BEN_CLASS column (for future use in rollUp)
 data_uses_flat_crit$BEN_CLASS=gsub(",CF","",data_uses_flat_crit$BEN_CLASS)
 data_uses_flat_crit$BEN_CLASS=gsub(",SUP","",data_uses_flat_crit$BEN_CLASS)
@@ -114,7 +120,6 @@ data_uses_flat_crit=data_uses_flat_crit[,!names(data_uses_flat_crit) %in% "ssc"]
 
 #Merge SS criteria to data_uses_flat (by parameter and ss location description, only keep matches) in new object
 data_uses_flat_ssc=merge(data_uses_flat,ss_table)
-head(data_uses_flat_ssc)
 dim(data_uses_flat_ssc)
 
 #Remove matches where MLID != SS MLID (if provided)
