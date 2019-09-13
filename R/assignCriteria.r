@@ -169,10 +169,10 @@ temp1 <- data_uses_flat_crit[is.na(data_uses_flat_crit$NumericCriterion)& !data_
 if(print){
 	print("Data record counts for each parameter with standards criteria and associated beneficial use:")
 	print(table(temp$R3172ParameterName, temp$BeneficialUse))
-	if(length(temp1[,1])>0){
-	print("Data record counts for each parameter without standard criteria:")
-	print(table(temp1$R3172ParameterName, temp1$BeneficialUse))
-	}
+	#if(length(temp1[,1])>0){
+	#print("Data record counts for each parameter without standard criteria:")
+	#print(table(temp1$R3172ParameterName, temp1$BeneficialUse))
+	#}
 }
 
 return(data_uses_flat_crit)
