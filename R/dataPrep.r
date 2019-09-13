@@ -269,6 +269,25 @@ print(table(reasons$reason))
 rm(nd)
 
 
+####Apply rejections to flag column in data
+flags=reasons
+flags$IR_DataPrep_FLAG="REJECT"
+flags=unique(flags[,c("ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","IR_DataPrep_FLAG")])
+dimcheck=dim(data)[1]
+data=merge(data,flags,all.x=T)
+result$data_flags=data
+result$flag_reasons=reasons
+
+if(dimcheck!=dim(data)[1]){
+	stop("ERROR: Error in applying data prep flags. Data dimension[1] has changed.")
+	}
+data=within(data, {IR_DataPrep_FLAG[is.na(IR_DataPrep_FLAG)]="ACCEPT"})
+
+print("Data prep record ACCEPT/REJECT counts:")
+print(table(data$IR_DataPrep_FLAG))
+table(data[data$IR_DataPrep_FLAG=="ACCEPT","IR_UnitConv_FLAG"])
+
+
 
 ###Pull out accepted data
 acc_data=data[data$IR_DataPrep_FLAG=="ACCEPT",]
@@ -589,6 +608,8 @@ if(any(acc_data$AssessmentType=="Conventional")){
 #Estimated & calculated value check
 #Holding times
 
+#Return accepted data
+result$accepted_data=acc_data
 
 ####Apply rejections to flag column in data
 flags=reasons
@@ -608,11 +629,9 @@ print("Data prep record ACCEPT/REJECT counts:")
 print(table(data$IR_DataPrep_FLAG))
 table(data[data$IR_DataPrep_FLAG=="ACCEPT","IR_UnitConv_FLAG"])
 
-#Return accepted data (minus lake profiles)
-result$accepted_data=acc_data
+
 
 objects(result)
-
 
 return(result)
 
