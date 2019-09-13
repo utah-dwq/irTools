@@ -41,16 +41,16 @@ assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startR
 
 
 
-#####Testing setup
-##library(openxlsx)
-##library(reshape2)
-##library(plyr)
-#data=acc_data
-#crit_wb="IR_uses_standards_working_v4_ef.xlsx"
-#crit_sheetname="criteria"
-#ss_sheetname="ss_criteria"
-#crit_startRow=3
-#ss_startRow=4
+####Testing setup
+#library(openxlsx)
+#library(reshape2)
+#library(plyr)
+data=acc_data
+crit_wb="IR_uses_standards_working_v4_ef.xlsx"
+crit_sheetname="criteria"
+ss_sheetname="ss_criteria"
+crit_startRow=3
+ss_startRow=4
 
 
 
@@ -77,11 +77,11 @@ names(data)[names(data) %in% names(ss_table)]
 
 #Identify correction factor (CF) parameters in crit_table, append ",CF" to BEN_CLASS for all of these parameters (note, this is so target units can be defined for correction factors)
 cf=crit_table[crit_table$BeneficialUse=="CF",]
-data$BEN_CLASS[data$R3172ParameterName %in% cf$R3172ParameterName]=paste0(data$BEN_CLASS[data$R3172ParameterName %in% cf$R3172ParameterName],",CF")
+data$BEN_CLASS[data$CAS %in% cf$CAS]=paste0(data$BEN_CLASS[data$CAS %in% cf$CAS],",CF")
 
 #Identify supplemental parameters (SUP) parameters in crit_table, append ",SUP" to BEN_CLASS for all of these parameters (note, this is so target units can be defined for correction factors)
 sup=crit_table[crit_table$BeneficialUse=="SUP",]
-data$BEN_CLASS[data$R3172ParameterName %in% sup$R3172ParameterName]=paste0(data$BEN_CLASS[data$R3172ParameterName %in% sup$R3172ParameterName],",SUP")
+data$BEN_CLASS[data$CAS %in% sup$CAS]=paste0(data$BEN_CLASS[data$CAS %in% sup$CAS],",SUP")
 
 #Expand comma separated uses (BEN_CLASS)
 max_use_count=max(sapply(strsplit(data$BEN_CLASS,","),FUN="length"))
