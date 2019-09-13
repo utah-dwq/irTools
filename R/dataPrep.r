@@ -27,15 +27,15 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb,
 ####SETUP#####
 ###rm(list=ls(all=TRUE))
 ###load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
-data=acc_data_criteria
-#translation_wb="00-lookup-tables\\ir_translation_workbook.xlsx"
-split_agg_tds=TRUE
-unit_sheetname="unitConvTable"
-startRow_unit=1
-crit_wb="IR_uses_standards_working.xlsx"
-cf_formulas_sheetname="cf_formulas"
-startRow_formulas=3
-#######
+#data=acc_data_criteria
+##translation_wb="00-lookup-tables\\ir_translation_workbook.xlsx"
+#split_agg_tds=TRUE
+#unit_sheetname="unitConvTable"
+#startRow_unit=1
+#crit_wb="IR_uses_standards_working_v4_ef.xlsx"
+#cf_formulas_sheetname="cf_formulas"
+#startRow_formulas=3
+########
 
 result=list()
 
@@ -248,9 +248,11 @@ data_n=data
 data_n$reason=NA
 suppressWarnings({
 	data_n=within(data_n,{
-		reason[IR_DetCond=="ND" & which(as.numeric(IR_LowerLimitValue)>as.numeric(NumericCriterion))]="Non-detect result with detection limit > criterion."
+		reason[which(IR_DetCond=="ND" & as.numeric(IR_LowerLimitValue)>as.numeric(NumericCriterion))]="Non-detect result with detection limit > criterion"
 	})
 })
+table(data_n$reason)
+
 data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
 print(table(reasons$reason))
@@ -259,30 +261,13 @@ rm(data_n)
 # Reject records non-detect records when a detection is available on the same day
 nd=data[data$IR_DetCond=='ND',]
 det=unique(data[data$IR_DetCond=='DET', c('ActivityIdentifier', 'IR_MLID', 'R3172ParameterName', 'IR_Fraction', 'ActivityStartDate')])
-det$reason='Non detect value with a detection value also associated with this activity identifier, parameter, and fraction'
+det$reason='Non detect value with a detection value available for this activity identifier, parameter, and fraction'
 nd=merge(nd, det)
 nd=nd[!is.na(nd$reason),names(nd) %in% names(reasons)]
 reasons=rbind(reasons, nd[!is.na(nd$reason),])
 print(table(reasons$reason))
 rm(nd)
 
-####Apply rejections to flag column in data
-flags=reasons
-flags$IR_DataPrep_FLAG="REJECT"
-flags=unique(flags[,c("ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","IR_DataPrep_FLAG")])
-dimcheck=dim(data)[1]
-data=merge(data,flags,all.x=T)
-result$data_flags=data
-result$flag_reasons=reasons
-
-if(dimcheck!=dim(data)[1]){
-	stop("ERROR: Error in applying data prep flags. Data dimension[1] has changed.")
-	}
-data=within(data, {IR_DataPrep_FLAG[is.na(IR_DataPrep_FLAG)]="ACCEPT"})
-
-print("Data prep record ACCEPT/REJECT counts:")
-print(table(data$IR_DataPrep_FLAG))
-table(data[data$IR_DataPrep_FLAG=="ACCEPT","IR_UnitConv_FLAG"])
 
 
 ###Pull out accepted data
@@ -295,7 +280,7 @@ table(is.na(acc_data$DataLoggerLine))
 #Subset columns (note - col names may change w/ standards table, may want a cleaner way around this)
 col_names=c("OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","ActivityStartTime.Time","IR_ActivityType","IR_MLID","IR_MLNAME","MonitoringLocationTypeName","R317Descrp","IR_Lat","IR_Long",
 													"ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS","CharacteristicName",
-													"R3172ParameterName","IR_Value","IR_Unit","IR_DetCond","IR_Fraction","CriterionUnits","TargetFraction",
+													"IRParameterName", "R3172ParameterName","IR_Value","IR_Unit","IR_DetCond","IR_Fraction","CriterionUnits","TargetFraction",
 													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
 													"AssessmentType","TableDescription","CriterionLabel","CriterionType","ParameterQualifier", "FrequencyCombined", "FrequencyNumber", "FrequencyUnit",
 													"DailyAggFun","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","NumericCriterion","SSC_StartMon","SSC_EndMon","SSC_MLID"
@@ -313,8 +298,6 @@ dim(acc_data)
 acc_data=acc_data[is.na(acc_data$DataLoggerLine),]
 dim(acc_data)
 
-#Return accepted data (minus lake profiles)
-result$accepted_data=acc_data
 
 ##Extract lakes trophic data
 #result$lakes_trophic=acc_data[acc_data$AU_Type=="Reservoir/Lake" & acc_data$R3172ParameterName %in% c("Chlorophyll a", "Total Phosphorus as P","Depth, Secchi disk depth"),]
@@ -350,7 +333,13 @@ aggDVbyfun=function(x, value_var, drop_vars, agg_var){
 	return(daily)
 }
 
-drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode","IR_Fraction","IR_DetCond")
+drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode","IR_Fraction","IR_DetCond", "MonitoringLocationTypeName")
+
+
+
+
+
+
 
 
 #############
@@ -360,9 +349,9 @@ if(any(acc_data$AssessmentType=="Toxic")){
 
 ## Extract radium data
 result$radium=acc_data[acc_data$R3172ParameterName=='Radium 226, 228 (Combined)',]
-acc_data=acc_data[acc_data$R3172ParameterName!='Radium 226, 228 (Combined)',]
 
 toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$BeneficialUse=="CF"),]
+toxics_raw=toxics_raw[toxics_raw$R3172ParameterName!='Radium 226, 228 (Combined)',]
 
 	#split streams & lakes
 	toxics_strms=toxics_raw[which(toxics_raw$AU_Type=="River/Stream"),]
@@ -381,7 +370,7 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 		toxics_strms_daily=toxics_strms_daily[toxics_strms_daily$BeneficialUse!="CF",]
 		dim(toxics_strms_daily)
 		
-		cfs_strms$cf=paste0("cf_",cfs_strms$DailyAggFun,"_",cfs_strms$R3172ParameterName,"_",cfs_strms$IR_Unit)
+		cfs_strms$cf=paste0("cf_",cfs_strms$DailyAggFun,"_",cfs_strms$IRParameterName,"_",cfs_strms$IR_Unit)
 		cfs_strms_cast=reshape2::dcast(cfs_strms, ActivityStartDate+IR_MLID~cf, value.var="IR_Value")
 		
 		dim(toxics_strms_daily)
@@ -404,7 +393,7 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 		toxics_lakes_daily=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse!="CF",]
 		dim(toxics_lakes_daily)
 		
-		cfs_lakes$cf=paste0("cf_",cfs_lakes$DailyAggFun,"_",cfs_lakes$R3172ParameterName,"_",cfs_lakes$IR_Unit)
+		cfs_lakes$cf=paste0("cf_",cfs_lakes$DailyAggFun,"_",cfs_lakes$IRParameterName,"_",cfs_lakes$IR_Unit)
 		cfs_lakes_cast=reshape2::dcast(cfs_lakes, ActivityStartDate+IR_MLID~cf, value.var="IR_Value")
 		
 		dim(toxics_lakes_daily)
@@ -478,18 +467,48 @@ toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$Beneficial
 		NumericCriterion[calc=="calc"]=CalculatedCrit[calc=="calc"]
 	})
 	
+	plot(toxics$CalculatedCrit~toxics$hardness)
+	
 	#head(toxics[toxics$R3172ParameterName=='Total ammonia as N',])
 	#boxplot(toxics[toxics$R3172ParameterName=='Total ammonia as N','CalculatedCrit'])
-	#Generate toxics result
 	toxics=toxics[,!names(toxics) %in% 'CF']
 	
-	# Check for non-detect IR_Value > NumericCriterion (this second check is needed for calculated criteria)
+	# Check for non-detect IR_Value/lql_fac > NumericCriterion (this second check is needed for calculated criteria)
 	# To do this, need to join detection conditions back to daily aggregated data by IR_Value.
-	#det_cond=unique(acc_data[,c('IR_MLID','IR_MLNAME','ActivityStartDate','CharacteristicName','R3172ParameterName','IR_Value','IR_DetCond')])
+	# Then remove those records from both toxics & acc_data
+	# Note that another way to do this would have been to aggregate & assign CF values and calculate criteria for all raw data before aggregating to daily values.
+	det_cond=unique(acc_data[,c('IR_MLID','IR_MLNAME','ActivityStartDate','CharacteristicName','IRParameterName','R3172ParameterName','IR_Value','IR_Fraction','IR_DetCond')])
+	nd=subset(det_cond, IR_DetCond=='ND')
+	dimcheck=dim(toxics)[1]
+	toxics=merge(toxics, nd, all.x=T)
+	if(dim(toxics)[1]!=dimcheck){
+		stop("Error identifying non-detect values in aggregated toxics data.")
+	}
 	
+	data_n=toxics
+	data_n$reason=NA
+	data_n=within(data_n,{
+		reason[which(IR_DetCond=="ND" & as.numeric(IR_Value*2)>as.numeric(NumericCriterion))]="Non-detect result with detection limit > criterion (aggregated & calculated data)"
+	})
+	table(data_n$reason)
 	
+	data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
+	reasons=plyr::rbind.fill(reasons, data_n[!is.na(data_n$reason),])
+	print(table(reasons$reason))
 	
+	data_n=unique(data_n[,c('IR_MLID','IR_MLNAME','ActivityStartDate','CharacteristicName','IRParameterName','R3172ParameterName','IR_Value','IR_Fraction','IR_DetCond','reason')])
+	dimcheck=dim(acc_data)[1]
+	acc_data=merge(acc_data, data_n, all.x=T)
+	if(dim(acc_data)[1]!=dimcheck){
+		stop("Error identifying non-detect values in raw data to reject based on value > calculated criteria.")
+	}
+	table(acc_data$reason)
 	
+	acc_data=acc_data[!is.na(acc_data$reason), !names(acc_data) %in% reason]
+	
+	rm(data_n)
+	
+	#Generate toxics result
 	result$toxics=toxics	
 }
 
@@ -562,7 +581,6 @@ if(any(acc_data$AssessmentType=="Conventional")){
 	if(exists("conventionals")){result$conventionals=conventionals}
 }
 
-objects(result)
 
 
 #Other possible checks - execution TBD
@@ -570,6 +588,30 @@ objects(result)
 #Value based flags & rejections (if performing, desired flags/rejections should be input to param translation table)
 #Estimated & calculated value check
 #Holding times
+
+
+####Apply rejections to flag column in data
+flags=reasons
+flags$IR_DataPrep_FLAG="REJECT"
+flags=unique(flags[,c("ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","IR_DataPrep_FLAG")])
+dimcheck=dim(data)[1]
+data=merge(data,flags,all.x=T)
+result$data_flags=data
+result$flag_reasons=reasons
+
+if(dimcheck!=dim(data)[1]){
+	stop("ERROR: Error in applying data prep flags. Data dimension[1] has changed.")
+	}
+data=within(data, {IR_DataPrep_FLAG[is.na(IR_DataPrep_FLAG)]="ACCEPT"})
+
+print("Data prep record ACCEPT/REJECT counts:")
+print(table(data$IR_DataPrep_FLAG))
+table(data[data$IR_DataPrep_FLAG=="ACCEPT","IR_UnitConv_FLAG"])
+
+#Return accepted data (minus lake profiles)
+result$accepted_data=acc_data
+
+objects(result)
 
 
 return(result)
