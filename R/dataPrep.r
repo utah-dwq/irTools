@@ -24,11 +24,8 @@
 #' @export
 dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb, cf_formulas_sheetname, startRow_unit=1, startRow_formulas=1, split_agg_tds=TRUE){
 
-####SETUP#####
-###rm(list=ls(all=TRUE))
-###load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\ready_for_prep.RData")
+#####SETUP#####
 #data=acc_data_criteria
-##translation_wb="00-lookup-tables\\ir_translation_workbook.xlsx"
 #split_agg_tds=TRUE
 #unit_sheetname="unitConvTable"
 #startRow_unit=1
@@ -39,8 +36,49 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb,
 
 result=list()
 
+
+# aggregate to daily values function
+x=toxics_strms
+value_var="IR_Value"
+agg_var="DailyAggFun"
+aggDVbyfun=function(x, value_var, drop_vars, agg_var){
+	val=x[,value_var]
+	x=x[,!names(x) %in% value_var & !names(x) %in% drop_vars]
+	num_names=names(x[unlist(lapply(x, is.numeric))])
+	x=as.data.frame(lapply(x, addNA, ifany=T)) #Add NA as factor level where cols contain NAs (converts everything to factor)
+	x=data.frame(val,x) #Add back in preserved numeric val (alternatively could allow it to convert to factor then use as.numeric(levels(z))[z])
+	x=x[,!names(x) %in% drop_vars]
+	daily=x[0,]
+	funs=unique(x[,agg_var])
+
+	for(n in 1:length(funs)){
+		fun_n=funs[n]
+		x_n=x[x[,agg_var]==fun_n,]
+		daily_n=aggregate(val~.,x_n, FUN=get(paste(fun_n)))
+		daily=rbind(daily,daily_n)
+	}
+
+	daily[num_names]=lapply(daily[num_names], wqTools::facToNum) #Convert numeric cols back to numeric
+
+	names(daily)[names(daily)=="val"]=value_var #Rename value_var
+
+	return(daily)
+}
+
+#Column names to pass through function
+col_names=c("OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","ActivityStartTime.Time","IR_ActivityType","IR_MLID","IR_MLNAME","MonitoringLocationTypeName","R317Descrp","IR_Lat","IR_Long",
+													"ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS","CharacteristicName","ParameterGroupName",
+													"CAS", "IRParameterName", "R3172ParameterName","IR_Value","IR_Unit","IR_DetCond","ResultSampleFractionText","IR_Fraction","CriterionUnits","TargetFraction",
+													"IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit",
+													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
+													"AssessmentType","TableDescription","CriterionLabel","CriterionType","ParameterQualifier", "FrequencyCombined", "FrequencyNumber", "FrequencyUnit","TargetActivityType",
+													"DailyAggFun","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","NumericCriterion","SSC_StartMon","SSC_EndMon","SSC_MLID"
+													)
+
+data=data[,col_names]
 reasons=data.frame(data[0,])
 reasons$reason=character(0)
+
 
 #Remove records w/o criteria (in case they have been optionally passed through assignCriteria - these cause errors in aggregation steps as they do not have aggregation functions specified)
 count=length(data$CriterionUnits[is.na(data$CriterionUnits)])
@@ -103,14 +141,6 @@ rm(data_n)
 
 with(subset(reasons, reason=='Non-assessed fraction or fraction not defined, & fraction specified by criterion'), {table(ResultSampleFractionText, TargetFraction)})
 
-#Load translation workbook
-trans_wb=openxlsx::loadWorkbook(translation_wb)
-
-#Remove filters from all sheets in trans_wb (filtering seems to cause file corruption occassionally...)
-sheetnames=openxlsx::getSheetNames(translation_wb)
-for(n in 1:length(sheetnames)){
-  openxlsx::removeFilter(trans_wb, sheetnames[n])
-}
 
 
 ##################################
@@ -224,6 +254,28 @@ reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
 #print(table(reasons$reason))
 rm(data_n)
 
+##Reject records with pH<=0 or pH>16
+#data_n=data
+#data_n$reason=NA
+#data_n=within(data_n,{
+#	reason[IRParameterName=="pH" & (IR_Value<=0 | IR_Value>16)]="Reported pH value <=0 or >16"
+#	})
+#data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
+#reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+##print(table(reasons$reason))
+#rm(data_n)
+#
+##Reject records with temperature<=-10 or >50
+#data_n=data
+#data_n$reason=NA
+#data_n=within(data_n,{
+#	reason[IRParameterName=="Max. Temperature" & (IR_Value<-10 | IR_Value>40)]="Reported temperature value <-10 or >40"
+#	})
+#data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
+#reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+##print(table(reasons$reason))
+#rm(data_n)
+
 #When IR_Unit = CriterionUnit, make UnitConversionFactor 1
 if(any(na.omit(data[data$IR_Unit==data$CriterionUnits,"UnitConversionFactor"]!=1))){
 	warning("WARNING: Potential error in unit conversion table. Conversion factor !=1 for record where IR_Unit==CriterionUnits.")
@@ -243,6 +295,111 @@ data=within(data,{
 	IR_UpperLimitUnit = CriterionUnits
 })
 
+# Reject records non-detect records when a detection is available on the same day
+nd=data[data$IR_DetCond=='ND',]
+det=unique(data[data$IR_DetCond=='DET', c('ActivityIdentifier', 'IR_MLID', 'R3172ParameterName', 'IR_Fraction', 'ActivityStartDate')])
+det$reason='Non detect value with a detection value available for this activity identifier, parameter, and fraction'
+nd=merge(nd, det)
+nd=nd[!is.na(nd$reason),names(nd) %in% names(reasons)]
+reasons=rbind(reasons, nd[!is.na(nd$reason),])
+print(table(reasons$reason))
+rm(nd)
+
+
+
+# Assign correction factors to data requiring calculations
+## Extract CFs
+cfs=unique(data[data$BeneficialUse=="CF",c("ActivityStartDate","IR_MLID","IRParameterName","DailyAggFun","IR_Unit","IR_Value")])
+data=data[data$BeneficialUse!="CF",]
+calcs=data[which(data$NumericCriterion=="calc"),col_names]
+data=data[which(data$NumericCriterion!="calc"),]
+
+## Aggregate CFs to daily values & cast to wide format
+drop_vars=""
+cfs_daily=aggDVbyfun(cfs, drop_vars=drop_vars, value_var="IR_Value", agg_var="DailyAggFun")
+
+dim(cfs)
+dim(cfs_daily)
+
+cfs_daily$cf=paste0("cf_",cfs_daily$DailyAggFun,"_",cfs_daily$IRParameterName,"_",cfs_daily$IR_Unit)
+cfs_daily_cast=reshape2::dcast(cfs_daily, ActivityStartDate+IR_MLID~cf, value.var="IR_Value")
+
+
+## Calculate hardness
+cfs_daily_cast=within(cfs_daily_cast,{
+		hardness=100*(`cf_min_Calcium_mg/l`/40.08 + `cf_min_Magnesium_mg/l`/24.3)
+		hardness[is.na(hardness)]=`cf_min_Hardness_mg/l`[is.na(hardness)]
+		hardness=ifelse(hardness>400,400,hardness) 
+	})
+
+## Merge CFs back to data
+dimcheck=dim(calcs)[1]
+calcs=merge(calcs,cfs_daily_cast,all.x=T)
+if(dim(calcs)[1] != dimcheck){
+	stop('ERROR: Failure assigning correction factors to data.')
+}
+
+
+## Calculate CF dependent criteria
+### Load criterion workbook
+criterion_wb=openxlsx::loadWorkbook(crit_wb)
+
+### Remove filters from all sheets in crit_wb
+sheetnames=openxlsx::getSheetNames(crit_wb)
+for(n in 1:length(sheetnames)){
+openxlsx::removeFilter(criterion_wb, sheetnames[n])
+}
+
+### Read formula table
+cf_formulas=data.frame(openxlsx::readWorkbook(criterion_wb, sheet=cf_formulas_sheetname, startRow=startRow_formulas, detectDates=TRUE))
+cf_formulas=cf_formulas[,!names(cf_formulas) %in% c("R3172ParameterName", "IRParameterName")]
+
+names(calcs)[names(calcs) %in% names(cf_formulas)]
+
+
+### Merge formulas to data
+calcs=merge(calcs, cf_formulas, all.x=T)
+table(calcs$R3172ParameterName, calcs$CriterionFormula)[rowSums(table(calcs$R3172ParameterName, calcs$CriterionFormula))>0,]
+any(is.na(calcs$CriterionFormula))
+
+
+### Fill & evaluate formula
+calcs=within(calcs, {
+	CF[!is.na(CF)]=paste0("(",CF[!is.na(CF)],")")
+	CriterionFormula=gsub("CF * ","",CriterionFormula, fixed=TRUE)
+	CriterionFormula[!is.na(CF)]=paste0("(",CriterionFormula[!is.na(CF)],")")
+	CriterionFormula[!is.na(CF)]=paste(CF[!is.na(CF)], "*", CriterionFormula[!is.na(CF)])
+	CriterionFormula=gsub("MIN", "min", CriterionFormula, fixed=TRUE)
+	CriterionFormula=gsub("MAX", "max", CriterionFormula, fixed=TRUE)
+	CriterionFormula=gsub("ln", "log", CriterionFormula, fixed=TRUE)
+	CriterionFormula=gsub(") (", ")*(", CriterionFormula, fixed=TRUE)
+	CriterionFormula=gsub(")(",  ")*(", CriterionFormula, fixed=TRUE)
+	CriterionFormula=gsub("(e(",  "(exp(", CriterionFormula, fixed=TRUE)
+	CriterionFormula=gsub("e(",  "exp(", CriterionFormula, fixed=TRUE)
+	CriterionFormula=gsub("IFELSE",  "ifelse", CriterionFormula, fixed=TRUE)
+	CriterionFormula=stringr::str_replace_all(CriterionFormula, "hardness", as.character(hardness))
+	CriterionFormula=stringr::str_replace_all(CriterionFormula, "min_pH", as.character(`cf_min_pH_pH units`))
+	CriterionFormula=stringr::str_replace_all(CriterionFormula, "max_pH", as.character(`cf_max_pH_pH units`))
+	CriterionFormula=stringr::str_replace_all(CriterionFormula, "T", as.character(`cf_max_Max. Temperature_C`))
+	CalculatedCrit=sapply(CriterionFormula, function(x) eval(parse(text=x)))
+	suppressWarnings({
+		NumericCriterion=wqTools::facToNum(NumericCriterion)
+	})
+	NumericCriterion=CalculatedCrit
+})
+
+plot(calcs$CalculatedCrit~calcs$hardness)
+plot(calcs$CalculatedCrit~calcs$`cf_max_pH_pH units`)
+
+### Bind calculated criteria data back to full dataset
+calcs=calcs[,unique(c(col_names,'cf_max_Max. Temperature_C','cf_max_pH_pH units','cf_min_Calcium_mg/l','cf_min_Hardness_mg/l','cf_min_Magnesium_mg/l','cf_min_pH_pH units','hardness','CriterionFormula','CalculatedCrit'))]	
+
+dim(calcs)
+dim(data)
+
+data=plyr::rbind.fill(data, calcs)
+
+
 #Reject non-detect records where IR_LowerLimitValue > NumericCriterion
 data_n=data
 data_n$reason=NA
@@ -255,19 +412,8 @@ table(data_n$reason)
 
 data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
-print(table(reasons$reason))
+#print(table(reasons$reason))
 rm(data_n)
-
-# Reject records non-detect records when a detection is available on the same day
-nd=data[data$IR_DetCond=='ND',]
-det=unique(data[data$IR_DetCond=='DET', c('ActivityIdentifier', 'IR_MLID', 'R3172ParameterName', 'IR_Fraction', 'ActivityStartDate')])
-det$reason='Non detect value with a detection value available for this activity identifier, parameter, and fraction'
-nd=merge(nd, det)
-nd=nd[!is.na(nd$reason),names(nd) %in% names(reasons)]
-reasons=rbind(reasons, nd[!is.na(nd$reason),])
-print(table(reasons$reason))
-rm(nd)
-
 
 ####Apply rejections to flag column in data
 flags=reasons
@@ -275,8 +421,8 @@ flags$IR_DataPrep_FLAG="REJECT"
 flags=unique(flags[,c("ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","IR_DataPrep_FLAG")])
 dimcheck=dim(data)[1]
 data=merge(data,flags,all.x=T)
-result$data_flags=data
-result$flag_reasons=reasons
+#result$data_flags=data
+result$rej_data_reasons=reasons
 
 if(dimcheck!=dim(data)[1]){
 	stop("ERROR: Error in applying data prep flags. Data dimension[1] has changed.")
@@ -288,24 +434,14 @@ print(table(data$IR_DataPrep_FLAG))
 table(data[data$IR_DataPrep_FLAG=="ACCEPT","IR_UnitConv_FLAG"])
 
 
-
 ###Pull out accepted data
+names(data)=make.names(names(data))
 acc_data=data[data$IR_DataPrep_FLAG=="ACCEPT",]
-#result$acc_data=acc_data
-result$rej_data=data[data$IR_DataPrep_FLAG!="ACCEPT",]
+result$acc_data=acc_data
+#result$rej_data=data[data$IR_DataPrep_FLAG!="ACCEPT",]
 dim(acc_data)
 table(is.na(acc_data$DataLoggerLine))
 
-#Subset columns (note - col names may change w/ standards table, may want a cleaner way around this)
-col_names=c("OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","ActivityStartTime.Time","IR_ActivityType","IR_MLID","IR_MLNAME","MonitoringLocationTypeName","R317Descrp","IR_Lat","IR_Long",
-													"ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS","CharacteristicName",
-													"IRParameterName", "R3172ParameterName","IR_Value","IR_Unit","IR_DetCond","IR_Fraction","CriterionUnits","TargetFraction",
-													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
-													"AssessmentType","TableDescription","CriterionLabel","CriterionType","ParameterQualifier", "FrequencyCombined", "FrequencyNumber", "FrequencyUnit",
-													"DailyAggFun","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","NumericCriterion","SSC_StartMon","SSC_EndMon","SSC_MLID"
-													)
-acc_data=acc_data[, col_names]
-dim(acc_data)
 
 #######
 ####Extract lake profiles
@@ -324,42 +460,8 @@ dim(acc_data)
 #Extract e coli
 result$ecoli=acc_data[acc_data$R3172ParameterName=="E. coli",]
 
-#x=toxics_strms
-#value_var="IR_Value"
-#drop_vars=c("OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time")
-#agg_var="DailyAggFun"
-aggDVbyfun=function(x, value_var, drop_vars, agg_var){
-	val=x[,value_var]
-	x=x[,!names(x) %in% value_var & !names(x) %in% drop_vars]
-	num_names=names(x[unlist(lapply(x, is.numeric))])
-	x=as.data.frame(lapply(x, addNA, ifany=T)) #Add NA as factor level where cols contain NAs (converts everything to factor)
-	x=data.frame(val,x) #Add back in preserved numeric val (alternatively could allow it to convert to factor then use as.numeric(levels(z))[z])
-	x=x[,!names(x) %in% drop_vars]
-	daily=x[0,]
-	funs=unique(x[,agg_var])
-
-	for(n in 1:length(funs)){
-		fun_n=funs[n]
-		x_n=x[x[,agg_var]==fun_n,]
-		daily_n=aggregate(val~.,x_n, FUN=get(paste(fun_n)))
-		daily=rbind(daily,daily_n)
-	}
-
-	daily[num_names]=lapply(daily[num_names], wqTools::facToNum) #Convert numeric cols back to numeric
-
-	names(daily)[names(daily)=="val"]=value_var #Rename value_var
-
-	return(daily)
-}
-
-drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode","IR_Fraction","IR_DetCond", "MonitoringLocationTypeName")
-
-
-
-
-
-
-
+drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode", "IR_ActivityType", "TargetActivityType",
+			"R317Descrp","IR_DetCond", "MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","CharacteristicName")
 
 #############
 #######Toxics & correction factors
@@ -380,45 +482,18 @@ toxics_raw=toxics_raw[toxics_raw$R3172ParameterName!='Radium 226, 228 (Combined)
 		###Streams
 		#Aggregate to daily values
 		dim(toxics_strms)
-		toxics_strms_daily=aggDVbyfun(toxics_strms,	drop_vars=drop_vars,	value_var="IR_Value", agg_var="DailyAggFun")
+		toxics_strms_daily=aggDVbyfun(toxics_strms,	drop_vars=drop_vars, value_var="IR_Value", agg_var="DailyAggFun")
 		dim(toxics_strms_daily)
-		
-		
-		#Assign CFs
-		cfs_strms=toxics_strms_daily[toxics_strms_daily$BeneficialUse=="CF",]
-		toxics_strms_daily=toxics_strms_daily[toxics_strms_daily$BeneficialUse!="CF",]
-		dim(toxics_strms_daily)
-		
-		cfs_strms$cf=paste0("cf_",cfs_strms$DailyAggFun,"_",cfs_strms$IRParameterName,"_",cfs_strms$IR_Unit)
-		cfs_strms_cast=reshape2::dcast(cfs_strms, ActivityStartDate+IR_MLID~cf, value.var="IR_Value")
-		
-		dim(toxics_strms_daily)
-		toxics_strms_daily=merge(toxics_strms_daily,cfs_strms_cast,all.x=T)
-		dim(toxics_strms_daily)
-		toxics_strms_daily=toxics_strms_daily[toxics_strms_daily$BeneficialUse!="CF",] #Remove CF rows
 	}
 	
 	
-	###Lakes (JV note - applying same logic as streams, aggregate all parameters including CFs to daily values by DailyAggFun, then cast & merge CFs to data)
+	###Lakes (JV note - applying same logic as streams)
 	
 	if(dim(toxics_lakes)[1]>0){
 		#Aggregate to daily values
 		dim(toxics_lakes)
 		toxics_lakes_daily=aggDVbyfun(toxics_lakes,	drop_vars=drop_vars, value_var="IR_Value", agg_var="DailyAggFun")
-		dim(toxics_lakes_daily)
-		
-		#Assign CFs
-		cfs_lakes=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse=="CF",]
-		toxics_lakes_daily=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse!="CF",]
-		dim(toxics_lakes_daily)
-		
-		cfs_lakes$cf=paste0("cf_",cfs_lakes$DailyAggFun,"_",cfs_lakes$IRParameterName,"_",cfs_lakes$IR_Unit)
-		cfs_lakes_cast=reshape2::dcast(cfs_lakes, ActivityStartDate+IR_MLID~cf, value.var="IR_Value")
-		
-		dim(toxics_lakes_daily)
-		toxics_lakes_daily=merge(toxics_lakes_daily,cfs_lakes_cast,all.x=T)
-		dim(toxics_lakes_daily)
-		toxics_lakes_daily=toxics_lakes_daily[toxics_lakes_daily$BeneficialUse!="CF",] #Remove CF rows
+		dim(toxics_lakes_daily)		
 	}
 	
 	#Merge lakes & streams toxics
@@ -432,101 +507,6 @@ toxics_raw=toxics_raw[toxics_raw$R3172ParameterName!='Radium 226, 228 (Combined)
 		toxics=toxics_lakes_daily
 	}
 	
-	
-	#Calculate hardness (will need to update for different hardness parameters, max of 400?):
-	toxics=within(toxics,{
-			hardness=100*(`cf_min_Calcium_mg/l`/40.08 + `cf_min_Magnesium_mg/l`/24.3)
-			hardness[is.na(hardness)]=`cf_min_Hardness_mg/l`[is.na(hardness)]
-			hardness=ifelse(hardness>400,400,hardness) 
-		})
-
-
-	#Calculate CF dependent criterion values
-	
-	#Load criterion workbook
-	criterion_wb=openxlsx::loadWorkbook(crit_wb)
-	
-	#Remove filters from all sheets in crit_wb
-	sheetnames=openxlsx::getSheetNames(crit_wb)
-	for(n in 1:length(sheetnames)){
-	openxlsx::removeFilter(criterion_wb, sheetnames[n])
-	}
-	
-	#Read formula table
-	cf_formulas=data.frame(openxlsx::readWorkbook(criterion_wb, sheet=cf_formulas_sheetname, startRow=startRow_formulas, detectDates=TRUE))
-	
-	names(toxics)[names(toxics) %in% names(cf_formulas)]
-
-	toxics=merge(toxics, cf_formulas, all.x=T)
-	table(toxics$R3172ParameterName, toxics$CriterionFormula)[rowSums(table(toxics$R3172ParameterName, toxics$CriterionFormula))>0,]
-	
-	calc=toxics$NumericCriterion
-	
-	toxics=within(toxics, {
-		CF[!is.na(CF)]=paste0("(",CF[!is.na(CF)],")")
-		CriterionFormula=gsub("CF * ","",CriterionFormula, fixed=TRUE)
-		CriterionFormula[!is.na(CF)]=paste0("(",CriterionFormula[!is.na(CF)],")")
-		CriterionFormula[!is.na(CF)]=paste(CF[!is.na(CF)], "*", CriterionFormula[!is.na(CF)])
-		CriterionFormula=gsub("MIN", "min", CriterionFormula, fixed=TRUE)
-		CriterionFormula=gsub("MAX", "max", CriterionFormula, fixed=TRUE)
-		CriterionFormula=gsub("ln", "log", CriterionFormula, fixed=TRUE)
-		CriterionFormula=gsub(") (", ")*(", CriterionFormula, fixed=TRUE)
-		CriterionFormula=gsub(")(",  ")*(", CriterionFormula, fixed=TRUE)
-		CriterionFormula=gsub("(e(",  "(exp(", CriterionFormula, fixed=TRUE)
-		CriterionFormula=gsub("e(",  "exp(", CriterionFormula, fixed=TRUE)
-		CriterionFormula=gsub("IFELSE",  "ifelse", CriterionFormula, fixed=TRUE)
-		CriterionFormula=stringr::str_replace_all(CriterionFormula, "hardness", as.character(hardness))
-		CriterionFormula=stringr::str_replace_all(CriterionFormula, "min_pH", as.character(`cf_min_pH_pH units`))
-		CriterionFormula=stringr::str_replace_all(CriterionFormula, "max_pH", as.character(`cf_max_pH_pH units`))
-		CriterionFormula=stringr::str_replace_all(CriterionFormula, "T", as.character(`cf_max_Max. Temperature_C`))
-		CalculatedCrit=sapply(CriterionFormula, function(x) eval(parse(text=x)))
-		suppressWarnings({
-			NumericCriterion=wqTools::facToNum(NumericCriterion)
-		})
-		NumericCriterion[calc=="calc"]=CalculatedCrit[calc=="calc"]
-	})
-	
-	plot(toxics$CalculatedCrit~toxics$hardness)
-	
-	#head(toxics[toxics$R3172ParameterName=='Total ammonia as N',])
-	#boxplot(toxics[toxics$R3172ParameterName=='Total ammonia as N','CalculatedCrit'])
-	toxics=toxics[,!names(toxics) %in% 'CF']
-	
-	# Check for non-detect IR_Value/lql_fac > NumericCriterion (this second check is needed for calculated criteria)
-	# To do this, need to join detection conditions back to daily aggregated data by IR_Value.
-	# Then remove those records from both toxics & acc_data
-	# Note that another way to do this would have been to aggregate & assign CF values and calculate criteria for all raw data before aggregating to daily values.
-	det_cond=unique(acc_data[,c('IR_MLID','IR_MLNAME','ActivityStartDate','CharacteristicName','IRParameterName','R3172ParameterName','IR_Value','IR_Fraction','IR_DetCond')])
-	nd=subset(det_cond, IR_DetCond=='ND')
-	dimcheck=dim(toxics)[1]
-	toxics=merge(toxics, nd, all.x=T)
-	if(dim(toxics)[1]!=dimcheck){
-		stop("Error identifying non-detect values in aggregated toxics data.")
-	}
-	
-	data_n=toxics
-	data_n$reason=NA
-	data_n=within(data_n,{
-		reason[which(IR_DetCond=="ND" & as.numeric(IR_Value*2)>as.numeric(NumericCriterion))]="Non-detect result with detection limit > criterion (aggregated & calculated data)"
-	})
-	table(data_n$reason)
-	
-	data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
-	reasons=plyr::rbind.fill(reasons, data_n[!is.na(data_n$reason),])
-	print(table(reasons$reason))
-	
-	data_n=unique(data_n[,c('IR_MLID','IR_MLNAME','ActivityStartDate','CharacteristicName','IRParameterName','R3172ParameterName','IR_Value','IR_Fraction','IR_DetCond','reason')])
-	dimcheck=dim(acc_data)[1]
-	acc_data=merge(acc_data, data_n, all.x=T)
-	if(dim(acc_data)[1]!=dimcheck){
-		stop("Error identifying non-detect values in raw data to reject based on value > calculated criteria.")
-	}
-	table(acc_data$reason)
-	
-	acc_data=acc_data[!is.na(acc_data$reason), !names(acc_data) %in% reason]
-	
-	rm(data_n)
-	
 	#Generate toxics result
 	result$toxics=toxics	
 }
@@ -534,6 +514,9 @@ toxics_raw=toxics_raw[toxics_raw$R3172ParameterName!='Radium 226, 228 (Combined)
 #############
 #######Conventionals
 ######
+drop_vars=c("DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode", "IR_ActivityType", "TargetActivityType",
+			"R317Descrp","IR_DetCond", "MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","CharacteristicName",
+			'cf_max_Max..Temperature_C','cf_max_pH_pH.units','cf_min_Calcium_mg.l','cf_min_Hardness_mg.l','cf_min_Magnesium_mg.l','cf_min_pH_pH.units','hardness','CriterionFormula','CalculatedCrit')
 
 if(any(acc_data$AssessmentType=="Conventional")){
 	conv_raw=acc_data[which(acc_data$AssessmentType=="Conventional" & acc_data$BeneficialUse!="CF"),]
@@ -600,36 +583,11 @@ if(any(acc_data$AssessmentType=="Conventional")){
 	if(exists("conventionals")){result$conventionals=conventionals}
 }
 
-
-
 #Other possible checks - execution TBD
 #Rivers/streams depth check
 #Value based flags & rejections (if performing, desired flags/rejections should be input to param translation table)
 #Estimated & calculated value check
 #Holding times
-
-#Return accepted data
-result$accepted_data=acc_data
-
-####Apply rejections to flag column in data
-flags=reasons
-flags$IR_DataPrep_FLAG="REJECT"
-flags=unique(flags[,c("ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","IR_DataPrep_FLAG")])
-dimcheck=dim(data)[1]
-data=merge(data,flags,all.x=T)
-result$data_flags=data
-result$flag_reasons=reasons
-
-if(dimcheck!=dim(data)[1]){
-	stop("ERROR: Error in applying data prep flags. Data dimension[1] has changed.")
-	}
-data=within(data, {IR_DataPrep_FLAG[is.na(IR_DataPrep_FLAG)]="ACCEPT"})
-
-print("Data prep record ACCEPT/REJECT counts:")
-print(table(data$IR_DataPrep_FLAG))
-table(data[data$IR_DataPrep_FLAG=="ACCEPT","IR_UnitConv_FLAG"])
-
-
 
 objects(result)
 
