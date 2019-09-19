@@ -38,9 +38,9 @@ result=list()
 
 
 # aggregate to daily values function
-x=toxics_strms
-value_var="IR_Value"
-agg_var="DailyAggFun"
+#x=toxics_strms
+#value_var="IR_Value"
+#agg_var="DailyAggFun"
 aggDVbyfun=function(x, value_var, drop_vars, agg_var){
 	val=x[,value_var]
 	x=x[,!names(x) %in% value_var & !names(x) %in% drop_vars]
