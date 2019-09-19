@@ -388,8 +388,8 @@ calcs=within(calcs, {
 	NumericCriterion=CalculatedCrit
 })
 
-plot(calcs$CalculatedCrit~calcs$hardness)
-plot(calcs$CalculatedCrit~calcs$`cf_max_pH_pH units`)
+#plot(calcs$CalculatedCrit~calcs$hardness)
+#plot(calcs$CalculatedCrit~calcs$`cf_max_pH_pH units`)
 
 ### Bind calculated criteria data back to full dataset
 calcs=calcs[,unique(c(col_names,'cf_max_Max. Temperature_C','cf_max_pH_pH units','cf_min_Calcium_mg/l','cf_min_Hardness_mg/l','cf_min_Magnesium_mg/l','cf_min_pH_pH units','hardness','CriterionFormula','CalculatedCrit'))]	
