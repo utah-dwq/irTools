@@ -41,16 +41,16 @@ assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startR
 
 
 
-####Testing setup
-#library(openxlsx)
-#library(reshape2)
-#library(plyr)
-data=acc_data
-crit_wb="IR_uses_standards_working_v4_ef.xlsx"
-crit_sheetname="criteria"
-ss_sheetname="ss_criteria"
-crit_startRow=3
-ss_startRow=4
+#####Testing setup
+##library(openxlsx)
+##library(reshape2)
+##library(plyr)
+#data=acc_data
+#crit_wb="IR_uses_standards_working_v4_ef.xlsx"
+#crit_sheetname="criteria"
+#ss_sheetname="ss_criteria"
+#crit_startRow=3
+#ss_startRow=4
 
 
 
