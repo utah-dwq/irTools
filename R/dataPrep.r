@@ -66,9 +66,9 @@ aggDVbyfun=function(x, value_var, drop_vars, agg_var){
 }
 
 #Column names to pass through function
-col_names=c("ResultIdentifier","OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","ActivityStartTime.Time","IR_ActivityType","IR_MLID","IR_MLNAME","MonitoringLocationTypeName","R317Descrp","IR_Lat","IR_Long",
+col_names=c("ResultIdentifier","OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","ActivityStartTime.Time","IR_ActivityType","IR_MLID","IR_MLNAME","MonitoringLocationIdentifier","MonitoringLocationTypeName","R317Descrp","IR_Lat","IR_Long",
 													"ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS","CharacteristicName","ParameterGroupName",
-													"CAS", "IRParameterName", "R3172ParameterName","IR_Value","IR_Unit","IR_DetCond","ResultSampleFractionText","IR_Fraction","CriterionUnits","TargetFraction",
+													"CAS", "IRParameterName", "R3172ParameterName","IR_Value","IR_Unit","ResultMeasure.MeasureUnitCode","IR_DetCond","ResultSampleFractionText","IR_Fraction","CriterionUnits","TargetFraction",
 													"IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit",
 													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
 													"AssessmentType","TableDescription","CriterionLabel","CriterionType","ParameterQualifier", "FrequencyCombined", "FrequencyNumber", "FrequencyUnit","TargetActivityType",
@@ -461,7 +461,7 @@ dim(acc_data)
 result$ecoli=acc_data[acc_data$R3172ParameterName=="E. coli",]
 
 drop_vars=c("ResultIdentifier","DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode", "IR_ActivityType", "TargetActivityType",
-			"R317Descrp","IR_DetCond", "MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","CharacteristicName")
+			"R317Descrp","IR_DetCond", "MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","IR_Fraction","CharacteristicName")
 
 #############
 #######Toxics & correction factors
@@ -515,7 +515,7 @@ toxics_raw=toxics_raw[toxics_raw$R3172ParameterName!='Radium 226, 228 (Combined)
 #######Conventionals
 ######
 drop_vars=c("ResultIdentifier","DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode", "IR_ActivityType", "TargetActivityType",
-			"R317Descrp","IR_DetCond", "MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","CharacteristicName",
+			"R317Descrp","IR_DetCond", "MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","CharacteristicName","IR_Fraction",
 			'cf_max_Max..Temperature_C','cf_max_pH_pH.units','cf_min_Calcium_mg.l','cf_min_Hardness_mg.l','cf_min_Magnesium_mg.l','cf_min_pH_pH.units','hardness','CriterionFormula','CalculatedCrit')
 
 if(any(acc_data$AssessmentType=="Conventional")){
