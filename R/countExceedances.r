@@ -15,12 +15,19 @@
 countExceedances=function(data, group_vars=c("IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS","R3172ParameterName","CriterionLabel","SSC_MLID","SSC_StartMon","SSC_EndMon","AsmntAggFun"), agg_exc=FALSE, agg_exc_as_n=TRUE){
 	
 ###Set up
-#data=conventionals
+#data=test3
 #data$CriterionType[is.na(data$CriterionType)]="max"
 #data=data[data$BeneficialUse!="CF",]
 #group_vars=c("IR_MLID","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","BeneficialUse","R3172ParameterName","CriterionLabel","SSC_MLID","SSC_StartMon","SSC_EndMon","AsmntAggFun")
 #agg_exc=TRUE
 #agg_exc_as_n=TRUE
+
+#Ensure NumericCriterion & IR_Value are numeric
+if(class(data$NumericCriterion)=='character'){data$NumericCriterion=as.numeric(data$NumericCriterion)}
+if(class(data$NumericCriterion)=='factor'){data$NumericCriterion=wqTools::facToNum(data$NumericCriterion)}
+if(class(data$IR_Value)=='character'){data$IR_Value=as.numeric(data$IR_Value)}
+if(class(data$IR_Value)=='factor'){data$IR_Value=wqTools::facToNum(data$IR_Value)}
+
 
 #Set class for all group_vars to factor
 data[,names(data) %in% group_vars]=as.data.frame(lapply(data[,names(data) %in% group_vars], as.factor))
@@ -36,7 +43,6 @@ addNA_fac=function(x){
 }
 
 	
-if(class(data$NumericCriterion)=="factor"){data$NumericCriterion=wqTools::facToNum(data$NumericCriterion)}
 
 
 #Generate sample counts (length of IR_Value in unique data_exc[,group_vars])
