@@ -352,10 +352,8 @@ openxlsx::removeFilter(criterion_wb, sheetnames[n])
 
 ### Read formula table
 cf_formulas=data.frame(openxlsx::readWorkbook(criterion_wb, sheet=cf_formulas_sheetname, startRow=startRow_formulas, detectDates=TRUE))
-cf_formulas=cf_formulas[,!names(cf_formulas) %in% c("R3172ParameterName", "IRParameterName")]
-
 names(calcs)[names(calcs) %in% names(cf_formulas)]
-
+cf_formulas=cf_formulas[,!names(cf_formulas) %in% c("R3172ParameterName", "IRParameterName", "TableDescription")]
 
 ### Merge formulas to data
 calcs=merge(calcs, cf_formulas, all.x=T)
@@ -418,7 +416,8 @@ rm(data_n)
 ####Apply rejections to flag column in data
 flags=reasons
 flags$IR_DataPrep_FLAG="REJECT"
-flags=unique(flags[,c("ResultIdentifier","ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","IR_DataPrep_FLAG")])
+flags=unique(flags[,c("ResultIdentifier","BeneficialUse","ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","TargetFraction","IR_DataPrep_FLAG","NumericCriterion")])
+#flags=unique(flags[,!names(flags) %in% 'reason'])
 dimcheck=dim(data)[1]
 data=merge(data,flags,all.x=T)
 #result$data_flags=data
@@ -441,7 +440,7 @@ result$acc_data=acc_data
 #result$rej_data=data[data$IR_DataPrep_FLAG!="ACCEPT",]
 dim(acc_data)
 table(is.na(acc_data$DataLoggerLine))
-
+table(subset(acc_data, R3172ParameterName=='Arsenic')$IR_Fraction)
 
 #######
 ####Extract lake profiles
