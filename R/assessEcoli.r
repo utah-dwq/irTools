@@ -43,6 +43,8 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   # Read in data
   data_raw = data
   
+  ecoli_assessments$raw_data = data
+  
   # Geometric mean function
   gmean <- function(x){exp(mean(log(x)))}
   
@@ -50,7 +52,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   uses_stds <- unique(data_raw[c("BeneficialUse","CriterionLabel","NumericCriterion")])
   
   # Remove duplicates from data
-  data_raw <- data_raw[,!names(data_raw)%in%c("AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","CriterionLabel","NumericCriterion")]
+  data_raw <- data_raw[,!names(data_raw)%in%c("ActivityIdentifier","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","CriterionLabel","NumericCriterion")]
   data_raw <- unique(data_raw)
   
   # Convert dates to R dates
@@ -168,7 +170,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
       out$SampleCount = length(x$ActivityStartDate)
       geomean <- gmean(x$IR_Value)
       if(out$SampleCount<10){
-        out$IR_Cat = ifelse(geomean>stdcrit,"IDEX","IDNE")
+        out$IR_Cat = ifelse(geomean>stdcrit,"IDEX","FS")
       }else{
         out$IR_Cat = ifelse(geomean>stdcrit,"NS","FS")
       }
