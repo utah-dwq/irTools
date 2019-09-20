@@ -416,7 +416,7 @@ rm(data_n)
 ####Apply rejections to flag column in data
 flags=reasons
 flags$IR_DataPrep_FLAG="REJECT"
-flags=unique(flags[,c("ResultIdentifier","BeneficialUse","ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","TargetFraction","IR_DataPrep_FLAG","NumericCriterion")])
+flags=unique(flags[,c("BeneficialUse","ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","TargetFraction","IR_DataPrep_FLAG")])
 #flags=unique(flags[,!names(flags) %in% 'reason'])
 dimcheck=dim(data)[1]
 data=merge(data,flags,all.x=T)
