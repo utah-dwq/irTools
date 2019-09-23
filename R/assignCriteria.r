@@ -41,18 +41,21 @@ assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startR
 
 
 
+
 #####Testing setup
-##library(openxlsx)
-##library(reshape2)
-##library(plyr)
+#library(openxlsx)
+#library(reshape2)
+#library(plyr)
 #data=acc_data
+#data=within(data,{
+#	ss_R317Descrp[ss_R317Descrp=='Lost Creek from the confluence with Sevier River to U.S. National Forest boundary']='Ivie Creek and its tributaries from the confluence with Muddy Creek to the confluence with Quitchupah Creek'
+#})
 #crit_wb="IR_uses_standards_working_v4_ef.xlsx"
 #crit_sheetname="criteria"
 #ss_sheetname="ss_criteria"
 #crit_startRow=3
 #ss_startRow=4
-
-
+#any(data$R3172ParameterName=='Sulfate', na.rm=T)
 
 #Check that data is post-parameter translation
 if(!any(names(data)=="R3172ParameterName")){
@@ -97,18 +100,23 @@ uses_flat=uses_flat[uses_flat$BeneficialUse!="" & !is.na(uses_flat$BeneficialUse
 #Merge flat uses back to data by BEN_CLASS
 data_uses_flat=merge(data,uses_flat,all=T)
 
+any(data_uses_flat$CAS=='14808-79-8', na.rm=T)
+
 #Merge criteria to data w/ flattened uses
 data_uses_flat_crit=merge(data_uses_flat,crit_table,all.x=T)
 dim_check=dim(data_uses_flat_crit)[1]
+any(data_uses_flat_crit$R3172ParameterName=='Sulfate', na.rm=T)
+any(data_uses_flat_crit$CAS=='14808-79-8', na.rm=T)
 
 #Remove "CF" & SUP from comma-separated BEN_CLASS column (for future use in rollUp)
 data_uses_flat_crit$BEN_CLASS=gsub(",CF","",data_uses_flat_crit$BEN_CLASS)
 data_uses_flat_crit$BEN_CLASS=gsub(",SUP","",data_uses_flat_crit$BEN_CLASS)
 
+
 #4. Site specific standards
 #ID records w/ SS criteria (by SSCLocDescription)
 #Remove those records from data_uses_flat_crit
-ssc=unique(ss_table[,c("BeneficialUse","ss_R317Descrp","R3172ParameterName")])
+ssc=unique(ss_table[,c("CAS", "BeneficialUse","ss_R317Descrp")])
 ssc$ssc="Y"
 data_uses_flat_crit=merge(data_uses_flat_crit, ssc, all.x=T)
 	dim(data_uses_flat_crit)[1]==dim_check
@@ -157,6 +165,8 @@ dim(data_uses_flat_crit)
 data_uses_flat_crit=plyr::rbind.fill(data_uses_flat_crit, data_uses_flat_ssc)
 dim(data_uses_flat_crit)
 
+any(data_uses_flat_crit$R3172ParameterName=='Sulfate', na.rm=T)
+any(data_uses_flat_crit$CAS=='14808-79-8', na.rm=T)
 
 #Remove records w/o criteria or not conversion factor if rm_nocrit==TRUE
 if(rm_nocrit==TRUE){
