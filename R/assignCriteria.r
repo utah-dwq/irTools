@@ -99,8 +99,8 @@ uses_flat=uses_flat[uses_flat$BeneficialUse!="" & !is.na(uses_flat$BeneficialUse
 
 #Merge flat uses back to data by BEN_CLASS
 data_uses_flat=merge(data,uses_flat,all=T)
-
-any(data_uses_flat$CAS=='14808-79-8', na.rm=T)
+rm(uses_flat)
+gc()
 
 #Merge criteria to data w/ flattened uses
 data_uses_flat_crit=merge(data_uses_flat,crit_table,all.x=T)
@@ -129,6 +129,8 @@ data_uses_flat_crit=data_uses_flat_crit[,!names(data_uses_flat_crit) %in% "ssc"]
 #Merge SS criteria to data_uses_flat (by parameter and ss location description, only keep matches) in new object
 data_uses_flat_ssc=merge(data_uses_flat,ss_table)
 dim(data_uses_flat_ssc)
+rm(data_uses_flat)
+gc()
 
 #Remove matches where MLID != SS MLID (if provided)
 dim(data_uses_flat_ssc)
