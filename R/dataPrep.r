@@ -85,6 +85,7 @@ count=length(data$CriterionUnits[is.na(data$CriterionUnits)])
 if(count>0){warning(paste(count, 'records being removed due to lack of criteria & units in standards table. These may have been purposely passed through in assign criteria.'))}
 data=data[!is.na(data$CriterionUnits),]# | data$BeneficialUse=="CF" | data$R3172ParameterName=="Profile depth",]
 
+table(data$BeneficialUse)
 
 ####################################
 ######Activity type check###########
@@ -96,6 +97,7 @@ data_n=within(data_n,{
 	})
 data_n=data_n[!is.na(data_n$reason),]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+table(reasons$BeneficialUse)
 #print(table(reasons$reason))
 rm(data_n)
 
@@ -110,6 +112,7 @@ data_n=within(data_n,{
 	})
 data_n=data_n[!is.na(data_n$reason),]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+table(reasons$BeneficialUse)
 #print(table(reasons$reason))
 rm(data_n)
 
@@ -136,6 +139,7 @@ data_n=within(data_n,{
 	reason[(IR_Fraction!=TargetFraction | is.na(IR_Fraction)) & !is.na(TargetFraction)]="Non-assessed fraction or fraction not defined, & fraction specified by criterion"
 	})
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+table(reasons$BeneficialUse)
 #print(table(reasons$reason))
 rm(data_n)
 
@@ -223,6 +227,7 @@ if(dim(diss_tot)[1]>0){
 	dim(diss_tot_units)
 	
 	reasons=rbind(reasons, diss_tot_units[!is.na(diss_tot_units$reason),])
+	table(reasons$BeneficialUse)
 	#print(table(reasons$reason))
 }
 
@@ -251,6 +256,7 @@ data_n=within(data_n,{
 	})
 data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+table(reasons$BeneficialUse)
 #print(table(reasons$reason))
 rm(data_n)
 
@@ -302,17 +308,16 @@ det$reason='Non detect value with a detection value available for this activity 
 nd=merge(nd, det)
 nd=nd[!is.na(nd$reason),names(nd) %in% names(reasons)]
 reasons=rbind(reasons, nd[!is.na(nd$reason),])
+table(reasons$BeneficialUse)
 print(table(reasons$reason))
 rm(nd)
-
-
 
 # Assign correction factors to data requiring calculations
 ## Extract CFs
 cfs=unique(data[data$BeneficialUse=="CF",c("ActivityStartDate","IR_MLID","IRParameterName","DailyAggFun","IR_Unit","IR_Value")])
 data=data[data$BeneficialUse!="CF",]
 calcs=data[which(data$NumericCriterion=="calc"),col_names]
-data=data[which(data$NumericCriterion!="calc"),]
+data=data[is.na(data$NumericCriterion) | data$NumericCriterion!="calc",]
 
 ## Aggregate CFs to daily values & cast to wide format
 drop_vars=""
@@ -396,6 +401,19 @@ dim(calcs)
 dim(data)
 
 data=plyr::rbind.fill(data, calcs)
+table(data$BeneficialUse)
+
+#Reject records where a criterion could not be calculated
+data_n=data
+data_n$reason=NA
+data_n=within(data_n,{
+	reason[is.na(NumericCriterion) & BeneficialUse!='SUP']="Missing one or more correction factors, unable to calculate criterion"
+	})
+data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
+reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+table(reasons$BeneficialUse)
+#print(table(reasons$reason))
+rm(data_n)
 
 
 #Reject non-detect records where IR_LowerLimitValue > NumericCriterion
@@ -403,13 +421,14 @@ data_n=data
 data_n$reason=NA
 suppressWarnings({
 	data_n=within(data_n,{
-		reason[which(IR_DetCond=="ND" & as.numeric(IR_LowerLimitValue)>as.numeric(NumericCriterion))]="Non-detect result with detection limit > criterion"
+		reason[which(BeneficialUse!='SUP' & !is.na(NumericCriterion) & IR_DetCond=="ND" & as.numeric(IR_LowerLimitValue)>as.numeric(NumericCriterion))]="Non-detect result with detection limit > criterion"
 	})
 })
 table(data_n$reason)
 
 data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+table(reasons$BeneficialUse)
 #print(table(reasons$reason))
 rm(data_n)
 
@@ -441,6 +460,7 @@ result$acc_data=acc_data
 dim(acc_data)
 table(is.na(acc_data$DataLoggerLine))
 table(subset(acc_data, R3172ParameterName=='Arsenic')$IR_Fraction)
+table(acc_data$BeneficialUse)
 
 #######
 ####Extract lake profiles
