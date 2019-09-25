@@ -119,6 +119,7 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 				param1=wqTools::convertUnits(param1, input_units='IR_Unit', target_units = "target_unit", value_var='IR_Value', conv_val_col='plot_value')
 				param1=param1[order(param1$ActivityStartDate),]
 				reactive_objects$param1=unique(param1[,c('IR_MLID','ActivityStartDate','IR_Lat','IR_Long','R3172ParameterName','plot_value','target_unit','IR_MLNAME','IR_DetCond','IR_Fraction','ASSESS_ID','AU_NAME','AU_Type','BEN_CLASS')])
+				#param1<<-reactive_objects$param1
 				## Criteria
 				crit1=subset(reactive_objects$sel_crit, R3172ParameterName == input$sel_param1)
 					crit1$target_unit=reactive_objects$sel_units1

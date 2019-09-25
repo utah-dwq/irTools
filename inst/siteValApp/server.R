@@ -181,6 +181,16 @@ session$onFlushed(once = T, function() {
 
 map_proxy=leafletProxy("map")
 
+observe({
+	req(map_proxy)
+	print(object.size(map_proxy))
+})
+
+observe({
+	print(memory.size())
+})
+
+
 # Add sites via proxy on site_types change
 observeEvent({
 	reactive_objects$map_sites
@@ -246,7 +256,8 @@ observeEvent({
 		
 		map_proxy %>% hideGroup("Site IDs") %>% hideGroup("Site names")
 		
-	}	
+	}
+	gc()
 })
 
 

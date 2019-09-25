@@ -18,6 +18,12 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 	
 	mlocs=plyr::rbind.fill(site_asmnt, na_sites, rejected_sites2)
 	mlocs=unique(mlocs[,c('IR_MLID','IR_MLNAME','IR_Lat', 'IR_Long')])
+	mlocs$IR_Lat=wqTools::facToNum(mlocs$IR_Lat)
+	mlocs$IR_Long=wqTools::facToNum(mlocs$IR_Long)
+	site_asmnt$IR_Lat=wqTools::facToNum(site_asmnt$IR_Lat)
+	site_asmnt$IR_Long=wqTools::facToNum(site_asmnt$IR_Long)
+	
+	
 	assessment_map <- 
 		buildMap(plot_polys = F, search='', ...) %>%
 			addMapPane("highlight", zIndex = 413) %>%

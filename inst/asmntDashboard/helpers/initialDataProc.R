@@ -1,6 +1,7 @@
 initialDataProc=function(site_use_param_asmnt){
 
-#site_use_param_asmnt=read.csv("C:\\Users\\jvander\\Desktop\\site-use-param-asmnt - Copy.csv")
+#load("C:/Users/jvander/Documents/R/irTools/inst/extdata/asmntDashboard_data.Rdata")
+#site_use_param_asmnt=site_use_param_asmnt
 
 # Initial data processing
 ## Site level rollups
@@ -8,7 +9,7 @@ site_param_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('IR_ML
 site_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('IR_MLID','IR_MLNAME','IR_Lat','IR_Long','ASSESS_ID','AU_NAME'), cat_var="AssessCat", print=F, expand_uses=F)
 
 ## Read master site list
-master_site_file=system.file("extdata", "IR_master_site_file.xlsx", package = "irTools")
+master_site_file=system.file("extdata", "master_site_file_08292019_2020IR_final.xlsx", package = "irTools")
 master_site=as.data.frame(readxl::read_excel(master_site_file, 'sites'))
 
 ## ID rejected site locations
@@ -62,8 +63,8 @@ if(dim(sites_idE)[1]>0){
 
 
 ## AU level rollups
-au_param_asmnt=rollUp(list(site_use_param_asmnt), group_vars=c('ASSESS_ID','AU_NAME','R3172ParameterName'), cat_var="AssessCat", print=F, expand_uses=F)
-au_asmnt=rollUp(list(site_use_param_asmnt), group_vars=c('ASSESS_ID','AU_NAME'), cat_var="AssessCat", print=F, expand_uses=F)
+au_param_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('ASSESS_ID','AU_NAME','R3172ParameterName'), cat_var="AssessCat", print=F, expand_uses=F)
+au_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('ASSESS_ID','AU_NAME'), cat_var="AssessCat", print=F, expand_uses=F)
 
 ### Generate impaired params wide list
 aus_ns=subset(au_param_asmnt, AssessCat=='NS')
@@ -109,9 +110,9 @@ assignAsmntCols=function(x){
 }
 
 ## AUs & sites
-data("au_poly")
-data("bu_poly")
-data("ss_poly")
+au_poly=wqTools::au_poly
+bu_poly=wqTools::bu_poly
+ss_poly=wqTools::ss_poly
 
 ## Outputs
 

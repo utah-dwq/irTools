@@ -20,13 +20,9 @@ source('helpers/initialDataProc.R')
 source('helpers/asmntMap.R')
 source('helpers/figuresMod.R')
 
-# IR Data
-# EDH NOTE: need to discuss how to store data from prepExportData in app. Currently way different from sample assessments.
-load('compiled_data_test.RData')
-
 # Load data & criteria
-load(system.file("extdata", "prepped_merged_data.Rdata", package = "irTools"))
-
+#load(system.file("extdata", "asmntDashboard_data.Rdata", package = "irTools"))
+load("C:/Users/jvander/Documents/R/irTools/inst/extdata/asmntDashboard_data.Rdata")
 options(warn = -1)
 
 
@@ -304,7 +300,7 @@ observeEvent(input$build_tools,{
 	sel_sites=reactive_objects$site_asmnt$IR_MLID[reactive_objects$site_asmnt$ASSESS_ID %in% reactive_objects$selected_aus]
 	if(length(sel_sites)>0){
 		reactive_objects$sel_sites=sel_sites
-		reactive_objects$sel_data=subset(merged_data, IR_MLID %in% sel_sites)
+		reactive_objects$sel_data=subset(assessed_data, IR_MLID %in% sel_sites)
 		reactive_objects$sel_crit=subset(criteria, IR_MLID %in% sel_sites)
 		showModal(modalDialog(title="Analysis tools ready.",size="l",easyClose=T,
 			"Data and analysis tools ready. Scroll to 'Figures' and 'Data table' panels to review and plot data."))
@@ -358,37 +354,37 @@ output$dt=DT::renderDT({
 	)
 })
 
-# Create styles for export headers
-Identifier = openxlsx::createStyle(textDecoration = "bold", bgFill = "yellow")
-IR = openxlsx::createStyle(textDecoration = "bold", bgFill = "pink")
-
-reviewer_export <- openxlsx::createWorkbook()
-openxlsx::addWorksheet(reviewer_export, sheetName = "Data Summary")
-openxlsx::addWorksheet(reviewer_export, sheetName = "Abbreviated Data")
-
-observe({
-  req(reactive_objects$sel_data)
-  # Narrow compiled data to clicked AU's
-  compiled_data_narrow = lapply(compiled_data, function(x){x = x[x$ASSESS_ID%in%unique(reactive_objects$sel_data$ASSESS_ID),]})
-  
-  openxlsx::writeDataTable(reviewer_export, sheet = "Data Summary", compiled_data_narrow$summary_tc_assessed)
-  openxlsx::writeDataTable(reviewer_export, sheet = "Abbreviated Data", compiled_data_narrow$toxconv_data_asmnt)
-  openxlsx::conditionalFormatting(reviewer_export, sheet = "Abbreviated Data", cols = 1:95, rows = 1, rule = "IR", type = "contains", style = IR)
-  openxlsx::conditionalFormatting(reviewer_export, sheet = "Abbreviated Data", cols = 1:95, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
-  
-  if(!is.null(compiled_data_narrow$ecoli_data_asmnt)){
-    openxlsx::addWorksheet(reviewer_export, sheetName = "E.coli Data")
-    openxlsx::writeData(reviewer_export, sheet = "E.coli Data", compiled_data_narrow$ecoli_data_asmnt)
-  }
-  
-  reactive_objects$AUexport = reviewer_export
-})
-
-# Export data table - (export wide dataset, not column subset dataset)
-output$exp_dt <- downloadHandler(
-	filename=paste0('exported-AU-data-', Sys.Date(),'.xlsx'),
-	content = function(file) {openxlsx::saveWorkbook(reactive_objects$AUexport, file)}
-)
+## Create styles for export headers
+#Identifier = openxlsx::createStyle(textDecoration = "bold", bgFill = "yellow")
+#IR = openxlsx::createStyle(textDecoration = "bold", bgFill = "pink")
+#
+#reviewer_export <- openxlsx::createWorkbook()
+#openxlsx::addWorksheet(reviewer_export, sheetName = "Data Summary")
+#openxlsx::addWorksheet(reviewer_export, sheetName = "Abbreviated Data")
+#
+#observe({
+#  req(reactive_objects$sel_data)
+#  # Narrow compiled data to clicked AU's
+#  compiled_data_narrow = lapply(compiled_data, function(x){x = x[x$ASSESS_ID%in%unique(reactive_objects$sel_data$ASSESS_ID),]})
+#  
+#  openxlsx::writeDataTable(reviewer_export, sheet = "Data Summary", compiled_data_narrow$summary_tc_assessed)
+#  openxlsx::writeDataTable(reviewer_export, sheet = "Abbreviated Data", compiled_data_narrow$toxconv_data_asmnt)
+#  openxlsx::conditionalFormatting(reviewer_export, sheet = "Abbreviated Data", cols = 1:95, rows = 1, rule = "IR", type = "contains", style = IR)
+#  openxlsx::conditionalFormatting(reviewer_export, sheet = "Abbreviated Data", cols = 1:95, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
+#  
+#  if(!is.null(compiled_data_narrow$ecoli_data_asmnt)){
+#    openxlsx::addWorksheet(reviewer_export, sheetName = "E.coli Data")
+#    openxlsx::writeData(reviewer_export, sheet = "E.coli Data", compiled_data_narrow$ecoli_data_asmnt)
+#  }
+#  
+#  reactive_objects$AUexport = reviewer_export
+#})
+#
+## Export data table - (export wide dataset, not column subset dataset)
+#output$exp_dt <- downloadHandler(
+#	filename=paste0('exported-AU-data-', Sys.Date(),'.xlsx'),
+#	content = function(file) {openxlsx::saveWorkbook(reactive_objects$AUexport, file)}
+#)
 
 # Download WQP data for sites
 observe({
@@ -493,18 +489,18 @@ observeEvent(input$split_cancel, ignoreInit=T, {
 
 
 # Print figures module outputs
-observe({
-	if(!is.null(figures$select_data())){
-		print(figures$select_data())
-	}
-	if(!is.null(figures$param1())){
-		print(figures$param1())
-	}
-	if(!is.null(figures$param_choices())){
-		print(figures$param_choices())
-	}
-
-})
+#observe({
+#	if(!is.null(figures$select_data())){
+#		print(figures$select_data())
+#	}
+#	if(!is.null(figures$param1())){
+#		print(figures$param1())
+#	}
+#	if(!is.null(figures$param_choices())){
+#		print(figures$param_choices())
+#	}
+#
+#})
 
 
 # Flag UI
