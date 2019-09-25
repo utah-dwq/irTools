@@ -72,7 +72,8 @@ col_names=c("ResultIdentifier","OrganizationIdentifier","ActivityIdentifier","Ac
 													"IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit",
 													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
 													"AssessmentType","TableDescription","CriterionLabel","CriterionType","ParameterQualifier", "FrequencyCombined", "FrequencyNumber", "FrequencyUnit","TargetActivityType",
-													"DailyAggFun","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","NumericCriterion","SSC_StartMon","SSC_EndMon","SSC_MLID"
+													"DailyAggFun","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","NumericCriterion","SSC_StartMon","SSC_EndMon","SSC_MLID",
+													"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG"
 													)
 
 data=data[,col_names]
@@ -480,7 +481,8 @@ dim(acc_data)
 result$ecoli=acc_data[acc_data$R3172ParameterName=="E. coli",]
 
 drop_vars=c("ResultIdentifier","DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode", "IR_ActivityType", "TargetActivityType",
-			"R317Descrp","IR_DetCond", "MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","IR_Fraction","CharacteristicName")
+			"R317Descrp","IR_DetCond", "MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","IR_Fraction","CharacteristicName",
+			"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG")
 
 #############
 #######Toxics & correction factors
@@ -535,7 +537,8 @@ toxics_raw=toxics_raw[toxics_raw$R3172ParameterName!='Radium 226, 228 (Combined)
 ######
 drop_vars=c("ResultIdentifier","DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode", "IR_ActivityType", "TargetActivityType",
 			"R317Descrp","IR_DetCond", "MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","CharacteristicName","IR_Fraction",
-			'cf_max_Max..Temperature_C','cf_max_pH_pH.units','cf_min_Calcium_mg.l','cf_min_Hardness_mg.l','cf_min_Magnesium_mg.l','cf_min_pH_pH.units','hardness','CriterionFormula','CalculatedCrit')
+			'cf_max_Max..Temperature_C','cf_max_pH_pH.units','cf_min_Calcium_mg.l','cf_min_Hardness_mg.l','cf_min_Magnesium_mg.l','cf_min_pH_pH.units','hardness','CriterionFormula','CalculatedCrit',
+			"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG")
 
 if(any(acc_data$AssessmentType=="Conventional")){
 	conv_raw=acc_data[which(acc_data$AssessmentType=="Conventional" & acc_data$BeneficialUse!="CF"),]
