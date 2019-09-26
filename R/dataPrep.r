@@ -245,7 +245,7 @@ dim(data)
 
 #Manually convert deg F to C
 data=within(data, {
-	IR_Value=ifelse(IR_Unit=='deg F' & CriterionUnits=='C',  (IR_Value − 32)*5/9, IR_Value)
+	IR_Value=ifelse(IR_Unit=='deg F' & CriterionUnits=='C',  (IR_Value-32)*5/9, IR_Value)
 	IR_Unit=ifelse(IR_Unit=='deg F' & CriterionUnits=='C',  'deg C', IR_Unit)
 })
 
