@@ -43,6 +43,8 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   # Read in data
   data_raw = data
   
+  ecoli_assessments$raw_data = data
+  
   # Geometric mean function
   gmean <- function(x){exp(mean(log(x)))}
   
@@ -50,14 +52,20 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   uses_stds <- unique(data_raw[c("BeneficialUse","CriterionLabel","NumericCriterion")])
   
   # Remove duplicates from data
-  data_raw <- data_raw[,!names(data_raw)%in%c("AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","CriterionLabel","NumericCriterion")]
+  data_raw <- data_raw[,!names(data_raw)%in%c("ActivityIdentifier","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","CriterionLabel","NumericCriterion")]
   data_raw <- unique(data_raw)
   
   # Convert dates to R dates
-  data_raw$ActivityStartDate=as.Date(data_raw$ActivityStartDate,format='%m/%d/%Y')
+  data_raw$ActivityStartDate=as.Date(data_raw$ActivityStartDate,format='%Y-%m-%d')
   
   # Create year column for scenario calculations
   data_raw$Year=lubridate::year(data_raw$ActivityStartDate)
+  
+  # JV NOTE - <1 & >2419.6 are coerced to numeric in fillMaskedValues. Simplest solution I can think of right now is to do the conversions in 65 & 66 before coercing to numeric in fillMaskedValues.
+  # EH NOTE: <1 and >2419.6 now handled in readWQP data, before data are coerced to numeric. However, retained in this assessment tool for (potential) data that bypass other segments of irTools.
+  # Should we manually set anything over 2420 to 2420 for assessment? Some over-detect results in WQP have higher limits reported.
+  data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
+  data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
   
   # Restrict assessments to data collected during recreation season.
   if(rec_season){
@@ -76,17 +84,18 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     }else{
       data_rec = data_raw
     }
-
-  # JV NOTE - <1 & >2419.6 are coerced to numeric in fillMaskedValues. Simplest solution I can think of right now is to do the conversions in 65 & 66 before coercing to numeric in fillMaskedValues.
-  # EH NOTE: <1 and >2419.6 now handled in readWQP data, before data are coerced to numeric. However, retained in this assessment tool for (potential) data that bypass other segments of irTools.
-  # Should we manually set anything over 2420 to 2420 for assessment? Some over-detect results in WQP have higher limits reported.
-  data_raw$IR_Value=gsub("<1",1,data_raw$IR_Value)
-  data_raw$IR_Value=as.numeric(gsub(">2419.6",2420,data_raw$IR_Value))
+  
+  ecoli_assessments$assessed_data = data_rec
   
   # Aggregate to daily values.
-  daily_agg=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate,data=data_rec,FUN=function(x){exp(mean(log(x)))})
-  data_processed <- merge(daily_agg,unique(data_rec[,!names(data_rec)%in%c("ActivityStartTime.Time")]), all.x=TRUE)
-  ecoli_assessments$assessed_data = data_processed
+  data_processed=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate+Year,data=data_rec,FUN=function(x){exp(mean(log(x)))})
+  
+  cols2keep = c("ActivityStartDate","IR_MLID","IR_MLNAME","ASSESS_ID","AU_NAME","AU_Type","BEN_CLASS","R3172ParameterName",
+                "IR_Value","IR_Unit","IR_DetCond","IR_Fraction","IR_ActivityType","IR_Lat","IR_Long","DataLoggerLine",
+                "ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","R317Descrp","ActivityDepthHeightMeasure.MeasureUnitCode")
+  
+  data_processed_allcols <- merge(data_processed,unique(data_rec[,cols2keep]), all.x=TRUE)
+  ecoli_assessments$dailyaggregated_data = data_processed
 
   # maxSamps48hr function - counts the maximum number of samples collected over the rec season that were not collected within 48 hours of another sample(s).
   maxSamps48hr = function(x){
@@ -137,7 +146,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
       }
     # Create output dataframe with MLID/Use/Year/SampleCount...etc.
       out <- samps[1,c("IR_MLID","BeneficialUse","Year")]
-      out$SampleCount = length(geomeans)
+      out$SampleCount = length(geomeans[geomeans>0])
       out$ExcCountLim = 1
       out$ExcCount = length(geomeans[geomeans>=stdcrit])
       out$IR_Cat = ifelse(any(geomeans>=stdcrit),"NS","ScenC")
@@ -161,7 +170,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
       out$SampleCount = length(x$ActivityStartDate)
       geomean <- gmean(x$IR_Value)
       if(out$SampleCount<10){
-        out$IR_Cat = ifelse(geomean>stdcrit,"IDEX","IDNE")
+        out$IR_Cat = ifelse(geomean>stdcrit,"IDEX","FS")
       }else{
         out$IR_Cat = ifelse(geomean>stdcrit,"NS","FS")
       }
@@ -182,15 +191,19 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
 
 ### Rank and Roll Up By Scenarios (one scenario assessment by MLID/use/year as determined by E. coli scenario hierarchy)###
   
-  ScenABC = ScenABC[!(ScenABC$IR_Cat=="ScenB"|ScenABC$IR_Cat=="ScenC"|ScenABC$IR_Cat=="Not Assessed"),]
-  ScenABC$S.rank = 3
-  ScenABC$S.rank[ScenABC$Scenario=="B"] = 2
-  ScenABC$S.rank[ScenABC$Scenario=="C"] = 1
+  ScenABC = ScenABC[!(ScenABC$IR_Cat=="ScenB"|ScenABC$IR_Cat=="ScenC"),]
+  ScenABC$S.rank = 4
+  ScenABC$S.rank[ScenABC$Scenario=="B"] = 3
+  ScenABC$S.rank[ScenABC$Scenario=="C"] = 2
+  ScenABC$S.rank[ScenABC$IR_Cat=="Not Assessed"] = 1
   
   ScenABC_agg <- aggregate(S.rank~IR_MLID+BeneficialUse+Year, data=ScenABC, FUN=max)
   ScenABC_agg$Scenario = "A"
-  ScenABC_agg$Scenario[ScenABC_agg$S.rank==2]="B"
+  ScenABC_agg$Scenario[ScenABC_agg$S.rank==3]="B"
+  ScenABC_agg$Scenario[ScenABC_agg$S.rank==2]="C"
   ScenABC_agg$Scenario[ScenABC_agg$S.rank==1]="C"
+  ScenABC_agg = ScenABC_agg[,!names(ScenABC_agg)%in%"S.rank"]
+  
   ScenABC_assess <- merge(ScenABC_agg, ScenABC, all.x=TRUE)
   ScenABC_assess = ScenABC_assess[,!names(ScenABC_assess)%in%c("S.rank")]
   
