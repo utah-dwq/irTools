@@ -181,14 +181,10 @@ session$onFlushed(once = T, function() {
 
 map_proxy=leafletProxy("map")
 
-observe({
-	req(map_proxy)
-	print(object.size(map_proxy))
-})
 
-observe({
-	print(memory.size())
-})
+#observe({
+#	print(memory.size())
+#})
 
 
 # Add sites via proxy on site_types change
