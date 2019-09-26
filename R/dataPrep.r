@@ -485,14 +485,14 @@ drop_vars=c("ResultIdentifier","DataLoggerLine","OrganizationIdentifier","Activi
 			"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG")
 
 #############
-#######Toxics & correction factors
+#######Toxics
 ######
 if(any(acc_data$AssessmentType=="Toxic")){
 
 ## Extract radium data
 result$radium=acc_data[acc_data$R3172ParameterName=='Radium 226, 228 (Combined)',]
 
-toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$BeneficialUse=="CF"),]
+toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic"),]
 toxics_raw=toxics_raw[toxics_raw$R3172ParameterName!='Radium 226, 228 (Combined)',]
 
 	#split streams & lakes
