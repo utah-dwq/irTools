@@ -76,7 +76,14 @@ col_names=c("ResultIdentifier","OrganizationIdentifier","ActivityIdentifier","Ac
 													"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG"
 													)
 
-data=data[,col_names]
+### Upload export translation workbook
+exp_file=system.file("extdata", "IR_export_translations.xlsx", package = "irTools")
+exp_wb = openxlsx::loadWorkbook(exp_file)
+
+# Read in columns from translation workbook
+columns = openxlsx::readWorkbook(exp_wb, sheet = 1)
+colnames_exp = columns$COL_KEEP[columns$SHEET=="DA"]
+
 reasons=data.frame(data[0,])
 reasons$reason=character(0)
 
@@ -453,12 +460,17 @@ print(table(data$IR_DataPrep_FLAG))
 table(data[data$IR_DataPrep_FLAG=="ACCEPT","IR_UnitConv_FLAG"])
 
 
+
 ###Pull out accepted data
 names(data)=make.names(names(data))
 acc_data=data[data$IR_DataPrep_FLAG=="ACCEPT",]
-result$acc_data=acc_data
-#result$rej_data=data[data$IR_DataPrep_FLAG!="ACCEPT",]
+#Remove profiles from acc_data
+acc_data=acc_data[is.na(acc_data$DataLoggerLine),]
 dim(acc_data)
+result$acc_data=acc_data[,col_names]
+colnames_export = names(acc_data)[names(acc_data)%in%colnames_exp]
+result$export_data = acc_data[,colnames_export]
+#result$rej_data=data[data$IR_DataPrep_FLAG!="ACCEPT",]
 table(is.na(acc_data$DataLoggerLine))
 table(subset(acc_data, R3172ParameterName=='Arsenic')$IR_Fraction)
 table(acc_data$BeneficialUse)
@@ -469,10 +481,6 @@ table(acc_data$BeneficialUse)
 #
 #table(result$lake_profiles$R3172ParameterName)
 #
-#Remove profiles from acc_data
-acc_data=acc_data[is.na(acc_data$DataLoggerLine),]
-dim(acc_data)
-
 
 ##Extract lakes trophic data
 #result$lakes_trophic=acc_data[acc_data$AU_Type=="Reservoir/Lake" & acc_data$R3172ParameterName %in% c("Chlorophyll a", "Total Phosphorus as P","Depth, Secchi disk depth"),]
