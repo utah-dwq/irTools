@@ -27,5 +27,5 @@ assignCriteria(data, crit_wb, crit_sheetname, ss_sheetname,
 A flattened & expanded sample x use x parameter x criterion data.frame.
 }
 \description{
-Assigns general & site-specific numeric WQ criteria to WQP data. Does not calculate criteria w/ correction factors. See calcCriteria (function in development).
+Assigns general & site-specific numeric WQ criteria to WQP data. Does not calculate criteria w/ correction factors - this occurrs in dataPrep.
 }
