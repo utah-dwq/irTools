@@ -36,47 +36,24 @@ dat_accepted = merge(dat_accepted, wmus, all.x = TRUE)
 
 dim(dat_accepted)
 
-# Lake profiles and trophic data have already been removed from acc_data, so just need to remove E.coli
-dat_accepted1 = dat_accepted[!dat_accepted$R3172ParameterName=="E. coli",]
-
-# Remove numeric criterion from tox conv bc those are updated (or duplicated) in the aggregated datasets
-tox_conv = dat_accepted1[,!names(dat_accepted1)%in%"NumericCriterion"]
-table(tox_conv$AssessmentType)
-
-# Bind AGGREGATED tox and conv ds together and rename IR_Value column
-prepped_data$toxics$NumericCriterion = wqTools::facToNum(prepped_data$toxics$NumericCriterion)
-prepped_data$conventionals$NumericCriterion = wqTools::facToNum(prepped_data$conventionals$NumericCriterion)
-
-dim(prepped_data$toxics) + dim(prepped_data$conventionals)
-
-aggreg_tox_conv = plyr::rbind.fill(prepped_data$toxics, prepped_data$conventionals)
-dim(aggreg_tox_conv)
-
-names(aggreg_tox_conv)[names(aggreg_tox_conv)=="IR_Value"] = "IR_Aggreg_Value"
-
-# Merge aggregated to non-aggreg
-tox_conv2 = merge(tox_conv1, aggreg_tox_conv, all = TRUE)
-dim(tox_conv1)
-dim(tox_conv2) # should match
-head(tox_conv2[tox_conv2$Exceeds==1,])
-
-
+# Retain only toxic and conventional records
+tox_conv = subset(dat_accepted, dat_accepted$AssessmentType=="Toxic"|dat_accepted$AssessmentType=="Conventional")
 
 # Ensure criteria are numeric
-prepped_data$toxics$NumericCriterion = as.numeric(prepped_data$toxics$NumericCriterion)
-prepped_data$conventionals$NumericCriterion = as.numeric(prepped_data$conventionals$NumericCriterion)
+tox_conv$NumericCriterion = wqTools::facToNum(tox_conv$NumericCriterion)
+tox_conv$IR_Value = wqTools::facToNum(tox_conv$NumericCriterion)
 
 # Create exceeds column
-dat_accepted1$Exceeds = 0
+tox_conv$Exceeds = 0
 
 # Determine if exceeds based on criterion type
-dat_accepted1=within(dat_accepted1, {
+tox_conv1=within(tox_conv1, {
   Exceeds[CriterionType=="max" & IR_Value > NumericCriterion]=1
   Exceeds[CriterionType=="min" & IR_Value < NumericCriterion]=1
 })
-table(dat_accepted1$Exceeds)
+table(tox_conv1$Exceeds)
 
-compiled_data$toxconv_data_asmnt = dat_accepted1
+compiled_data$toxconv_data_asmnt = tox_conv1
 
 # Summary data
 toxics_exc = irTools::countExceedances(prepped_data$toxics, group_vars = c("IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS","R3172ParameterName","AssessmentType","CriterionLabel", "SSC_MLID","SSC_StartMon","SSC_EndMon","AsmntAggFun"))
@@ -181,3 +158,24 @@ return(compiled_data)
 
 # columns of interest
 # toxconv_data_asmnt = tox_conv2[,names(tox_conv2)%in%abbrev_cols]
+
+# # Remove numeric criterion from tox conv bc those are updated (or duplicated) in the aggregated datasets
+# tox_conv = dat_accepted1[,!names(dat_accepted1)%in%"NumericCriterion"]
+# table(tox_conv$AssessmentType)
+# 
+# # Bind AGGREGATED tox and conv ds together and rename IR_Value column
+# prepped_data$toxics$NumericCriterion = wqTools::facToNum(prepped_data$toxics$NumericCriterion)
+# prepped_data$conventionals$NumericCriterion = wqTools::facToNum(prepped_data$conventionals$NumericCriterion)
+# 
+# dim(prepped_data$toxics) + dim(prepped_data$conventionals)
+# 
+# aggreg_tox_conv = plyr::rbind.fill(prepped_data$toxics, prepped_data$conventionals)
+# dim(aggreg_tox_conv)
+# 
+# names(aggreg_tox_conv)[names(aggreg_tox_conv)=="IR_Value"] = "IR_Aggreg_Value"
+# 
+# # Merge aggregated to non-aggreg
+# tox_conv2 = merge(tox_conv1, aggreg_tox_conv, all = TRUE)
+# dim(tox_conv1)
+# dim(tox_conv2) # should match
+# head(tox_conv2[tox_conv2$Exceeds==1,])
