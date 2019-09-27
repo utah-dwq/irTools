@@ -25,6 +25,8 @@ source('helpers/figuresMod.R')
 load("C:/Users/jvander/Documents/R/irTools/inst/extdata/asmntDashboard_data.Rdata")
 options(warn = -1)
 
+# Shiny file input size allowed
+options(shiny.maxRequestSize = 10*1024^2)
 
 # User interface
 ui <-fluidPage(
@@ -59,9 +61,10 @@ ui <-fluidPage(
 			shinycssloaders::withSpinner(leaflet::leafletOutput("assessment_map", height="600px"),size=2, color="#0080b7")
 		),
 		bsCollapsePanel(list(icon('plus-circle'), icon('chart-bar'), "Figures"),
+			fluidRow(tableOutput("asmnt_summary")),
 			figuresModUI('figures')
 		),
-		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "Download AU data"),
+		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "View & download data"),
 			fluidRow(downloadButton('exp_dt', label = "Download data in Excel workbook", icon='download', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')),
 			br(),
 			fluidRow(div(DT::DTOutput("dt"), style = list("font-size:65%")))
@@ -202,7 +205,7 @@ observe({
 					'<br />', "AU ID: ", ASSESS_ID,
 					'<br />', "Assessment: ", AssessCat,
 					'<br />', "Impaired params: ", Impaired_params,
-					'<br />', "ID w/ exceedance params: ", idE_params)
+					'<br />', "ID w/ exceedance params: ", IDEX_params)
 	})
 })
 
@@ -218,7 +221,7 @@ output$map_rev_filter=renderUI({
 	req(reactive_objects$site_use_param_asmnt)
 	#req(reactive_objects$map_ready)
 	choices=unique(reactive_objects$site_use_param_asmnt$AU_review)
-	choices=c('Review needed', 'Complete', 'Complete with flag(s)', 'Not assessed')
+	choices=unique(append(choices, c('Complete', 'Complete with flag(s)', 'Not assessed')))
 	fluidRow(
 		column(1),
 		column(11,shinyWidgets::pickerInput('map_rev_filter', 'Review types', choices, selected='Review needed', multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3")))
@@ -237,7 +240,8 @@ observeEvent(input$map_rev_filter, ignoreInit=T, {
 				'<br />', "AU ID: ", ASSESS_ID,
 				'<br />', "Assessment: ", AssessCat,
 				'<br />', "Impaired params: ", Impaired_params,
-				'<br />', "ID w/ exceedance params: ", idE_params)
+				'<br />', "ID w/ exceedance params: ", IDEX_params,
+				'<br> NS pollution indicators: ', pi_params)
 	
 	})
 
@@ -302,6 +306,7 @@ observeEvent(input$build_tools,{
 		reactive_objects$sel_sites=sel_sites
 		reactive_objects$sel_data=subset(assessed_data, IR_MLID %in% sel_sites)
 		reactive_objects$sel_crit=subset(criteria, IR_MLID %in% sel_sites)
+		reactive_objects$asmnt_summary=sf::st_drop_geometry(subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus))
 		showModal(modalDialog(title="Analysis tools ready.",size="l",easyClose=T,
 			"Data and analysis tools ready. Scroll to 'Figures' and 'Data table' panels to review and plot data."))
 	}else{
@@ -310,6 +315,13 @@ observeEvent(input$build_tools,{
 	}
 })
 
+
+output$asmnt_summary=function() {
+	req(reactive_objects$asmnt_summary)
+	knitr::kable(allign='c', reactive_objects$asmnt_summary[,c('ASSESS_ID','AU_NAME','AssessCat','Impaired_params','IDEX_params','pi_params')],
+			row.names=F, col.names=c('ASSESS_ID','AU_NAME','Category', 'Impaired params', 'ID w/ exceedance params', 'NS pollution indicators')) %>%
+			kableExtra::kable_styling()
+}
 
 # Recommend rebuild
 ## Determine if a rebuild is appropriate
@@ -574,11 +586,22 @@ output$flagUI5=renderUI({
 observe({
 	req(figures$select_data())
 	reactive_objects$start_date=min(figures$select_data()$x)
-	})
-observe({
-	req(figures$select_data())
 	reactive_objects$end_date=max(figures$select_data()$x)
-	})
+	ymin=min(figures$select_data()$y)
+	ymax=max(figures$select_data()$y)
+	selected_points=subset(reactive_objects$sel_data, 
+		R3172ParameterName==param1() &
+		wqTools::facToNum(IR_Value) >= ymin &
+		wqTools::facToNum(IR_Value) <= ymax &
+		as.Date(ActivityStartDate) >= reactive_objects$start_date &
+		as.Date(ActivityStartDate) <= reactive_objects$end_date	
+	)
+	selected_rids=unique(selected_points[,c('ResultIdentifier','ActivityStartDate','IR_MLID','IR_MLNAME','ASSESS_ID','R3172ParameterName')])
+	print(dim(selected_rids))
+	print(head(selected_rids))
+	reactive_objects$selected_rids=selected_rids
+
+})
 
 output$flagUI6=renderUI({
 	req(input$flag_scope)
@@ -639,7 +662,7 @@ observeEvent(input$mark_complete, ignoreInit=T, {
 					'<br />', "AU ID: ", ASSESS_ID,
 					'<br />', "Assessment: ", AssessCat,
 					'<br />', "Impaired params: ", Impaired_params,
-					'<br />', "ID w/ exceedance params: ", idE_params)
+					'<br />', "ID w/ exceedance params: ", IDEX_params)
 		
 		})
 	

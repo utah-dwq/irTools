@@ -51,7 +51,8 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 					"<br> ML type: ", site_asmnt$MonitoringLocationTypeName,
 					"<br> Assessment: ", site_asmnt$AssessCat,
 					"<br> Impaired params: ", site_asmnt$Impaired_params,
-					"<br> ID w/ exceedance params: ", site_asmnt$idE_params)
+					"<br> ID w/ exceedance params: ", site_asmnt$IDEX_params,
+					"<br> NS pollution indicators: ", site_asmnt$pi_params)
 			) %>%
 			leaflet::addCircleMarkers(data=na_sites, lat=~IR_Lat, lng=~IR_Long, group="Not-assessed sites",
 				color = ~col, opacity=0.8, options = pathOptions(pane = "markers"),
@@ -105,7 +106,7 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 						labels = c('Fully supporting', 'Insufficient data, no exceedances', 'Insufficient data, exceedances', 'Not supporting', 'Not assessed')) %>% 
 			fitBounds(-114.0187, 37.02012, -109.0555, 41.99088) %>%
 			leaflet.extras::removeSearchFeatures() %>% leaflet.extras::addSearchFeatures(
-				targetGroups = c('au_ids','au_names', 'locationID', 'locationName'),
+				targetGroups = c('au_ids','au_names', 'locationID'),#, 'locationName'),
 				options = leaflet.extras::searchFeaturesOptions(
 					zoom=12, openPopup = TRUE, firstTipSubmit = TRUE,
 					autoCollapse = TRUE, hideMarkerOnCollapse = TRUE ))

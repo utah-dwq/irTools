@@ -1,11 +1,15 @@
 initialDataProc=function(site_use_param_asmnt){
 
 #load("C:/Users/jvander/Documents/R/irTools/inst/extdata/asmntDashboard_data.Rdata")
-#site_use_param_asmnt=site_use_param_asmnt
 
 # Initial data processing
+## Extract pollution indicator assessments
+pol_ind=subset(site_use_param_asmnt, pol_ind=='Y')
+site_use_param_asmnt=subset(site_use_param_asmnt, pol_ind=='N')
+
 ## Site level rollups
 site_param_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('IR_MLID','IR_MLNAME','IR_Lat','IR_Long','ASSESS_ID','AU_NAME','R3172ParameterName'), cat_var="AssessCat", print=F, expand_uses=F)
+if(dim(pol_ind)[1]>0){site_param_pol_ind=irTools::rollUp(list(pol_ind), group_vars=c('IR_MLID','IR_MLNAME','IR_Lat','IR_Long','ASSESS_ID','AU_NAME','R3172ParameterName'), cat_var="AssessCat", print=F, expand_uses=F)}
 site_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('IR_MLID','IR_MLNAME','IR_Lat','IR_Long','ASSESS_ID','AU_NAME'), cat_var="AssessCat", print=F, expand_uses=F)
 
 ## Read master site list
@@ -31,7 +35,7 @@ if(all(names(site_asmnt)!='AU_Type')){
 }
 
 
-### Generate impaired params wide list
+### Generate impaired params wIDEX list
 sites_ns=subset(site_param_asmnt, AssessCat=='NS')
 if(dim(sites_ns)[1]>0){
 	impaired_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_ns, value.var='R3172ParameterName')
@@ -46,27 +50,44 @@ if(dim(sites_ns)[1]>0){
 	site_asmnt=merge(site_asmnt, impaired_params, all.x=T)
 }else{site_asmnt$Impaired_params=NA}
 
-### Generate idE params wide list
-sites_idE=subset(site_param_asmnt, AssessCat=='idE')
-if(dim(sites_idE)[1]>0){
-	idE_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_idE, value.var='R3172ParameterName')
-	nms=names(idE_params[2:dim(idE_params)[2]])
-	idE_params=tidyr::unite(idE_params, 'idE_params', nms, sep='; ')
-	idE_params=within(idE_params, {
-		idE_params=gsub('NA; ', '', idE_params)
-		idE_params=gsub('NA', '', idE_params)
-		idE_params=sub("; $","",idE_params)
+### Generate IDEX params wIDEX list
+sites_IDEX=subset(site_param_asmnt, AssessCat=='IDEX')
+if(dim(sites_IDEX)[1]>0){
+	IDEX_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_IDEX, value.var='R3172ParameterName')
+	nms=names(IDEX_params[2:dim(IDEX_params)[2]])
+	IDEX_params=tidyr::unite(IDEX_params, 'IDEX_params', nms, sep='; ')
+	IDEX_params=within(IDEX_params, {
+		IDEX_params=gsub('NA; ', '', IDEX_params)
+		IDEX_params=gsub('NA', '', IDEX_params)
+		IDEX_params=sub("; $","",IDEX_params)
 	})
-	head(idE_params)
-	site_asmnt=merge(site_asmnt, idE_params, all.x=T)
-}else{site_asmnt$idE_params=NA}
+	head(IDEX_params)
+	site_asmnt=merge(site_asmnt, IDEX_params, all.x=T)
+}else{site_asmnt$IDEX_params=NA}
+
+
+### Generate pollution indicator NS wIDEX list
+if(dim(pol_ind)[1]>0){sites_pi=subset(site_param_pol_ind, AssessCat=='NS')}
+if(dim(sites_pi)[1]>0){
+	pi_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_pi, value.var='R3172ParameterName')
+	nms=names(pi_params[2:dim(pi_params)[2]])
+	pi_params=tidyr::unite(pi_params, 'pi_params', nms, sep='; ')
+	pi_params=within(pi_params, {
+		pi_params=gsub('NA; ', '', pi_params)
+		pi_params=gsub('NA', '', pi_params)
+		pi_params=sub("; $","",pi_params)
+	})
+	head(pi_params)
+	site_asmnt=merge(site_asmnt, pi_params, all.x=T)
+}else{site_asmnt$pi_params=NA}
 
 
 ## AU level rollups
 au_param_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('ASSESS_ID','AU_NAME','R3172ParameterName'), cat_var="AssessCat", print=F, expand_uses=F)
+au_param_pol_ind=irTools::rollUp(list(pol_ind), group_vars=c('ASSESS_ID','AU_NAME','R3172ParameterName'), cat_var="AssessCat", print=F, expand_uses=F)
 au_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('ASSESS_ID','AU_NAME'), cat_var="AssessCat", print=F, expand_uses=F)
 
-### Generate impaired params wide list
+### Generate impaired params wIDEX list
 aus_ns=subset(au_param_asmnt, AssessCat=='NS')
 if(dim(aus_ns)[1]>0){
 	impaired_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_ns, value.var='R3172ParameterName')
@@ -81,20 +102,37 @@ if(dim(aus_ns)[1]>0){
 	au_asmnt=merge(au_asmnt, impaired_params, all.x=T)
 }else{au_asmnt$Impaired_params=NA}
 
-### Generate idE params wide list
-aus_idE=subset(au_param_asmnt, AssessCat=='idE')
-if(dim(aus_idE)[1]>0){
-	idE_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_idE, value.var='R3172ParameterName')
-	nms=names(idE_params[2:dim(idE_params)[2]])
-	idE_params=tidyr::unite(idE_params, 'idE_params', nms, sep='; ')
-	idE_params=within(idE_params, {
-		idE_params=gsub('NA; ', '', idE_params)
-		idE_params=gsub('NA', '', idE_params)
-		idE_params=sub("; $","",idE_params)
+### Generate IDEX params wIDEX list
+aus_IDEX=subset(au_param_asmnt, AssessCat=='IDEX')
+if(dim(aus_IDEX)[1]>0){
+	IDEX_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_IDEX, value.var='R3172ParameterName')
+	nms=names(IDEX_params[2:dim(IDEX_params)[2]])
+	IDEX_params=tidyr::unite(IDEX_params, 'IDEX_params', nms, sep='; ')
+	IDEX_params=within(IDEX_params, {
+		IDEX_params=gsub('NA; ', '', IDEX_params)
+		IDEX_params=gsub('NA', '', IDEX_params)
+		IDEX_params=sub("; $","",IDEX_params)
 	})
-	head(idE_params)
-	au_asmnt=merge(au_asmnt, idE_params, all.x=T)
-}else{au_asmnt$idE_params=NA}
+	head(IDEX_params)
+	au_asmnt=merge(au_asmnt, IDEX_params, all.x=T)
+}else{au_asmnt$IDEX_params=NA}
+
+
+### Generate IDEX params wIDEX list
+if(dim(pol_ind)[1]>0){aus_pi=subset(au_param_pol_ind, AssessCat=='NS')}
+if(dim(aus_pi)[1]>0){
+	pi_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_pi, value.var='R3172ParameterName')
+	nms=names(pi_params[2:dim(pi_params)[2]])
+	pi_params=tidyr::unite(pi_params, 'pi_params', nms, sep='; ')
+	pi_params=within(pi_params, {
+		pi_params=gsub('NA; ', '', pi_params)
+		pi_params=gsub('NA', '', pi_params)
+		pi_params=sub("; $","",pi_params)
+	})
+	head(pi_params)
+	au_asmnt=merge(au_asmnt, pi_params, all.x=T)
+}else{au_asmnt$pi_params=NA}
+
 
 # Assign colors
 assignAsmntCols=function(x){
@@ -102,8 +140,8 @@ assignAsmntCols=function(x){
 		col=NA
 		col[is.na(AssessCat)]='grey'
 		col[AssessCat=='FS']='green'
-		col[AssessCat=='idNE']='yellow'
-		col[AssessCat=='idE']='orange'
+		col[AssessCat=='IDNE']='yellow'
+		col[AssessCat=='IDEX']='orange'
 		col[AssessCat=='NS']='red'
 	})
 	return(y)
