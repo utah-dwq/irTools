@@ -29,25 +29,26 @@ columns = openxlsx::readWorkbook(exp_wb, sheet = 1)
 abbrev_cols = columns$COL_KEEP[columns$SHEET=="DA"]
 summ_cols = columns$COL_KEEP[columns$SHEET=="DS"]
 
-# With all accepted data, remove CF rows and add WMU
+# With all accepted data, remove CF rows
 dat_accepted = prepped_data$export_data[!prepped_data$export_data$BeneficialUse=="CF",]
 
-dat_accepted = merge(dat_accepted, wmus, all.x = TRUE)
-
-dim(dat_accepted)
-
-# Retain only toxic and conventional records
+# Retain only toxic and conventional records and add WMU
 tox_conv = subset(dat_accepted, dat_accepted$AssessmentType=="Toxic"|dat_accepted$AssessmentType=="Conventional")
+before = dim(tox_conv)[1]
+tox_conv = merge(tox_conv, wmus, all.x = TRUE)
+after = dim(tox_conv)[1]
+
+before==after
 
 # Ensure criteria are numeric
-tox_conv$NumericCriterion = wqTools::facToNum(tox_conv$NumericCriterion)
-tox_conv$IR_Value = wqTools::facToNum(tox_conv$NumericCriterion)
+tox_conv$NumericCriterion = as.numeric(tox_conv$NumericCriterion)
+tox_conv$IR_Value = as.numeric(tox_conv$IR_Value)
 
 # Create exceeds column
 tox_conv$Exceeds = 0
 
 # Determine if exceeds based on criterion type
-tox_conv1=within(tox_conv1, {
+tox_conv1=within(tox_conv, {
   Exceeds[CriterionType=="max" & IR_Value > NumericCriterion]=1
   Exceeds[CriterionType=="min" & IR_Value < NumericCriterion]=1
 })
@@ -56,7 +57,10 @@ table(tox_conv1$Exceeds)
 compiled_data$toxconv_data_asmnt = tox_conv1
 
 # Summary data
-toxics_exc = irTools::countExceedances(prepped_data$toxics, group_vars = c("IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS","R3172ParameterName","AssessmentType","CriterionLabel", "SSC_MLID","SSC_StartMon","SSC_EndMon","AsmntAggFun"))
+prepped_data$toxics$NumericCriterion = wqTools::facToNum(prepped_data$toxics$NumericCriterion)
+prepped_data$conventions$NumericCriterion = wqTools::facToNum(prepped_data$conventionals$NumericCriterion)
+
+toxics_exc = irTools::countExceedances(prepped_data$toxics, group_vars = c("IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS","R3172ParameterName","AssessmentType","CriterionLabel","SSC_MLID","SSC_StartMon","SSC_EndMon","AsmntAggFun"))
 toxics_exc_assessed = irTools::assessExcCounts(toxics_exc,min_n = 4, max_exc_count = 2, max_exc_count_id = 1)
 
 conv_exc = irTools::countExceedances(prepped_data$conventionals, group_vars = c("IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS","R3172ParameterName","AssessmentType","CriterionLabel","SSC_MLID","SSC_StartMon","SSC_EndMon","AsmntAggFun"))
