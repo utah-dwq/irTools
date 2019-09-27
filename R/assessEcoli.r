@@ -107,7 +107,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     out$ExcCountLim = ifelse(out_48_hr>=5,ceiling(out_48_hr*.1),1)
     out$ExcCount = length(x$IR_Value[x$IR_Value>stdcrit])
     if(out_48_hr<5){
-      out$IR_Cat = ifelse(out$ExcCount>out$ExcCountLim,"IDEX","IDNE")
+      out$IR_Cat = ifelse(out$ExcCount>=out$ExcCountLim,"IDEX","IDNE")
     }else{
       out$IR_Cat = ifelse(out$ExcCount>out$ExcCountLim,"NS","ScenB")
     }
