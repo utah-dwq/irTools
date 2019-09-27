@@ -565,7 +565,7 @@ output$flagUI3=renderUI({
 
 output$flagUI4=renderUI({
 	req(reactive_objects$sel_sites, ml_types_sel_au())
-	conditionalPanel(condition="(input.flag_scope=='Site(s)' | input.flag_scope=='Record(s)')  & input.rev_type=='Generate flag'",
+	conditionalPanel(condition="input.flag_scope=='Site(s)' & input.rev_type=='Generate flag'",
 		shinyWidgets::radioGroupButtons('site_flag_type','Select sites by:', choices=c('MLID','ML type'), checkIcon = list(yes = icon("check"))),
 		conditionalPanel(condition="input.site_flag_type=='MLID'",
 			shinyWidgets::pickerInput("flag_sites", "Site(s):", choices=reactive_objects$sel_sites, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
@@ -578,7 +578,7 @@ output$flagUI4=renderUI({
 
 output$flagUI5=renderUI({
 	req(param_choices())
-	conditionalPanel(condition="input.rev_type=='Generate flag'",
+	conditionalPanel(condition="input.rev_type=='Generate flag' & input.flag_scope!='Record(s)'",
 		shinyWidgets::pickerInput("flag_param", "Parameter(s):", choices=param_choices(), multiple=T, selected=param1(), options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
 	)
 })
@@ -606,8 +606,8 @@ observe({
 output$flagUI6=renderUI({
 	req(input$flag_scope)
 	conditionalPanel(condition="input.rev_type=='Generate flag' & input.flag_scope=='Record(s)'",
-		dateRangeInput('flag_date_range', 'Date range:', start=reactive_objects$start_date, end=reactive_objects$end_date),
-		helpText('Use the box select tool on the multi-site time series plot to select a date range interactively.')
+		#dateRangeInput('flag_date_range', 'Date range:', start=reactive_objects$start_date, end=reactive_objects$end_date),
+		helpText('Use the box select tool on the multi-site time series plot to select data to flag interactively.')
 	)
 })
 
@@ -697,15 +697,15 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
 		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
 	}
-	if(input$flag_scope=='Site(s)' | input$flag_scope=='Record(s)'){
+	if(input$flag_scope=='Site(s)'){# | input$flag_scope=='Record(s)'){
 		if((input$flag_scope=='Site(s)' & 
 			(input$rev_name!="" &
 					((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) & 
 					!is.null(input$flag_param) &  !is.null(input$rev_name) &  input$rev_comment!="")
-			|(input$flag_scope=='Record(s)' & 
-				(input$rev_name!="" &
-					((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) & 
-					!is.null(input$flag_param) &  !is.null(input$rev_name) &  input$rev_comment!="" & input$flag_date_range[1]!=Sys.Date()))
+			#|(input$flag_scope=='Record(s)' & 
+			#	(input$rev_name!="" &
+			#		((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) & 
+			#		!is.null(input$flag_param) &  !is.null(input$rev_name) &  input$rev_comment!="" & input$flag_date_range[1]!=Sys.Date()))
 		)){
 			if(input$site_flag_type=='MLID'){
 				sites=input$flag_sites
@@ -722,17 +722,21 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 			reviews$Reviewer=input$rev_name
 			reviews$Comment=input$rev_comment					
 			reviews$ReviewDate=Sys.Date()
-			if(input$flag_scope=='Site(s)'){
-				reactive_objects$site_reviews=rbind(reactive_objects$site_reviews, reviews)
-				print(reactive_objects$site_reviews)
-			}else{
-				reviews$StartDate=input$flag_date_range[1]
-				reviews$EndDate=input$flag_date_range[2]				
-				reactive_objects$record_reviews=rbind(reactive_objects$record_reviews, reviews)
-				print(reactive_objects$record_reviews)
-			}
+			reactive_objects$site_reviews=rbind(reactive_objects$site_reviews, reviews)
+			print(reactive_objects$site_reviews)
 			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
 			
+		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
+	}
+	if(input$flag_scope=='Record(s)'){
+		if(!is.null(input$rev_name) & input$rev_comment!="" & dim(reactive_objects$selected_rids)[1]>0){
+			reviews=reactive_objects$selected_rids
+			reviews$Reviewer=input$rev_name
+			reviews$Comment=input$rev_comment					
+			reviews$ReviewDate=Sys.Date()
+			reactive_objects$record_reviews=rbind(reactive_objects$record_reviews, reviews)
+			print(reactive_objects$record_reviews)
+			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
 		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
 	}
 	if(input$flag_scope=='State-wide'){
