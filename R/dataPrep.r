@@ -27,6 +27,7 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb,
 #####SETUP#####
 #data=acc_data_criteria
 #split_agg_tds=TRUE
+#translation_wb='ir_translation_workbook_working_v9_ef - no IR_Fraction formula.xlsx'
 #unit_sheetname="unitConvTable"
 #startRow_unit=1
 #crit_wb="IR_uses_standards_working_v4_ef.xlsx"
@@ -492,7 +493,7 @@ if(any(acc_data$AssessmentType=="Toxic")){
 ## Extract radium data
 result$radium=acc_data[acc_data$R3172ParameterName=='Radium 226, 228 (Combined)',]
 
-toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic"),]
+toxics_raw=subset(acc_data, AssessmentType=="Toxic" & BeneficialUse!="CF")
 toxics_raw=toxics_raw[toxics_raw$R3172ParameterName!='Radium 226, 228 (Combined)',]
 
 	#split streams & lakes
