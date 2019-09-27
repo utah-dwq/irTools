@@ -76,10 +76,10 @@ ui <-fluidPage(
 			),
 			uiOutput('wqp_url')
 			#actionButton('dwnld_wqp', 'Download WQP data', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('download'))
-		),
-		bsCollapsePanel(list(icon('plus-circle'), icon('download'), "Export reviews"), 
-			downloadButton('exp_rev', label = "Export reviews")
-		)
+		)#,
+		#bsCollapsePanel(list(icon('plus-circle'), icon('download'), "Export reviews"), 
+		#	downloadButton('exp_rev', label = "Export reviews")
+		#)
 	))),
 	
 	#Reviewer toolbar (wide)
@@ -104,7 +104,8 @@ observeEvent(input$toolbar_reset, ignoreInit=F, ignoreNULL=F, {
 					fluidRow(
 						textInput('rev_name', 'Reviewer name'),
 						actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt')),
-						actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox'))
+						actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox')),
+						downloadButton('exp_rev', label = "Export reviews", style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')
 						#actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'))
 					),
 					fluidRow(column(12, uiOutput('rebuild')))
@@ -597,10 +598,7 @@ observe({
 		as.Date(ActivityStartDate) <= reactive_objects$end_date	
 	)
 	selected_rids=unique(selected_points[,c('ResultIdentifier','ActivityStartDate','IR_MLID','IR_MLNAME','ASSESS_ID','R3172ParameterName')])
-	print(dim(selected_rids))
-	print(head(selected_rids))
 	reactive_objects$selected_rids=selected_rids
-
 })
 
 output$flagUI6=renderUI({
@@ -731,10 +729,11 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 	if(input$flag_scope=='Record(s)'){
 		if(!is.null(input$rev_name) & input$rev_comment!="" & dim(reactive_objects$selected_rids)[1]>0){
 			reviews=reactive_objects$selected_rids
+			reactive_objects$selected_rids=reactive_objects$selected_rids[0,]
 			reviews$Reviewer=input$rev_name
 			reviews$Comment=input$rev_comment					
 			reviews$ReviewDate=Sys.Date()
-			reactive_objects$record_reviews=rbind(reactive_objects$record_reviews, reviews)
+			reactive_objects$record_reviews=unique(rbind(reactive_objects$record_reviews, reviews))
 			print(reactive_objects$record_reviews)
 			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
 		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
