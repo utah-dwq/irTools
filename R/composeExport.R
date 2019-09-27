@@ -3,9 +3,8 @@
 #' Pulls columns of interest from prepped data and calculates basic exceedance summaries for site-use-parameter assessments.
 #' @param prepped_data A list of objects produced by dataPrep function, including toxics, conventionals, and ecoli dataframes.
 #' @return A list composed of three dataframes: site-date-use-param records linked with aggregated daily values (if applicable), calculations, and exceedances, site-use-param summaries including sample and exceedance counts, and prepped E.coli data.
-#' @importFrom dplyr anti_join
-#' @importFrom plyr rbind.fill
 #' @import openxlsx
+#' @import plyr
 
 ### TESTING ###
 # See "P:\WQ\Integrated Report\Automation_Development\elise\AU_export_testing\au_export_testing_steps.R" for steps taken up to dataPrep
@@ -18,10 +17,6 @@ composeExport <- function(prepped_data){
 compiled_data = list()
 
 ### Load watershed management units
-# wmus = openxlsx::read.xlsx("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\AU_export_testing\\au_wmu.xlsx")
-# wmus = wmus[,c("ASSESS_ID","Mgmt_Unit")]
-# save(wmus, file = "C:\\Users\\ehinman\\Documents\\GitHub\\irTools\\inst\\extdata\\wmus_aus.RData")
-
 load(system.file("extdata", "wmus_aus.Rdata", package = "irTools"))
 wmus = unique(wmus)
 
@@ -43,6 +38,33 @@ dim(dat_accepted)
 
 # Lake profiles and trophic data have already been removed from acc_data, so just need to remove E.coli
 dat_accepted1 = dat_accepted[!dat_accepted$R3172ParameterName=="E. coli",]
+
+# Remove numeric criterion from tox conv bc those are updated (or duplicated) in the aggregated datasets
+tox_conv = dat_accepted1[,!names(dat_accepted1)%in%"NumericCriterion"]
+table(tox_conv$AssessmentType)
+
+# Bind AGGREGATED tox and conv ds together and rename IR_Value column
+prepped_data$toxics$NumericCriterion = wqTools::facToNum(prepped_data$toxics$NumericCriterion)
+prepped_data$conventionals$NumericCriterion = wqTools::facToNum(prepped_data$conventionals$NumericCriterion)
+
+dim(prepped_data$toxics) + dim(prepped_data$conventionals)
+
+aggreg_tox_conv = plyr::rbind.fill(prepped_data$toxics, prepped_data$conventionals)
+dim(aggreg_tox_conv)
+
+names(aggreg_tox_conv)[names(aggreg_tox_conv)=="IR_Value"] = "IR_Aggreg_Value"
+
+# Merge aggregated to non-aggreg
+tox_conv2 = merge(tox_conv1, aggreg_tox_conv, all = TRUE)
+dim(tox_conv1)
+dim(tox_conv2) # should match
+head(tox_conv2[tox_conv2$Exceeds==1,])
+
+
+
+# Ensure criteria are numeric
+prepped_data$toxics$NumericCriterion = as.numeric(prepped_data$toxics$NumericCriterion)
+prepped_data$conventionals$NumericCriterion = as.numeric(prepped_data$conventionals$NumericCriterion)
 
 # Create exceeds column
 dat_accepted1$Exceeds = 0
