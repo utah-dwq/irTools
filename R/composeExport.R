@@ -52,13 +52,9 @@ dat_accepted1=within(dat_accepted1, {
   Exceeds[CriterionType=="max" & IR_Value > NumericCriterion]=1
   Exceeds[CriterionType=="min" & IR_Value < NumericCriterion]=1
 })
-table(tox_conv2$Exceeds)
-#head(tox_conv2[tox_conv2$Exceeds==1,])
+table(dat_accepted1$Exceeds)
 
-# columns of interest
-toxconv_data_asmnt = tox_conv2[,names(tox_conv2)%in%abbrev_cols]
-
-compiled_data$toxconv_data_asmnt = toxconv_data_asmnt
+compiled_data$toxconv_data_asmnt = dat_accepted1
 
 # Summary data
 toxics_exc = irTools::countExceedances(prepped_data$toxics, group_vars = c("IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS","R3172ParameterName","AssessmentType","CriterionLabel", "SSC_MLID","SSC_StartMon","SSC_EndMon","AsmntAggFun"))
@@ -159,3 +155,7 @@ return(compiled_data)
 # tox_conv2 = merge(tox_conv1, aggreg_tox_conv, all = TRUE)
 # dim(tox_conv1)
 # dim(tox_conv2) # should match
+#head(tox_conv2[tox_conv2$Exceeds==1,])
+
+# columns of interest
+# toxconv_data_asmnt = tox_conv2[,names(tox_conv2)%in%abbrev_cols]
