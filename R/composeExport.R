@@ -2,6 +2,8 @@
 #'
 #' Pulls columns of interest from prepped data and calculates basic exceedance summaries for site-use-parameter assessments.
 #' @param prepped_data A list of objects produced by dataPrep function, including toxics, conventionals, and ecoli dataframes.
+#' @param toxics_assessed A dataframe object of toxic assessments from the assessExcCounts function.
+#' @param conventionals_assessed A dataframe object of conventionals assessments from the assessExcCounts function.
 #' @return A list composed of three dataframes: site-date-use-param records linked with aggregated daily values (if applicable), calculations, and exceedances, site-use-param summaries including sample and exceedance counts, and prepped E.coli data.
 #' @import openxlsx
 #' @import plyr
@@ -12,7 +14,7 @@
 # prepped_data = result
 
 #' @export
-composeExport <- function(prepped_data){
+composeExport <- function(prepped_data, toxics_assessed, conventionals_assessed){
 
 compiled_data = list()
 
@@ -54,26 +56,18 @@ tox_conv1=within(tox_conv, {
 })
 table(tox_conv1$Exceeds)
 
-compiled_data$toxconv_data_asmnt = tox_conv1
+col_order = abbrev_cols[abbrev_cols%in%names(tox_conv1)]
+
+compiled_data$toxconv_data_asmnt = tox_conv1[,col_order]
 
 # Summary data
-prepped_data$toxics$NumericCriterion = wqTools::facToNum(prepped_data$toxics$NumericCriterion)
-prepped_data$conventions$NumericCriterion = wqTools::facToNum(prepped_data$conventionals$NumericCriterion)
-
-toxics_exc = irTools::countExceedances(prepped_data$toxics, group_vars = c("IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS","R3172ParameterName","AssessmentType","CriterionLabel","SSC_MLID","SSC_StartMon","SSC_EndMon","AsmntAggFun"))
-toxics_exc_assessed = irTools::assessExcCounts(toxics_exc,min_n = 4, max_exc_count = 2, max_exc_count_id = 1)
-
-conv_exc = irTools::countExceedances(prepped_data$conventionals, group_vars = c("IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS","R3172ParameterName","AssessmentType","CriterionLabel","SSC_MLID","SSC_StartMon","SSC_EndMon","AsmntAggFun"))
-conv_exc_assessed = irTools::assessExcCounts(conv_exc,min_n = 10, max_exc_pct = 10, max_exc_count_id = 2)
-
-# Combine summary data
-summary_tc_assessed = plyr::rbind.fill(conv_exc_assessed, toxics_exc_assessed)
-
-summary_tc_assessed = summary_tc_assessed[,!names(summary_tc_assessed)%in%c("SSC_StartMon","SSC_EndMon","AsmntAggFun")]
-
+summary_tc_assessed = plyr::rbind.fill(conventionals_assessed, toxics_assessed)
 names(summary_tc_assessed)[names(summary_tc_assessed)=="SampleCount"] = "MLIDSampleCount"
 names(summary_tc_assessed)[names(summary_tc_assessed)=="ExcCount"] = "MLIDExceedanceCount"
 names(summary_tc_assessed)[names(summary_tc_assessed)=="SSC_MLID"] = "siteSpecificAssessment"
+
+col_order2 = summ_cols[summ_cols%in%names(summary_tc_assessed)]
+summary_tc_assessed = summary_tc_assessed[,col_order2]
 
 compiled_data$summary_tc_assessed = summary_tc_assessed
 
@@ -183,3 +177,17 @@ return(compiled_data)
 # dim(tox_conv1)
 # dim(tox_conv2) # should match
 # head(tox_conv2[tox_conv2$Exceeds==1,])
+
+# prepped_data$toxics$NumericCriterion = wqTools::facToNum(prepped_data$toxics$NumericCriterion)
+# prepped_data$conventions$NumericCriterion = wqTools::facToNum(prepped_data$conventionals$NumericCriterion)
+# 
+# toxics_exc = irTools::countExceedances(prepped_data$toxics, group_vars = c("IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS","R3172ParameterName","AssessmentType","CriterionLabel","SSC_MLID","SSC_StartMon","SSC_EndMon","AsmntAggFun"))
+# toxics_exc_assessed = irTools::assessExcCounts(toxics_exc,min_n = 4, max_exc_count = 2, max_exc_count_id = 1)
+# 
+# conv_exc = irTools::countExceedances(prepped_data$conventionals, group_vars = c("IR_MLID","IR_MLNAME","R317Descrp","IR_Lat","IR_Long","ASSESS_ID","AU_NAME","BeneficialUse","BEN_CLASS","R3172ParameterName","AssessmentType","CriterionLabel","SSC_MLID","SSC_StartMon","SSC_EndMon","AsmntAggFun"))
+# conv_exc_assessed = irTools::assessExcCounts(conv_exc,min_n = 10, max_exc_pct = 10, max_exc_count_id = 2)
+# 
+# # Combine summary data
+# summary_tc_assessed = plyr::rbind.fill(conv_exc_assessed, toxics_exc_assessed)
+# 
+# summary_tc_assessed = summary_tc_assessed[,!names(summary_tc_assessed)%in%c("SSC_StartMon","SSC_EndMon","AsmntAggFun")]
