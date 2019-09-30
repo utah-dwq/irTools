@@ -145,10 +145,13 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 				param1=wqTools::convertUnits(param1, input_units='IR_Unit', target_units = "target_unit", value_var='IR_Value', conv_val_col='plot_value')
 				param1=param1[order(param1$ActivityStartDate),]
 				reactive_objects$param1=unique(param1[,c('IR_MLID','ActivityStartDate','IR_Lat','IR_Long','R3172ParameterName','plot_value','target_unit','IR_MLNAME','IR_DetCond','IR_Fraction','ASSESS_ID','AU_NAME','AU_Type','BEN_CLASS')])
+				
 				## Criteria
 				crit1=subset(reactive_objects$sel_crit, R3172ParameterName == input$sel_param1)
+				if(dim(crit1)[1]>0){
 					crit1$target_unit=input$sel_units1
 					crit1=wqTools::convertUnits(crit1, input_units='CriterionUnits', target_units = "target_unit", value_var='NumericCriterion', conv_val_col='plot_value')
+				}
 				crit1=crit1[order(crit1$ActivityStartDate),]
 				reactive_objects$crit1<-crit1
 			}
@@ -175,7 +178,9 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 		reactive_objects$ylab2 = paste0(input$sel_param2,' (', input$sel_units2,')')
 		mlid_len=length(unique(reactive_objects$param1$IR_MLID))
 		au_len=length(unique(reactive_objects$param1$ASSESS_ID))
-		crit_plot=unique(reactive_objects$crit1[,c('ActivityStartDate','BeneficialUse','label','CriterionType','plot_value')])
+		if(dim(reactive_objects$crit1)[1]>0){
+			crit_plot=unique(reactive_objects$crit1[,c('ActivityStartDate','BeneficialUse','label','CriterionType','plot_value')])
+		}else{crit_plot=reactive_objects$crit1}
 		reactive_objects$crit_plot=crit_plot
 		crit_len=length(unique(crit_plot$label))
 		mlid_vis=as.list(append(rep(T, mlid_len), rep(F, au_len)))
@@ -186,17 +191,16 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
     
 	# Multi-site time series
 	output$multi_site_ts=renderPlotly({
-		req(reactive_objects$param1, input$sel_units1, reactive_objects$crit1, reactive_objects$au_vis)		
+		req(reactive_objects$param1, input$sel_units1, reactive_objects$crit1, reactive_objects$au_vis, reactive_objects$crit_plot)				
 		#if(all(!is.na(reactive_objects$param1$plot_value))){
-			plot_ly(source="a") %>%
+			msts=plot_ly(source="a") %>%
 				add_trace(data=reactive_objects$param1, type = 'scatter', mode = 'lines+markers', x=~as.Date(ActivityStartDate), y=~plot_value, color = ~IR_MLID, marker = list(size=10), visible=T) %>%
-				add_trace(data=reactive_objects$param1, type = 'scatter', mode = 'markers',x = ~as.Date(ActivityStartDate), y=~plot_value, color = ~ASSESS_ID, marker = list(size=10), visible=F) %>%
-				add_trace(data=reactive_objects$crit_plot, type = 'scatter', mode='lines', x = ~as.Date(ActivityStartDate), y=~plot_value, connectgaps=TRUE, color = ~label, visible='legendonly') %>%
-					layout(title = reactive_objects$title,
-							titlefont = list(
-							family = "Arial, sans-serif"),
-							font = list(
-							family = "Arial, sans-serif"),
+				add_trace(data=reactive_objects$param1, type = 'scatter', mode = 'markers',x = ~as.Date(ActivityStartDate), y=~plot_value, color = ~ASSESS_ID, marker = list(size=10), visible=F)
+			if(dim(reactive_objects$crit_plot)[1]>0){
+				msts=add_trace(msts, data=reactive_objects$crit_plot, type = 'scatter', mode='lines', x = ~as.Date(ActivityStartDate), y=~plot_value, connectgaps=TRUE, color = ~label, visible='legendonly')
+			}
+			msts=layout(msts,
+							title = reactive_objects$title,
 							xaxis = list(title = "Date"),
 							yaxis = list(title = reactive_objects$ylab),
 						updatemenus = list(
@@ -212,34 +216,33 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 							)
 						)
 					) %>% 
-				config(displaylogo = FALSE, collaborate = FALSE,
+				config(displaylogo = FALSE,
 					modeBarButtonsToRemove = c(
 						'sendDataToCloud',
 						'lasso2d'
 					)
 				)
 		#}
+		msts
 	})
     	
 	# Multi site boxplot
 	output$multi_site_bp=renderPlotly({
 		req(reactive_objects$param1, input$sel_units1, reactive_objects$crit1, reactive_objects$au_vis, reactive_objects$title, reactive_objects$ylab, reactive_objects$mlid_vis, reactive_objects$au_vis)
 		crit_plot=reactive_objects$crit_plot
-		crit_plot=unique(crit_plot[!is.na(crit_plot$plot_value),c('plot_value','label')])
-		crit_plot0=crit_plot
-		crit_plot0$x=0
-		crit_plot1=crit_plot
-		crit_plot1$x=1
-		crit_plot=rbind(crit_plot0,crit_plot1)
-		
+		if(dim(crit_plot)[1]>0){
+			crit_plot=unique(crit_plot[!is.na(crit_plot$plot_value),c('plot_value','label')])
+			crit_plot0=crit_plot
+			crit_plot0$x=0
+			crit_plot1=crit_plot
+			crit_plot1$x=1
+			crit_plot=rbind(crit_plot0,crit_plot1)
+		}
 		#if(all(!is.na(reactive_objects$param1$plot_value))){
-			plot_ly(data=reactive_objects$param1, type = 'box', y = ~plot_value, color = ~IR_MLID, visible=T) %>%
+			msbp=plot_ly(data=reactive_objects$param1, type = 'box', y = ~plot_value, color = ~IR_MLID, visible=T) %>%
 				add_trace(type = 'box', y = ~plot_value, color = ~ASSESS_ID, visible=F) %>%
-				layout(title = reactive_objects$title,
-					titlefont = list(
-					family = "Arial, sans-serif"),
-					font = list(
-					family = "Arial, sans-serif"),
+				layout(
+					title = reactive_objects$title,
 					xaxis = list(title = "MLID"),
 					xaxis2 = list(overlaying = "x", zeroline=F, showticklabels = FALSE, showgrid = FALSE),
 					yaxis = list(title = reactive_objects$ylab),
@@ -256,7 +259,6 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 						)
 					)
 				) %>%
-				add_trace(data=crit_plot, type = 'scatter', mode='lines', x=~x, y = ~plot_value, color = ~label, visible='legendonly', xaxis = "x2")%>%
 				config(displaylogo = FALSE, collaborate = FALSE,
 					modeBarButtonsToRemove = c(
 						'sendDataToCloud',
@@ -264,7 +266,12 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 						'lasso2d'
 					)
 				)
+			if(dim(crit_plot)[1]>0){
+				msbp=add_trace(msbp, data=crit_plot, type = 'scatter', mode='lines', x=~x, y = ~plot_value, color = ~label, visible='legendonly', xaxis = "x2")
+			}
+
 		#}
+		msbp
 	})
     
 	

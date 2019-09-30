@@ -21,8 +21,8 @@ source('helpers/asmntMap.R')
 source('helpers/figuresMod.R')
 
 # Load data & criteria
-#load(system.file("extdata", "asmntDashboard_data.Rdata", package = "irTools"))
-load("C:/Users/jvander/Documents/R/irTools/inst/extdata/asmntDashboard_data.Rdata")
+load(system.file("extdata", "asmntDashboard_data.Rdata", package = "irTools"))
+#load("C:/Users/jvander/Documents/R/irTools/inst/extdata/asmntDashboard_data.Rdata")
 options(warn = -1)
 
 # Shiny file input size allowed
