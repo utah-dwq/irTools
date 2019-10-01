@@ -325,7 +325,8 @@ rm(nd)
 ## Extract CFs
 cfs=unique(data[data$BeneficialUse=="CF",c("ActivityStartDate","IR_MLID","IRParameterName","DailyAggFun","IR_Unit","IR_Value")])
 #data=data[data$BeneficialUse!="CF",]
-calcs=data[which(data$NumericCriterion=="calc"),col_names]
+calcs=data[which(data$NumericCriterion=="calc"),]
+dim(calcs)
 data=data[is.na(data$NumericCriterion) | data$NumericCriterion!="calc",]
 
 ## Aggregate CFs to daily values & cast to wide format
@@ -366,13 +367,21 @@ openxlsx::removeFilter(criterion_wb, sheetnames[n])
 
 ### Read formula table
 cf_formulas=data.frame(openxlsx::readWorkbook(criterion_wb, sheet=cf_formulas_sheetname, startRow=startRow_formulas, detectDates=TRUE))
+cf_formulas=cf_formulas[,names(cf_formulas) %in% c("CAS","BeneficialUse","FrequencyNumber","FrequencyUnit","CriterionFormula","ParameterQualifier","CriterionUnits")]
 names(calcs)[names(calcs) %in% names(cf_formulas)]
-cf_formulas=cf_formulas[,!names(cf_formulas) %in% c("R3172ParameterName", "IRParameterName", "TableDescription")]
 
 ### Merge formulas to data
+dimcheck=dim(calcs)[1]
 calcs=merge(calcs, cf_formulas, all.x=T)
+if(dim(calcs)[1] != dimcheck){
+	stop("ERORR assiging formulas to parameters with calculated criteria (1).")
+}
+
 table(calcs$R3172ParameterName, calcs$CriterionFormula)[rowSums(table(calcs$R3172ParameterName, calcs$CriterionFormula))>0,]
-any(is.na(calcs$CriterionFormula))
+if(any(is.na(calcs$CriterionFormula))){
+	stop("ERORR assiging formulas to parameters with calculated criteria (2).")
+}
+)
 
 
 ### Fill & evaluate formula
