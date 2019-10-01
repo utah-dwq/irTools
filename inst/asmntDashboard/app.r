@@ -358,6 +358,7 @@ output$dt=DT::renderDT({
 # Create styles for export headers
 Identifier = openxlsx::createStyle(textDecoration = "bold", bgFill = "yellow")
 IR = openxlsx::createStyle(textDecoration = "bold", bgFill = "pink")
+Param = openxlsx::createStyle(textDecoration = "bold", bgFill = "green")
 
 reviewer_export <- openxlsx::createWorkbook()
 openxlsx::addWorksheet(reviewer_export, sheetName = "Data Summary")
@@ -368,11 +369,16 @@ observe({
  # Narrow compiled data to clicked AU's
  compiled_data_narrow = lapply(compiled_data, function(x){x = x[x$ASSESS_ID%in%unique(reactive_objects$sel_data$ASSESS_ID),]})
 
- openxlsx::writeDataTable(reviewer_export, sheet = "Data Summary", compiled_data_narrow$summary_tc_assessed)
  openxlsx::writeDataTable(reviewer_export, sheet = "Abbreviated Data", compiled_data_narrow$toxconv_data_asmnt)
+ openxlsx::writeDataTable(reviewer_export, sheet = "Data Summary", compiled_data_narrow$summary_tc_assessed)
  openxlsx::conditionalFormatting(reviewer_export, sheet = "Abbreviated Data", cols = 1:95, rows = 1, rule = "IR", type = "contains", style = IR)
  openxlsx::conditionalFormatting(reviewer_export, sheet = "Abbreviated Data", cols = 1:95, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
-
+ openxlsx::conditionalFormatting(reviewer_export, sheet = "Abbreviated Data", cols = 1:95, rows = 1, rule = "Param", type = "contains",style = Param)
+ openxlsx::conditionalFormatting(reviewer_export, sheet = "Data Summary", cols = 1:20, rows = 1, rule = "IR", type = "contains", style = IR)
+ openxlsx::conditionalFormatting(reviewer_export, sheet = "Data Summary", cols = 1:20, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
+ openxlsx::conditionalFormatting(reviewer_export, sheet = "Data Summary", cols = 1:20, rows = 1, rule = "Param", type = "contains",style = Param)
+ 
+ 
  if(!is.null(compiled_data_narrow$ecoli_data_asmnt)){
    openxlsx::addWorksheet(reviewer_export, sheetName = "E.coli Data")
    openxlsx::writeData(reviewer_export, sheet = "E.coli Data", compiled_data_narrow$ecoli_data_asmnt)
