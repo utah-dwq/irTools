@@ -142,7 +142,7 @@ reactive_objects=reactiveValues()
 
 # Demo data input
 observeEvent(input$demo_input, {
-	file=system.file("extdata", "site-use-param-asmnt.xlsx", package = "irTools")	
+	file=system.file("extdata", "asmntDashboard_demo_data.xlsx", package = "irTools")	
 	au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
 	reactive_objects$au_splits=au_splits
 	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
