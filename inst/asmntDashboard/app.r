@@ -369,7 +369,7 @@ output$dt=DT::renderDT({
 # Create styles for export headers
 Identifier = openxlsx::createStyle(textDecoration = "bold", bgFill = "yellow")
 IR = openxlsx::createStyle(textDecoration = "bold", bgFill = "pink")
-Param = openxlsx::createStyle(textDecoration = "bold", bgFill = "green")
+Param = openxlsx::createStyle(textDecoration = "bold", bgFill = "turquoise")
 
 reviewer_export <- openxlsx::createWorkbook()
 openxlsx::addWorksheet(reviewer_export, sheetName = "Data Summary")
