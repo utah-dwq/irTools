@@ -22,7 +22,6 @@ source('helpers/figuresMod.R')
 
 # Load data & criteria
 load(system.file("extdata", "asmntDashboard_data.Rdata", package = "irTools"))
-#load("C:/Users/jvander/Documents/R/irTools/inst/extdata/asmntDashboard_data.Rdata")
 options(warn = -1)
 
 # Shiny file input size allowed
@@ -41,14 +40,14 @@ ui <-fluidPage(
 		tags$head(tags$link(rel = "icon", type = "image/png", href = "dwq_logo_small.png"), windowTitle="WQ Assessment Dashboard")
 	),
 
-	
+
 	# User inputs & figures
 	fluidRow(column(12, align='left', offset=8,
 		actionButton('toolbar_reset', 'Reset toolbar', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('sync-alt'))
 	)),
 	br(),
-	column(8, shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1, 
-		bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), value=1, 
+	column(8, shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1,
+		bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), value=1,
 			#fluidRow(
 				column(4, fileInput("import_assessments", "Import assessment file", accept=".xlsx"),
 				uiOutput('ex_url')),
@@ -69,7 +68,7 @@ ui <-fluidPage(
 			br(),
 			fluidRow(div(DT::DTOutput("dt"), style = list("font-size:65%")))
 		),
-		bsCollapsePanel(list(icon('plus-circle'), icon('database'), "Download raw data from WQP"), 
+		bsCollapsePanel(list(icon('plus-circle'), icon('database'), "Download raw data from WQP"),
 			fluidRow(
 				column(2, h4('Start date'), dateInput('start_date', '', format='mm/dd/yyyy', value='10/01/2008')),
 				column(2, h4('End date'), dateInput('end_date', '', format='mm/dd/yyyy'))
@@ -77,11 +76,11 @@ ui <-fluidPage(
 			uiOutput('wqp_url')
 			#actionButton('dwnld_wqp', 'Download WQP data', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('download'))
 		)#,
-		#bsCollapsePanel(list(icon('plus-circle'), icon('download'), "Export reviews"), 
+		#bsCollapsePanel(list(icon('plus-circle'), icon('download'), "Export reviews"),
 		#	downloadButton('exp_rev', label = "Export reviews")
 		#)
 	))),
-	
+
 	#Reviewer toolbar (wide)
 	uiOutput('toolbarUI'),
 	br(),
@@ -142,7 +141,7 @@ reactive_objects=reactiveValues()
 
 # Demo data input
 observeEvent(input$demo_input, {
-	file=system.file("extdata", "asmntDashboard_demo_data.xlsx", package = "irTools")	
+	file=system.file("extdata", "asmntDashboard_demo_data.xlsx", package = "irTools")
 	au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
 	reactive_objects$au_splits=au_splits
 	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
@@ -201,7 +200,7 @@ observe({
 	req(reactive_objects$au_asmnt_poly)
 	reactive_objects$au_asmnt_poly=within(reactive_objects$au_asmnt_poly, {
 		lab=paste0(
-					'<p>', 
+					'<p>',
 					"AU name: ", AU_NAME,
 					'<br />', "AU ID: ", ASSESS_ID,
 					'<br />', "Assessment: ", AssessCat,
@@ -236,14 +235,14 @@ observeEvent(input$map_rev_filter, ignoreInit=T, {
 	au_asmnt_poly=reactive_objects$au_asmnt_poly[reactive_objects$au_asmnt_poly$ASSESS_ID %in% aus,]
 	au_asmnt_poly=within(au_asmnt_poly, {
 	lab=paste0(
-				'<p>', 
+				'<p>',
 				"AU name: ", AU_NAME,
 				'<br />', "AU ID: ", ASSESS_ID,
 				'<br />', "Assessment: ", AssessCat,
 				'<br />', "Impaired params: ", Impaired_params,
 				'<br />', "ID w/ exceedance params: ", IDEX_params,
 				'<br> NS pollution indicators: ', pi_params)
-	
+
 	})
 
 	if(dim(au_asmnt_poly)[1]>0){
@@ -298,9 +297,9 @@ observeEvent(reactive_objects$selected_aus, ignoreNULL = F, ignoreInit=T, {
 # Clear selected AUs with clear_au action button
 observeEvent(input$clear_au, {
 	reactive_objects$selected_aus=NULL
-})  
+})
 
-# Generate data and criteria subsets (based on selected AUs) for analysis tools on button press 
+# Generate data and criteria subsets (based on selected AUs) for analysis tools on button press
 observeEvent(input$build_tools,{
 	sel_sites=reactive_objects$site_asmnt$IR_MLID[reactive_objects$site_asmnt$ASSESS_ID %in% reactive_objects$selected_aus]
 	if(length(sel_sites)>0){
@@ -343,8 +342,8 @@ output$rebuild=renderUI({
 		fluidRow(
 			tags$div("Re-build recommended...",id="rebuild_message"),
 			tags$script(HTML("
-				(function blink() { 
-					$('#rebuild_message').fadeOut(500).fadeIn(500, blink); 
+				(function blink() {
+					$('#rebuild_message').fadeOut(500).fadeIn(500, blink);
 				})();
 			"))
 		)
@@ -367,37 +366,43 @@ output$dt=DT::renderDT({
 	)
 })
 
-## Create styles for export headers
-#Identifier = openxlsx::createStyle(textDecoration = "bold", bgFill = "yellow")
-#IR = openxlsx::createStyle(textDecoration = "bold", bgFill = "pink")
-#
-#reviewer_export <- openxlsx::createWorkbook()
-#openxlsx::addWorksheet(reviewer_export, sheetName = "Data Summary")
-#openxlsx::addWorksheet(reviewer_export, sheetName = "Abbreviated Data")
-#
-#observe({
-#  req(reactive_objects$sel_data)
-#  # Narrow compiled data to clicked AU's
-#  compiled_data_narrow = lapply(compiled_data, function(x){x = x[x$ASSESS_ID%in%unique(reactive_objects$sel_data$ASSESS_ID),]})
-#  
-#  openxlsx::writeDataTable(reviewer_export, sheet = "Data Summary", compiled_data_narrow$summary_tc_assessed)
-#  openxlsx::writeDataTable(reviewer_export, sheet = "Abbreviated Data", compiled_data_narrow$toxconv_data_asmnt)
-#  openxlsx::conditionalFormatting(reviewer_export, sheet = "Abbreviated Data", cols = 1:95, rows = 1, rule = "IR", type = "contains", style = IR)
-#  openxlsx::conditionalFormatting(reviewer_export, sheet = "Abbreviated Data", cols = 1:95, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
-#  
-#  if(!is.null(compiled_data_narrow$ecoli_data_asmnt)){
-#    openxlsx::addWorksheet(reviewer_export, sheetName = "E.coli Data")
-#    openxlsx::writeData(reviewer_export, sheet = "E.coli Data", compiled_data_narrow$ecoli_data_asmnt)
-#  }
-#  
-#  reactive_objects$AUexport = reviewer_export
-#})
-#
-## Export data table - (export wide dataset, not column subset dataset)
-#output$exp_dt <- downloadHandler(
-#	filename=paste0('exported-AU-data-', Sys.Date(),'.xlsx'),
-#	content = function(file) {openxlsx::saveWorkbook(reactive_objects$AUexport, file)}
-#)
+# Create styles for export headers
+Identifier = openxlsx::createStyle(textDecoration = "bold", bgFill = "yellow")
+IR = openxlsx::createStyle(textDecoration = "bold", bgFill = "pink")
+Param = openxlsx::createStyle(textDecoration = "bold", bgFill = "green")
+
+reviewer_export <- openxlsx::createWorkbook()
+openxlsx::addWorksheet(reviewer_export, sheetName = "Data Summary")
+openxlsx::addWorksheet(reviewer_export, sheetName = "Abbreviated Data")
+
+observe({
+ req(reactive_objects$sel_data)
+ # Narrow compiled data to clicked AU's
+ compiled_data_narrow = lapply(compiled_data, function(x){x = x[x$ASSESS_ID%in%unique(reactive_objects$sel_data$ASSESS_ID),]})
+
+ openxlsx::writeDataTable(reviewer_export, sheet = "Abbreviated Data", compiled_data_narrow$toxconv_data_asmnt)
+ openxlsx::writeDataTable(reviewer_export, sheet = "Data Summary", compiled_data_narrow$summary_tc_assessed)
+ openxlsx::conditionalFormatting(reviewer_export, sheet = "Abbreviated Data", cols = 1:95, rows = 1, rule = "IR", type = "contains", style = IR)
+ openxlsx::conditionalFormatting(reviewer_export, sheet = "Abbreviated Data", cols = 1:95, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
+ openxlsx::conditionalFormatting(reviewer_export, sheet = "Abbreviated Data", cols = 1:95, rows = 1, rule = "Param", type = "contains",style = Param)
+ openxlsx::conditionalFormatting(reviewer_export, sheet = "Data Summary", cols = 1:20, rows = 1, rule = "IR", type = "contains", style = IR)
+ openxlsx::conditionalFormatting(reviewer_export, sheet = "Data Summary", cols = 1:20, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
+ openxlsx::conditionalFormatting(reviewer_export, sheet = "Data Summary", cols = 1:20, rows = 1, rule = "Param", type = "contains",style = Param)
+
+
+ if(!is.null(compiled_data_narrow$ecoli_data_asmnt)){
+   openxlsx::addWorksheet(reviewer_export, sheetName = "E.coli Data")
+   openxlsx::writeData(reviewer_export, sheet = "E.coli Data", compiled_data_narrow$ecoli_data_asmnt)
+ }
+
+ reactive_objects$AUexport = reviewer_export
+})
+
+# Export data table - (export wide dataset, not column subset dataset)
+output$exp_dt <- downloadHandler(
+filename=paste0('exported-AU-data-', Sys.Date(),'.xlsx'),
+content = function(file) {openxlsx::saveWorkbook(reactive_objects$AUexport, file)}
+)
 
 # Download WQP data for sites
 observe({
@@ -534,7 +539,7 @@ output$flagUI1a=renderUI({
 			tagList(
 				shinyWidgets::radioGroupButtons('rev_type', 'Review type:', choices=c('Generate flag','Mark complete'), checkIcon = list(yes = icon("check")))
 			)
-		}	
+		}
 })
 
 output$flagUI1b=renderUI({
@@ -590,12 +595,12 @@ observe({
 	reactive_objects$end_date=max(figures$select_data()$x)
 	ymin=min(figures$select_data()$y)
 	ymax=max(figures$select_data()$y)
-	selected_points=subset(reactive_objects$sel_data, 
+	selected_points=subset(reactive_objects$sel_data,
 		R3172ParameterName==param1() &
 		wqTools::facToNum(IR_Value) >= ymin &
 		wqTools::facToNum(IR_Value) <= ymax &
 		as.Date(ActivityStartDate) >= reactive_objects$start_date &
-		as.Date(ActivityStartDate) <= reactive_objects$end_date	
+		as.Date(ActivityStartDate) <= reactive_objects$end_date
 	)
 	selected_rids=unique(selected_points[,c('ResultIdentifier','ActivityStartDate','IR_MLID','IR_MLNAME','ASSESS_ID','R3172ParameterName')])
 	reactive_objects$selected_rids=selected_rids
@@ -644,26 +649,26 @@ observeEvent(input$mark_complete, ignoreInit=T, {
 		flags=unique(c(as.character(au_flags), as.character(site_flags), as.character(record_flags)))
 		complete_flag_aus=flag_aus[flag_aus %in% flags]
 		complete_no_flag_aus=flag_aus[!flag_aus %in% flags]
-		
+
 		reactive_objects$site_use_param_asmnt=within(reactive_objects$site_use_param_asmnt, {
 			AU_review[ASSESS_ID %in% complete_flag_aus] = 'Complete with flag(s)'
-			AU_review[ASSESS_ID %in% complete_no_flag_aus] = 'Complete'	
-		})		
-		
+			AU_review[ASSESS_ID %in% complete_no_flag_aus] = 'Complete'
+		})
+
 		# Update AU polygons in map
 		aus=unique(reactive_objects$site_use_param_asmnt$ASSESS_ID[reactive_objects$site_use_param_asmnt$AU_review %in% input$map_rev_filter])
 		au_asmnt_poly=reactive_objects$au_asmnt_poly[reactive_objects$au_asmnt_poly$ASSESS_ID %in% aus,]
 		au_asmnt_poly=within(au_asmnt_poly, {
 		lab=paste0(
-					'<p>', 
+					'<p>',
 					"AU name: ", AU_NAME,
 					'<br />', "AU ID: ", ASSESS_ID,
 					'<br />', "Assessment: ", AssessCat,
 					'<br />', "Impaired params: ", Impaired_params,
 					'<br />', "ID w/ exceedance params: ", IDEX_params)
-		
+
 		})
-	
+
 		if(dim(au_asmnt_poly)[1]>0){
 			asmnt_map_proxy %>%
 				clearGroup(group='Assessment units') %>%
@@ -675,10 +680,10 @@ observeEvent(input$mark_complete, ignoreInit=T, {
 		}
 		# Clear completed AUs from selected AUs
 		reactive_objects$selected_aus=reactive_objects$selected_aus[!reactive_objects$selected_aus %in% flag_aus]
-		
+
 	}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
-	
-	
+
+
 })
 
 # Save reviews
@@ -696,13 +701,13 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
 	}
 	if(input$flag_scope=='Site(s)'){# | input$flag_scope=='Record(s)'){
-		if((input$flag_scope=='Site(s)' & 
+		if((input$flag_scope=='Site(s)' &
 			(input$rev_name!="" &
-					((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) & 
+					((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) &
 					!is.null(input$flag_param) &  !is.null(input$rev_name) &  input$rev_comment!="")
-			#|(input$flag_scope=='Record(s)' & 
+			#|(input$flag_scope=='Record(s)' &
 			#	(input$rev_name!="" &
-			#		((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) & 
+			#		((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) &
 			#		!is.null(input$flag_param) &  !is.null(input$rev_name) &  input$rev_comment!="" & input$flag_date_range[1]!=Sys.Date()))
 		)){
 			if(input$site_flag_type=='MLID'){
@@ -718,12 +723,12 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 			reviews=merge(reviews, input$flag_param)
 			names(reviews)=c('IR_MLID', 'IR_MLNAME', 'ASSESS_ID','ML_Type', 'R3172ParameterName')
 			reviews$Reviewer=input$rev_name
-			reviews$Comment=input$rev_comment					
+			reviews$Comment=input$rev_comment
 			reviews$ReviewDate=Sys.Date()
 			reactive_objects$site_reviews=rbind(reactive_objects$site_reviews, reviews)
 			print(reactive_objects$site_reviews)
 			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
-			
+
 		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
 	}
 	if(input$flag_scope=='Record(s)'){
@@ -731,7 +736,7 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 			reviews=reactive_objects$selected_rids
 			reactive_objects$selected_rids=reactive_objects$selected_rids[0,]
 			reviews$Reviewer=input$rev_name
-			reviews$Comment=input$rev_comment					
+			reviews$Comment=input$rev_comment
 			reviews$ReviewDate=Sys.Date()
 			reactive_objects$record_reviews=unique(rbind(reactive_objects$record_reviews, reviews))
 			print(reactive_objects$record_reviews)
@@ -750,7 +755,7 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 				names(sw_reviews)=c('ML_Type','AU_Type','R3172ParameterName')
 			}
 			sw_reviews$Reviewer=input$rev_name
-			sw_reviews$Comment=input$rev_comment		
+			sw_reviews$Comment=input$rev_comment
 			sw_reviews$ReviewDate=Sys.Date()
 			reactive_objects$sw_reviews=rbind(reactive_objects$sw_reviews,sw_reviews)
 			print(reactive_objects$sw_reviews)
@@ -779,4 +784,3 @@ output$exp_rev <- downloadHandler(
 
 ## run app
 shinyApp(ui = ui, server = server)
-
