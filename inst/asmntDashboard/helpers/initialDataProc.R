@@ -36,7 +36,7 @@ if(all(names(site_asmnt)!='AU_Type')){
 
 
 ### Generate impaired params wIDEX list
-sites_ns=subset(site_param_asmnt, AssessCat=='NS')
+sites_ns=subset(site_param_asmnt, AssessCat=='NS' & !is.na(IR_MLID) & IR_MLID!='NA')
 if(dim(sites_ns)[1]>0){
 	impaired_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_ns, value.var='R3172ParameterName')
 	nms=names(impaired_params[2:dim(impaired_params)[2]])
@@ -51,7 +51,7 @@ if(dim(sites_ns)[1]>0){
 }else{site_asmnt$Impaired_params=NA}
 
 ### Generate IDEX params wIDEX list
-sites_IDEX=subset(site_param_asmnt, AssessCat=='IDEX')
+sites_IDEX=subset(site_param_asmnt, AssessCat=='IDEX' & !is.na(IR_MLID) & IR_MLID!='NA')
 if(dim(sites_IDEX)[1]>0){
 	IDEX_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_IDEX, value.var='R3172ParameterName')
 	nms=names(IDEX_params[2:dim(IDEX_params)[2]])
@@ -67,7 +67,7 @@ if(dim(sites_IDEX)[1]>0){
 
 
 ### Generate pollution indicator NS wIDEX list
-if(dim(pol_ind)[1]>0){sites_pi=subset(site_param_pol_ind, AssessCat=='NS')}
+if(dim(pol_ind)[1]>0){sites_pi=subset(site_param_pol_ind, AssessCat=='NS' & !is.na(IR_MLID) & IR_MLID!='NA')}
 if(dim(sites_pi)[1]>0){
 	pi_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_pi, value.var='R3172ParameterName')
 	nms=names(pi_params[2:dim(pi_params)[2]])
