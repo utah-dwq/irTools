@@ -322,104 +322,106 @@ print(table(reasons$reason))
 rm(nd)
 
 # Assign correction factors to data requiring calculations
-## Extract CFs
-cfs=unique(data[data$BeneficialUse=="CF",c("ActivityStartDate","IR_MLID","IRParameterName","DailyAggFun","IR_Unit","IR_Value")])
-#data=data[data$BeneficialUse!="CF",]
-calcs=data[which(data$NumericCriterion=="calc"),]
-dim(calcs)
-data=data[is.na(data$NumericCriterion) | data$NumericCriterion!="calc",]
-
-## Aggregate CFs to daily values & cast to wide format
-drop_vars=""
-cfs_daily=aggDVbyfun(cfs, drop_vars=drop_vars, value_var="IR_Value", agg_var="DailyAggFun")
-
-dim(cfs)
-dim(cfs_daily)
-
-cfs_daily$cf=paste0("cf_",cfs_daily$DailyAggFun,"_",cfs_daily$IRParameterName,"_",cfs_daily$IR_Unit)
-cfs_daily_cast=reshape2::dcast(cfs_daily, ActivityStartDate+IR_MLID~cf, value.var="IR_Value")
-
-
-## Calculate hardness
-cfs_daily_cast=within(cfs_daily_cast,{
-		hardness=100*(`cf_min_Calcium_mg/l`/40.08 + `cf_min_Magnesium_mg/l`/24.3)
-		hardness[is.na(hardness)]=`cf_min_Hardness_mg/l`[is.na(hardness)]
-		hardness=ifelse(hardness>400,400,hardness) 
+if(any(data$BeneficialUse=="CF")){
+	## Extract CFs
+	cfs=unique(data[data$BeneficialUse=="CF",c("ActivityStartDate","IR_MLID","IRParameterName","DailyAggFun","IR_Unit","IR_Value")])
+	#data=data[data$BeneficialUse!="CF",]
+	calcs=data[which(data$NumericCriterion=="calc"),]
+	dim(calcs)
+	data=data[is.na(data$NumericCriterion) | data$NumericCriterion!="calc",]
+	
+	## Aggregate CFs to daily values & cast to wide format
+	drop_vars=""
+	cfs_daily=aggDVbyfun(cfs, drop_vars=drop_vars, value_var="IR_Value", agg_var="DailyAggFun")
+	
+	dim(cfs)
+	dim(cfs_daily)
+	
+	cfs_daily$cf=paste0("cf_",cfs_daily$DailyAggFun,"_",cfs_daily$IRParameterName,"_",cfs_daily$IR_Unit)
+	cfs_daily_cast=reshape2::dcast(cfs_daily, ActivityStartDate+IR_MLID~cf, value.var="IR_Value")
+	
+	
+	## Calculate hardness
+	cfs_daily_cast=within(cfs_daily_cast,{
+			hardness=100*(`cf_min_Calcium_mg/l`/40.08 + `cf_min_Magnesium_mg/l`/24.3)
+			hardness[is.na(hardness)]=`cf_min_Hardness_mg/l`[is.na(hardness)]
+			hardness=ifelse(hardness>400,400,hardness) 
+		})
+	
+	## Merge CFs back to data
+	dimcheck=dim(calcs)[1]
+	calcs=merge(calcs,cfs_daily_cast,all.x=T)
+	if(dim(calcs)[1] != dimcheck){
+		stop('ERROR: Failure assigning correction factors to data.')
+	}
+	
+	
+	## Calculate CF dependent criteria
+	### Load criterion workbook
+	criterion_wb=openxlsx::loadWorkbook(crit_wb)
+	
+	### Remove filters from all sheets in crit_wb
+	sheetnames=openxlsx::getSheetNames(crit_wb)
+	for(n in 1:length(sheetnames)){
+	openxlsx::removeFilter(criterion_wb, sheetnames[n])
+	}
+	
+	### Read formula table
+	cf_formulas=data.frame(openxlsx::readWorkbook(criterion_wb, sheet=cf_formulas_sheetname, startRow=startRow_formulas, detectDates=TRUE))
+	cf_formulas=cf_formulas[,names(cf_formulas) %in% c("CAS","BeneficialUse","FrequencyNumber","FrequencyUnit","CF","CriterionFormula","ParameterQualifier","CriterionUnits")]
+	names(calcs)[names(calcs) %in% names(cf_formulas)]
+	
+	### Merge formulas to data
+	dimcheck=dim(calcs)[1]
+	calcs=merge(calcs, cf_formulas, all.x=T)
+	if(dim(calcs)[1] != dimcheck){
+		stop("ERORR assiging formulas to parameters with calculated criteria (1).")
+	}
+	
+	table(calcs$R3172ParameterName, calcs$CriterionFormula)[rowSums(table(calcs$R3172ParameterName, calcs$CriterionFormula))>0,]
+	if(any(is.na(calcs$CriterionFormula))){
+		stop("ERORR assiging formulas to parameters with calculated criteria (2).")
+	}
+	
+	
+	
+	### Fill & evaluate formula
+	calcs=within(calcs, {
+		CF[!is.na(CF)]=paste0("(",CF[!is.na(CF)],")")
+		CriterionFormula=gsub("CF * ","",CriterionFormula, fixed=TRUE)
+		CriterionFormula[!is.na(CF)]=paste0("(",CriterionFormula[!is.na(CF)],")")
+		CriterionFormula[!is.na(CF)]=paste(CF[!is.na(CF)], "*", CriterionFormula[!is.na(CF)])
+		CriterionFormula=gsub("MIN", "min", CriterionFormula, fixed=TRUE)
+		CriterionFormula=gsub("MAX", "max", CriterionFormula, fixed=TRUE)
+		CriterionFormula=gsub("ln", "log", CriterionFormula, fixed=TRUE)
+		CriterionFormula=gsub(") (", ")*(", CriterionFormula, fixed=TRUE)
+		CriterionFormula=gsub(")(",  ")*(", CriterionFormula, fixed=TRUE)
+		CriterionFormula=gsub("(e(",  "(exp(", CriterionFormula, fixed=TRUE)
+		CriterionFormula=gsub("e(",  "exp(", CriterionFormula, fixed=TRUE)
+		CriterionFormula=gsub("IFELSE",  "ifelse", CriterionFormula, fixed=TRUE)
+		CriterionFormula=stringr::str_replace_all(CriterionFormula, "hardness", as.character(hardness))
+		CriterionFormula=stringr::str_replace_all(CriterionFormula, "min_pH", as.character(`cf_min_pH_pH units`))
+		CriterionFormula=stringr::str_replace_all(CriterionFormula, "max_pH", as.character(`cf_max_pH_pH units`))
+		CriterionFormula=stringr::str_replace_all(CriterionFormula, "T", as.character(`cf_max_Max. Temperature_C`))
+		CalculatedCrit=sapply(CriterionFormula, function(x) eval(parse(text=x)))
+		suppressWarnings({
+			NumericCriterion=wqTools::facToNum(NumericCriterion)
+		})
+		NumericCriterion=CalculatedCrit
 	})
-
-## Merge CFs back to data
-dimcheck=dim(calcs)[1]
-calcs=merge(calcs,cfs_daily_cast,all.x=T)
-if(dim(calcs)[1] != dimcheck){
-	stop('ERROR: Failure assigning correction factors to data.')
-}
-
-
-## Calculate CF dependent criteria
-### Load criterion workbook
-criterion_wb=openxlsx::loadWorkbook(crit_wb)
-
-### Remove filters from all sheets in crit_wb
-sheetnames=openxlsx::getSheetNames(crit_wb)
-for(n in 1:length(sheetnames)){
-openxlsx::removeFilter(criterion_wb, sheetnames[n])
-}
-
-### Read formula table
-cf_formulas=data.frame(openxlsx::readWorkbook(criterion_wb, sheet=cf_formulas_sheetname, startRow=startRow_formulas, detectDates=TRUE))
-cf_formulas=cf_formulas[,names(cf_formulas) %in% c("CAS","BeneficialUse","FrequencyNumber","FrequencyUnit","CriterionFormula","ParameterQualifier","CriterionUnits")]
-names(calcs)[names(calcs) %in% names(cf_formulas)]
-
-### Merge formulas to data
-dimcheck=dim(calcs)[1]
-calcs=merge(calcs, cf_formulas, all.x=T)
-if(dim(calcs)[1] != dimcheck){
-	stop("ERORR assiging formulas to parameters with calculated criteria (1).")
-}
-
-table(calcs$R3172ParameterName, calcs$CriterionFormula)[rowSums(table(calcs$R3172ParameterName, calcs$CriterionFormula))>0,]
-if(any(is.na(calcs$CriterionFormula))){
-	stop("ERORR assiging formulas to parameters with calculated criteria (2).")
-}
-
-
-
-### Fill & evaluate formula
-calcs=within(calcs, {
-	CF[!is.na(CF)]=paste0("(",CF[!is.na(CF)],")")
-	CriterionFormula=gsub("CF * ","",CriterionFormula, fixed=TRUE)
-	CriterionFormula[!is.na(CF)]=paste0("(",CriterionFormula[!is.na(CF)],")")
-	CriterionFormula[!is.na(CF)]=paste(CF[!is.na(CF)], "*", CriterionFormula[!is.na(CF)])
-	CriterionFormula=gsub("MIN", "min", CriterionFormula, fixed=TRUE)
-	CriterionFormula=gsub("MAX", "max", CriterionFormula, fixed=TRUE)
-	CriterionFormula=gsub("ln", "log", CriterionFormula, fixed=TRUE)
-	CriterionFormula=gsub(") (", ")*(", CriterionFormula, fixed=TRUE)
-	CriterionFormula=gsub(")(",  ")*(", CriterionFormula, fixed=TRUE)
-	CriterionFormula=gsub("(e(",  "(exp(", CriterionFormula, fixed=TRUE)
-	CriterionFormula=gsub("e(",  "exp(", CriterionFormula, fixed=TRUE)
-	CriterionFormula=gsub("IFELSE",  "ifelse", CriterionFormula, fixed=TRUE)
-	CriterionFormula=stringr::str_replace_all(CriterionFormula, "hardness", as.character(hardness))
-	CriterionFormula=stringr::str_replace_all(CriterionFormula, "min_pH", as.character(`cf_min_pH_pH units`))
-	CriterionFormula=stringr::str_replace_all(CriterionFormula, "max_pH", as.character(`cf_max_pH_pH units`))
-	CriterionFormula=stringr::str_replace_all(CriterionFormula, "T", as.character(`cf_max_Max. Temperature_C`))
-	CalculatedCrit=sapply(CriterionFormula, function(x) eval(parse(text=x)))
-	suppressWarnings({
-		NumericCriterion=wqTools::facToNum(NumericCriterion)
-	})
-	NumericCriterion=CalculatedCrit
-})
-
-#plot(calcs$CalculatedCrit~calcs$hardness)
-#plot(calcs$CalculatedCrit~calcs$`cf_max_pH_pH units`)
-
-### Bind calculated criteria data back to full dataset
-calcs=calcs[,unique(c(col_names,'cf_max_Max. Temperature_C','cf_max_pH_pH units','cf_min_Calcium_mg/l','cf_min_Hardness_mg/l','cf_min_Magnesium_mg/l','cf_min_pH_pH units','hardness','CriterionFormula','CalculatedCrit'))]	
-
-dim(calcs)
-dim(data)
-
-data=plyr::rbind.fill(data, calcs)
-table(data$BeneficialUse)
+	
+	#plot(calcs$CalculatedCrit~calcs$hardness)
+	#plot(calcs$CalculatedCrit~calcs$`cf_max_pH_pH units`)
+	
+	### Bind calculated criteria data back to full dataset
+	calcs=calcs[,unique(c(col_names,'cf_max_Max. Temperature_C','cf_max_pH_pH units','cf_min_Calcium_mg/l','cf_min_Hardness_mg/l','cf_min_Magnesium_mg/l','cf_min_pH_pH units','hardness','CriterionFormula','CalculatedCrit'))]	
+	
+	dim(calcs)
+	dim(data)
+	
+	data=plyr::rbind.fill(data, calcs)
+	table(data$BeneficialUse)
+}	
 
 #Reject records where a criterion could not be calculated
 data_n=data
