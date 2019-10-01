@@ -32,6 +32,8 @@ Imports:
 	writexl,
 	rgdal,
 	mapedit,
-	lwgeom
+	lwgeom,
+	knitr,
+	kableExtra
 Remotes:
 	utah-dwq/wqTools

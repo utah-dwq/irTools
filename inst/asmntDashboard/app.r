@@ -22,10 +22,10 @@ source('helpers/figuresMod.R')
 
 # Load data & criteria
 load(system.file("extdata", "asmntDashboard_data.Rdata", package = "irTools"))
-# load(system.file("extdata", "compiled_data.Rdata", package = "irTools"))
-#load("C:/Users/jvander/Documents/R/irTools/inst/extdata/asmntDashboard_data.Rdata")
 options(warn = -1)
 
+# Shiny file input size allowed
+options(shiny.maxRequestSize = 10*1024^2)
 
 # User interface
 ui <-fluidPage(
@@ -40,14 +40,14 @@ ui <-fluidPage(
 		tags$head(tags$link(rel = "icon", type = "image/png", href = "dwq_logo_small.png"), windowTitle="WQ Assessment Dashboard")
 	),
 
-	
+
 	# User inputs & figures
 	fluidRow(column(12, align='left', offset=8,
 		actionButton('toolbar_reset', 'Reset toolbar', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('sync-alt'))
 	)),
 	br(),
-	column(8, shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1, 
-		bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), value=1, 
+	column(8, shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1,
+		bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), value=1,
 			#fluidRow(
 				column(4, fileInput("import_assessments", "Import assessment file", accept=".xlsx"),
 				uiOutput('ex_url')),
@@ -60,26 +60,27 @@ ui <-fluidPage(
 			shinycssloaders::withSpinner(leaflet::leafletOutput("assessment_map", height="600px"),size=2, color="#0080b7")
 		),
 		bsCollapsePanel(list(icon('plus-circle'), icon('chart-bar'), "Figures"),
+			fluidRow(tableOutput("asmnt_summary")),
 			figuresModUI('figures')
 		),
-		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "Download AU data"),
+		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "View & download data"),
 			fluidRow(downloadButton('exp_dt', label = "Download data in Excel workbook", icon='download', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')),
 			br(),
 			fluidRow(div(DT::DTOutput("dt"), style = list("font-size:65%")))
 		),
-		bsCollapsePanel(list(icon('plus-circle'), icon('database'), "Download raw data from WQP"), 
+		bsCollapsePanel(list(icon('plus-circle'), icon('database'), "Download raw data from WQP"),
 			fluidRow(
 				column(2, h4('Start date'), dateInput('start_date', '', format='mm/dd/yyyy', value='10/01/2008')),
 				column(2, h4('End date'), dateInput('end_date', '', format='mm/dd/yyyy'))
 			),
 			uiOutput('wqp_url')
 			#actionButton('dwnld_wqp', 'Download WQP data', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('download'))
-		),
-		bsCollapsePanel(list(icon('plus-circle'), icon('download'), "Export reviews"), 
-			downloadButton('exp_rev', label = "Export reviews")
-		)
+		)#,
+		#bsCollapsePanel(list(icon('plus-circle'), icon('download'), "Export reviews"),
+		#	downloadButton('exp_rev', label = "Export reviews")
+		#)
 	))),
-	
+
 	#Reviewer toolbar (wide)
 	uiOutput('toolbarUI'),
 	br(),
@@ -102,7 +103,8 @@ observeEvent(input$toolbar_reset, ignoreInit=F, ignoreNULL=F, {
 					fluidRow(
 						textInput('rev_name', 'Reviewer name'),
 						actionButton('clear_au', 'Clear selected AU(s)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('trash-alt')),
-						actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox'))
+						actionButton('build_tools', 'Build analysis tools', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox')),
+						downloadButton('exp_rev', label = "Export reviews", style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')
 						#actionButton('asmnt_accept','Accept (inactive)', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('check-circle'))
 					),
 					fluidRow(column(12, uiOutput('rebuild')))
@@ -139,7 +141,7 @@ reactive_objects=reactiveValues()
 
 # Demo data input
 observeEvent(input$demo_input, {
-	file=system.file("extdata", "site-use-param-asmnt.xlsx", package = "irTools")	
+	file=system.file("extdata", "asmntDashboard_demo_data.xlsx", package = "irTools")
 	au_splits=as.data.frame(readxl::read_excel(file, 'au-splits'))
 	reactive_objects$au_splits=au_splits
 	site_use_param_asmnt=as.data.frame(readxl::read_excel(file, 'site-use-param-asmnt'))
@@ -198,12 +200,12 @@ observe({
 	req(reactive_objects$au_asmnt_poly)
 	reactive_objects$au_asmnt_poly=within(reactive_objects$au_asmnt_poly, {
 		lab=paste0(
-					'<p>', 
+					'<p>',
 					"AU name: ", AU_NAME,
 					'<br />', "AU ID: ", ASSESS_ID,
 					'<br />', "Assessment: ", AssessCat,
 					'<br />', "Impaired params: ", Impaired_params,
-					'<br />', "ID w/ exceedance params: ", idE_params)
+					'<br />', "ID w/ exceedance params: ", IDEX_params)
 	})
 })
 
@@ -219,7 +221,7 @@ output$map_rev_filter=renderUI({
 	req(reactive_objects$site_use_param_asmnt)
 	#req(reactive_objects$map_ready)
 	choices=unique(reactive_objects$site_use_param_asmnt$AU_review)
-	choices=c('Review needed', 'Complete', 'Complete with flag(s)', 'Not assessed')
+	choices=unique(append(choices, c('Complete', 'Complete with flag(s)', 'Not assessed')))
 	fluidRow(
 		column(1),
 		column(11,shinyWidgets::pickerInput('map_rev_filter', 'Review types', choices, selected='Review needed', multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3")))
@@ -233,13 +235,14 @@ observeEvent(input$map_rev_filter, ignoreInit=T, {
 	au_asmnt_poly=reactive_objects$au_asmnt_poly[reactive_objects$au_asmnt_poly$ASSESS_ID %in% aus,]
 	au_asmnt_poly=within(au_asmnt_poly, {
 	lab=paste0(
-				'<p>', 
+				'<p>',
 				"AU name: ", AU_NAME,
 				'<br />', "AU ID: ", ASSESS_ID,
 				'<br />', "Assessment: ", AssessCat,
 				'<br />', "Impaired params: ", Impaired_params,
-				'<br />', "ID w/ exceedance params: ", idE_params)
-	
+				'<br />', "ID w/ exceedance params: ", IDEX_params,
+				'<br> NS pollution indicators: ', pi_params)
+
 	})
 
 	if(dim(au_asmnt_poly)[1]>0){
@@ -294,15 +297,16 @@ observeEvent(reactive_objects$selected_aus, ignoreNULL = F, ignoreInit=T, {
 # Clear selected AUs with clear_au action button
 observeEvent(input$clear_au, {
 	reactive_objects$selected_aus=NULL
-})  
+})
 
-# Generate data and criteria subsets (based on selected AUs) for analysis tools on button press 
+# Generate data and criteria subsets (based on selected AUs) for analysis tools on button press
 observeEvent(input$build_tools,{
 	sel_sites=reactive_objects$site_asmnt$IR_MLID[reactive_objects$site_asmnt$ASSESS_ID %in% reactive_objects$selected_aus]
 	if(length(sel_sites)>0){
 		reactive_objects$sel_sites=sel_sites
 		reactive_objects$sel_data=subset(assessed_data, IR_MLID %in% sel_sites)
 		reactive_objects$sel_crit=subset(criteria, IR_MLID %in% sel_sites)
+		reactive_objects$asmnt_summary=sf::st_drop_geometry(subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus))
 		showModal(modalDialog(title="Analysis tools ready.",size="l",easyClose=T,
 			"Data and analysis tools ready. Scroll to 'Figures' and 'Data table' panels to review and plot data."))
 	}else{
@@ -311,6 +315,13 @@ observeEvent(input$build_tools,{
 	}
 })
 
+
+output$asmnt_summary=function() {
+	req(reactive_objects$asmnt_summary)
+	knitr::kable(allign='c', reactive_objects$asmnt_summary[,c('ASSESS_ID','AU_NAME','AssessCat','Impaired_params','IDEX_params','pi_params')],
+			row.names=F, col.names=c('ASSESS_ID','AU_NAME','Category', 'Impaired params', 'ID w/ exceedance params', 'NS pollution indicators')) %>%
+			kableExtra::kable_styling()
+}
 
 # Recommend rebuild
 ## Determine if a rebuild is appropriate
@@ -331,8 +342,8 @@ output$rebuild=renderUI({
 		fluidRow(
 			tags$div("Re-build recommended...",id="rebuild_message"),
 			tags$script(HTML("
-				(function blink() { 
-					$('#rebuild_message').fadeOut(500).fadeIn(500, blink); 
+				(function blink() {
+					$('#rebuild_message').fadeOut(500).fadeIn(500, blink);
 				})();
 			"))
 		)
@@ -377,8 +388,8 @@ observe({
  openxlsx::conditionalFormatting(reviewer_export, sheet = "Data Summary", cols = 1:20, rows = 1, rule = "IR", type = "contains", style = IR)
  openxlsx::conditionalFormatting(reviewer_export, sheet = "Data Summary", cols = 1:20, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
  openxlsx::conditionalFormatting(reviewer_export, sheet = "Data Summary", cols = 1:20, rows = 1, rule = "Param", type = "contains",style = Param)
- 
- 
+
+
  if(!is.null(compiled_data_narrow$ecoli_data_asmnt)){
    openxlsx::addWorksheet(reviewer_export, sheetName = "E.coli Data")
    openxlsx::writeData(reviewer_export, sheet = "E.coli Data", compiled_data_narrow$ecoli_data_asmnt)
@@ -528,7 +539,7 @@ output$flagUI1a=renderUI({
 			tagList(
 				shinyWidgets::radioGroupButtons('rev_type', 'Review type:', choices=c('Generate flag','Mark complete'), checkIcon = list(yes = icon("check")))
 			)
-		}	
+		}
 })
 
 output$flagUI1b=renderUI({
@@ -560,7 +571,7 @@ output$flagUI3=renderUI({
 
 output$flagUI4=renderUI({
 	req(reactive_objects$sel_sites, ml_types_sel_au())
-	conditionalPanel(condition="(input.flag_scope=='Site(s)' | input.flag_scope=='Record(s)')  & input.rev_type=='Generate flag'",
+	conditionalPanel(condition="input.flag_scope=='Site(s)' & input.rev_type=='Generate flag'",
 		shinyWidgets::radioGroupButtons('site_flag_type','Select sites by:', choices=c('MLID','ML type'), checkIcon = list(yes = icon("check"))),
 		conditionalPanel(condition="input.site_flag_type=='MLID'",
 			shinyWidgets::pickerInput("flag_sites", "Site(s):", choices=reactive_objects$sel_sites, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
@@ -573,7 +584,7 @@ output$flagUI4=renderUI({
 
 output$flagUI5=renderUI({
 	req(param_choices())
-	conditionalPanel(condition="input.rev_type=='Generate flag'",
+	conditionalPanel(condition="input.rev_type=='Generate flag' & input.flag_scope!='Record(s)'",
 		shinyWidgets::pickerInput("flag_param", "Parameter(s):", choices=param_choices(), multiple=T, selected=param1(), options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
 	)
 })
@@ -581,17 +592,25 @@ output$flagUI5=renderUI({
 observe({
 	req(figures$select_data())
 	reactive_objects$start_date=min(figures$select_data()$x)
-	})
-observe({
-	req(figures$select_data())
 	reactive_objects$end_date=max(figures$select_data()$x)
-	})
+	ymin=min(figures$select_data()$y)
+	ymax=max(figures$select_data()$y)
+	selected_points=subset(reactive_objects$sel_data,
+		R3172ParameterName==param1() &
+		wqTools::facToNum(IR_Value) >= ymin &
+		wqTools::facToNum(IR_Value) <= ymax &
+		as.Date(ActivityStartDate) >= reactive_objects$start_date &
+		as.Date(ActivityStartDate) <= reactive_objects$end_date
+	)
+	selected_rids=unique(selected_points[,c('ResultIdentifier','ActivityStartDate','IR_MLID','IR_MLNAME','ASSESS_ID','R3172ParameterName')])
+	reactive_objects$selected_rids=selected_rids
+})
 
 output$flagUI6=renderUI({
 	req(input$flag_scope)
 	conditionalPanel(condition="input.rev_type=='Generate flag' & input.flag_scope=='Record(s)'",
-		dateRangeInput('flag_date_range', 'Date range:', start=reactive_objects$start_date, end=reactive_objects$end_date),
-		helpText('Use the box select tool on the multi-site time series plot to select a date range interactively.')
+		#dateRangeInput('flag_date_range', 'Date range:', start=reactive_objects$start_date, end=reactive_objects$end_date),
+		helpText('Use the box select tool on the multi-site time series plot to select data to flag interactively.')
 	)
 })
 
@@ -630,26 +649,26 @@ observeEvent(input$mark_complete, ignoreInit=T, {
 		flags=unique(c(as.character(au_flags), as.character(site_flags), as.character(record_flags)))
 		complete_flag_aus=flag_aus[flag_aus %in% flags]
 		complete_no_flag_aus=flag_aus[!flag_aus %in% flags]
-		
+
 		reactive_objects$site_use_param_asmnt=within(reactive_objects$site_use_param_asmnt, {
 			AU_review[ASSESS_ID %in% complete_flag_aus] = 'Complete with flag(s)'
-			AU_review[ASSESS_ID %in% complete_no_flag_aus] = 'Complete'	
-		})		
-		
+			AU_review[ASSESS_ID %in% complete_no_flag_aus] = 'Complete'
+		})
+
 		# Update AU polygons in map
 		aus=unique(reactive_objects$site_use_param_asmnt$ASSESS_ID[reactive_objects$site_use_param_asmnt$AU_review %in% input$map_rev_filter])
 		au_asmnt_poly=reactive_objects$au_asmnt_poly[reactive_objects$au_asmnt_poly$ASSESS_ID %in% aus,]
 		au_asmnt_poly=within(au_asmnt_poly, {
 		lab=paste0(
-					'<p>', 
+					'<p>',
 					"AU name: ", AU_NAME,
 					'<br />', "AU ID: ", ASSESS_ID,
 					'<br />', "Assessment: ", AssessCat,
 					'<br />', "Impaired params: ", Impaired_params,
-					'<br />', "ID w/ exceedance params: ", idE_params)
-		
+					'<br />', "ID w/ exceedance params: ", IDEX_params)
+
 		})
-	
+
 		if(dim(au_asmnt_poly)[1]>0){
 			asmnt_map_proxy %>%
 				clearGroup(group='Assessment units') %>%
@@ -661,10 +680,10 @@ observeEvent(input$mark_complete, ignoreInit=T, {
 		}
 		# Clear completed AUs from selected AUs
 		reactive_objects$selected_aus=reactive_objects$selected_aus[!reactive_objects$selected_aus %in% flag_aus]
-		
+
 	}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
-	
-	
+
+
 })
 
 # Save reviews
@@ -681,15 +700,15 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
 		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
 	}
-	if(input$flag_scope=='Site(s)' | input$flag_scope=='Record(s)'){
-		if((input$flag_scope=='Site(s)' & 
+	if(input$flag_scope=='Site(s)'){# | input$flag_scope=='Record(s)'){
+		if((input$flag_scope=='Site(s)' &
 			(input$rev_name!="" &
-					((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) & 
+					((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) &
 					!is.null(input$flag_param) &  !is.null(input$rev_name) &  input$rev_comment!="")
-			|(input$flag_scope=='Record(s)' & 
-				(input$rev_name!="" &
-					((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) & 
-					!is.null(input$flag_param) &  !is.null(input$rev_name) &  input$rev_comment!="" & input$flag_date_range[1]!=Sys.Date()))
+			#|(input$flag_scope=='Record(s)' &
+			#	(input$rev_name!="" &
+			#		((input$site_flag_type=='MLID' & !is.null(input$flag_sites)) | (input$site_flag_type=='ML type' & !is.null(input$flag_ml_types_sel_au))) &
+			#		!is.null(input$flag_param) &  !is.null(input$rev_name) &  input$rev_comment!="" & input$flag_date_range[1]!=Sys.Date()))
 		)){
 			if(input$site_flag_type=='MLID'){
 				sites=input$flag_sites
@@ -704,19 +723,24 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 			reviews=merge(reviews, input$flag_param)
 			names(reviews)=c('IR_MLID', 'IR_MLNAME', 'ASSESS_ID','ML_Type', 'R3172ParameterName')
 			reviews$Reviewer=input$rev_name
-			reviews$Comment=input$rev_comment					
+			reviews$Comment=input$rev_comment
 			reviews$ReviewDate=Sys.Date()
-			if(input$flag_scope=='Site(s)'){
-				reactive_objects$site_reviews=rbind(reactive_objects$site_reviews, reviews)
-				print(reactive_objects$site_reviews)
-			}else{
-				reviews$StartDate=input$flag_date_range[1]
-				reviews$EndDate=input$flag_date_range[2]				
-				reactive_objects$record_reviews=rbind(reactive_objects$record_reviews, reviews)
-				print(reactive_objects$record_reviews)
-			}
+			reactive_objects$site_reviews=rbind(reactive_objects$site_reviews, reviews)
+			print(reactive_objects$site_reviews)
 			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
-			
+
+		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
+	}
+	if(input$flag_scope=='Record(s)'){
+		if(!is.null(input$rev_name) & input$rev_comment!="" & dim(reactive_objects$selected_rids)[1]>0){
+			reviews=reactive_objects$selected_rids
+			reactive_objects$selected_rids=reactive_objects$selected_rids[0,]
+			reviews$Reviewer=input$rev_name
+			reviews$Comment=input$rev_comment
+			reviews$ReviewDate=Sys.Date()
+			reactive_objects$record_reviews=unique(rbind(reactive_objects$record_reviews, reviews))
+			print(reactive_objects$record_reviews)
+			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
 		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
 	}
 	if(input$flag_scope=='State-wide'){
@@ -731,7 +755,7 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 				names(sw_reviews)=c('ML_Type','AU_Type','R3172ParameterName')
 			}
 			sw_reviews$Reviewer=input$rev_name
-			sw_reviews$Comment=input$rev_comment		
+			sw_reviews$Comment=input$rev_comment
 			sw_reviews$ReviewDate=Sys.Date()
 			reactive_objects$sw_reviews=rbind(reactive_objects$sw_reviews,sw_reviews)
 			print(reactive_objects$sw_reviews)
@@ -760,4 +784,3 @@ output$exp_rev <- downloadHandler(
 
 ## run app
 shinyApp(ui = ui, server = server)
-

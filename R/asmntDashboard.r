@@ -7,6 +7,8 @@
 #' @import leaflet
 #' @import shinyBS
 #' @import plotly
+#' @importFrom kableExtra kable_styling
+#' @importFrom knitr kable
 
 #' @export
 asmntDashboard=function(){

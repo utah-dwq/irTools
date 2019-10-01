@@ -27,6 +27,7 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb,
 #####SETUP#####
 #data=acc_data_criteria
 #split_agg_tds=TRUE
+#translation_wb='ir_translation_workbook_working_v9_ef - no IR_Fraction formula.xlsx'
 #unit_sheetname="unitConvTable"
 #startRow_unit=1
 #crit_wb="IR_uses_standards_working_v4_ef.xlsx"
@@ -323,7 +324,7 @@ rm(nd)
 # Assign correction factors to data requiring calculations
 ## Extract CFs
 cfs=unique(data[data$BeneficialUse=="CF",c("ActivityStartDate","IR_MLID","IRParameterName","DailyAggFun","IR_Unit","IR_Value")])
-data=data[data$BeneficialUse!="CF",]
+#data=data[data$BeneficialUse!="CF",]
 calcs=data[which(data$NumericCriterion=="calc"),col_names]
 data=data[is.na(data$NumericCriterion) | data$NumericCriterion!="calc",]
 
@@ -415,7 +416,7 @@ table(data$BeneficialUse)
 data_n=data
 data_n$reason=NA
 data_n=within(data_n,{
-	reason[is.na(NumericCriterion) & BeneficialUse!='SUP']="Missing one or more correction factors, unable to calculate criterion"
+	reason[is.na(NumericCriterion) & BeneficialUse!='SUP' & BeneficialUse!='CF']="Missing one or more correction factors, unable to calculate criterion"
 	})
 data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
@@ -429,7 +430,7 @@ data_n=data
 data_n$reason=NA
 suppressWarnings({
 	data_n=within(data_n,{
-		reason[which(BeneficialUse!='SUP' & !is.na(NumericCriterion) & IR_DetCond=="ND" & as.numeric(IR_LowerLimitValue)>as.numeric(NumericCriterion))]="Non-detect result with detection limit > criterion"
+		reason[which(BeneficialUse!='SUP' & BeneficialUse!='CF' & !is.na(NumericCriterion) & IR_DetCond=="ND" & as.numeric(IR_LowerLimitValue)>as.numeric(NumericCriterion))]="Non-detect result with detection limit > criterion"
 	})
 })
 table(data_n$reason)
@@ -493,14 +494,14 @@ drop_vars=c("ResultIdentifier","DataLoggerLine","OrganizationIdentifier","Activi
 			"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG")
 
 #############
-#######Toxics & correction factors
+#######Toxics
 ######
 if(any(acc_data$AssessmentType=="Toxic")){
 
 ## Extract radium data
 result$radium=acc_data[acc_data$R3172ParameterName=='Radium 226, 228 (Combined)',]
 
-toxics_raw=acc_data[which(acc_data$AssessmentType=="Toxic" | acc_data$BeneficialUse=="CF"),]
+toxics_raw=subset(acc_data, AssessmentType=="Toxic" & BeneficialUse!="CF")
 toxics_raw=toxics_raw[toxics_raw$R3172ParameterName!='Radium 226, 228 (Combined)',]
 
 	#split streams & lakes

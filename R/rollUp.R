@@ -15,14 +15,19 @@
 rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172ParameterName"), cat_var="IR_Cat", expand_uses=TRUE, print=TRUE){
 
 ##### Testing setup
-#data=list(conv_assessed, toxics_assessed)
-#group_vars=c("ASSESS_ID","AU_NAME", "IR_MLID", "BeneficialUse","R3172ParameterName", "CriterionLabel", "SampleCount", "ExcCount")
+#data=list(prelim_asmnts)
+#group_vars = c("BEN_CLASS","IR_MLID","IR_MLNAME","IR_Lat","IR_Long","ASSESS_ID","AU_NAME", "R3172ParameterName","BeneficialUse","pol_ind")
 #expand_uses=FALSE
+#cat_var="IR_Cat"
 #####
 
 # Combine all assessed data into one dataframe for roll up
 #dat=mget(data, inherits = TRUE)
 dat_all=do.call(plyr::rbind.fill, data)
+
+dat_all=as.data.frame(lapply(dat_all, addNA))
+head(dat_all)
+class(dat_all$BeneficialUse)
 
 if(expand_uses & !"BEN_CLASS" %in% group_vars){group_vars=append(group_vars, "BEN_CLASS")}
 
@@ -31,7 +36,8 @@ if(expand_uses & !"BEN_CLASS" %in% group_vars){group_vars=append(group_vars, "BE
 
 # Represent categories numerically so we can select the "max" category to define the AU
 names(dat_all)[names(dat_all)==cat_var]="IR_Cat"
-dat_all=subset(dat_all, !is.na(IR_Cat))
+dat_all=as.data.frame(dat_all)
+dat_all=subset(dat_all, !is.na(dat_all$IR_Cat))
 # Hierarchy of decision making within each subset: NS>TMDLa>IDEX>IDNE>FS
 dat_all$AssessCat[dat_all$IR_Cat=="NS"]<-5
 #dat_all$AssessCat[dat_all$IR_Cat=="TMDLa"]<- 4 - (JV) turning off TMDL approved for now. Not sure if we want to include this here yet or as a sort of "secondary review" type step

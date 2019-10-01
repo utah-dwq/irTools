@@ -23,7 +23,7 @@ observeEvent(input$example_input, {
 
 # Demo data input
 observeEvent(input$demo_input, {
-	sites_file=system.file("extdata", "IR_master_site_file-autoreview.xlsx", package = "irTools")
+	sites_file=system.file("extdata", "siteValApp_demo_data.xlsx", package = "irTools")
 		sites=as.data.frame(readxl::read_excel(sites_file, 'sites'))
 		suppressWarnings({sites$IR_Lat=as.numeric(sites$IR_Lat)
 		sites$IR_Long=as.numeric(sites$IR_Long)
@@ -181,14 +181,10 @@ session$onFlushed(once = T, function() {
 
 map_proxy=leafletProxy("map")
 
-observe({
-	req(map_proxy)
-	print(object.size(map_proxy))
-})
 
-observe({
-	print(memory.size())
-})
+#observe({
+#	print(memory.size())
+#})
 
 
 # Add sites via proxy on site_types change
