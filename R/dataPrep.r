@@ -381,7 +381,7 @@ table(calcs$R3172ParameterName, calcs$CriterionFormula)[rowSums(table(calcs$R317
 if(any(is.na(calcs$CriterionFormula))){
 	stop("ERORR assiging formulas to parameters with calculated criteria (2).")
 }
-)
+
 
 
 ### Fill & evaluate formula
