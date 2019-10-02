@@ -373,12 +373,12 @@ Identifier = openxlsx::createStyle(textDecoration = "bold", bgFill = "yellow")
 IR = openxlsx::createStyle(textDecoration = "bold", bgFill = "pink")
 Param = openxlsx::createStyle(textDecoration = "bold", bgFill = "turquoise")
 
-reviewer_export <- openxlsx::createWorkbook()
-openxlsx::addWorksheet(reviewer_export, sheetName = "Data Summary")
-openxlsx::addWorksheet(reviewer_export, sheetName = "Abbreviated Data")
-
 observe({
  req(reactive_objects$sel_data)
+  
+  reviewer_export <- openxlsx::createWorkbook()
+  openxlsx::addWorksheet(reviewer_export, sheetName = "Data Summary")
+  openxlsx::addWorksheet(reviewer_export, sheetName = "Abbreviated Data")
  # Narrow compiled data to clicked AU's
  compiled_data_narrow = lapply(compiled_data, function(x){x = x[x$ASSESS_ID%in%unique(reactive_objects$sel_data$ASSESS_ID),]})
 
@@ -402,7 +402,7 @@ observe({
 
 # Export data table - (export wide dataset, not column subset dataset)
 output$exp_dt <- downloadHandler(
-filename=paste0('exported-AU-data-', Sys.Date(),'.xlsx'),
+filename=paste0('AU_data_export-', reactive_objects$sel_data$ASSESS_ID,"-",Sys.Date(),'.xlsx'),
 content = function(file) {openxlsx::saveWorkbook(reactive_objects$AUexport, file)}
 )
 
