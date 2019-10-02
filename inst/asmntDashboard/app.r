@@ -22,6 +22,7 @@ source('helpers/figuresMod.R')
 
 # Load data & criteria
 load(system.file("extdata", "asmntDashboard_data.Rdata", package = "irTools"))
+load(system.file("extdata","reviewer_export_data.Rdata", package = "irTools"))
 #load('C:\\Users\\jvander\\Documents\\R\\irTools\\inst\\extdata\\asmntDashboard_data.Rdata')
 options(warn = -1)
 
