@@ -20,10 +20,10 @@ assessLakeProfiles <- function(data, do_crit=list("3A"=4, "3B"=3), temp_crit=lis
 
 ##### Testing setup
 #load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
-#data=profile_data_all
-#uses_assessed=c("3A","3B")
-#do_crit=list("3A"=4, "3B"=3)
-#temp_crit=list("3A"=20, "3B"=27)
+data=profile_data_asmnt
+uses_assessed=c("3A","3B")
+do_crit=list("3A"=4, "3B"=3)
+temp_crit=list("3A"=20, "3B"=27)
 #####
 
 # Make numeric criterion numeric
@@ -170,13 +170,15 @@ profile_asmnts_flat=reshape2::melt(profile_asmnts,nar.rm=T,value.name="IR_Cat",
 # Rename Variables
 profile_asmnts_flat=within(profile_asmnts_flat,{
 	R3172ParameterName=as.character(NA)
-	#R3172ParameterName[variable=="do_temp_asmnt"]="DO-temperature habitat profile width"
+	R3172ParameterName[variable=="do_temp_asmnt"]="DO-temperature habitat profile width"
 	R3172ParameterName[variable=="do_asmnt"]="Dissolved oxygen (DO)"
 	R3172ParameterName[variable=="temp_asmnt"]="Temperature, water"
 	R3172ParameterName[variable=="pH_asmnt"]="pH"
 })
 profile_asmnts_flat=profile_asmnts_flat[,names(profile_asmnts_flat)!="variable"]
 
+# Remove DO/temp specific assessment (when this is exceeded, both DO & temp are ID'd as impaired)
+profile_asmnts_flat=subset(profile_asmnts_flat, R3172ParameterName!="DO-temperature habitat profile width")
 
 # Roll up to site level (MLID, use, param), removing ActivityIdentifier & date
 profile_asmnts_rolledUp=irTools::rollUp(data=list(profile_asmnts_flat), group_vars=c("ASSESS_ID","AU_NAME","IR_MLID","IR_MLNAME","IR_Lat","IR_Long","BeneficialUse","R3172ParameterName"), expand_uses=F, print=F)
