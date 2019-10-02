@@ -402,7 +402,7 @@ observe({
 
 # Export data table - (export wide dataset, not column subset dataset)
 output$exp_dt <- downloadHandler(
-filename=paste0('AU_data_export-', reactive_objects$sel_data$ASSESS_ID,"-",Sys.Date(),'.xlsx'),
+filename=paste0('AU_data_export-', reactive_objects$sel_data$ASSESS_ID[1],"-",Sys.Date(),'.xlsx'),
 content = function(file) {openxlsx::saveWorkbook(reactive_objects$AUexport, file)}
 )
 
