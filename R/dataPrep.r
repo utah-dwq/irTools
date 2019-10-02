@@ -479,7 +479,8 @@ acc_data=data[data$IR_DataPrep_FLAG=="ACCEPT",]
 #Remove profiles from acc_data
 acc_data=acc_data[is.na(acc_data$DataLoggerLine),]
 dim(acc_data)
-result$acc_data=acc_data[,col_names]
+col_names1 = col_names[col_names%in%names(acc_data)]
+result$acc_data=acc_data[,col_names1]
 colnames_export = names(acc_data)[names(acc_data)%in%colnames_exp]
 result$export_data = acc_data[,colnames_export]
 #result$rej_data=data[data$IR_DataPrep_FLAG!="ACCEPT",]
