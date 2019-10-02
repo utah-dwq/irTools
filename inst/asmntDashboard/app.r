@@ -22,6 +22,7 @@ source('helpers/figuresMod.R')
 
 # Load data & criteria
 load(system.file("extdata", "asmntDashboard_data.Rdata", package = "irTools"))
+#load('C:\\Users\\jvander\\Documents\\R\\irTools\\inst\\extdata\\asmntDashboard_data.Rdata')
 options(warn = -1)
 
 # Shiny file input size allowed
@@ -366,7 +367,7 @@ output$dt=DT::renderDT({
 	)
 })
 
-# Create styles for export headers
+## Create styles for export headers
 Identifier = openxlsx::createStyle(textDecoration = "bold", bgFill = "yellow")
 IR = openxlsx::createStyle(textDecoration = "bold", bgFill = "pink")
 Param = openxlsx::createStyle(textDecoration = "bold", bgFill = "turquoise")

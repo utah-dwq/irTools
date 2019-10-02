@@ -1,5 +1,6 @@
 asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 	permits=read.csv(system.file("extdata", "ut_facilities.csv", package = "irTools"))
+	priority_permits=subset(permits, priority=='Y')
 
 	na_sites$IR_Lat=as.numeric(na_sites$IR_Lat)
 	na_sites$IR_Long=as.numeric(na_sites$IR_Long)
@@ -34,6 +35,12 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 					"Permit ID: ", permits$locationID,
 					"<br> Permit name: ", permits$locationName,
 					"<br> Permit type: ", permits$locationType)
+			) %>%
+			addCircleMarkers(lat=priority_permits$LatitudeMeasure, lng=priority_permits$LongitudeMeasure, options = pathOptions(pane = "permits"), group="Priority permits", radius=5, color='purple',
+				popup = paste0(
+					"Permit ID: ", priority_permits$locationID,
+					"<br> Permit name: ", priority_permits$locationName,
+					"<br> Permit type: ", priority_permits$locationType)
 			) %>%
 			addCircles(data=mlocs, lat=~IR_Lat, lng=~IR_Long, group="locationID", stroke=F, fill=F, label=~IR_MLID, 
 				popup = paste0(
@@ -91,7 +98,7 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 				popup=paste0("SS std: ", ss_poly$SiteSpecif)
 			) %>%
 			leaflet::addLayersControl(position ="topleft",
-				baseGroups = c("Topo","Satellite"),overlayGroups = c("Assessed sites", "Not-assessed sites", "Rejected sites", "Assessment units","Beneficial uses", "Site-specific standards", "Permits"),
+				baseGroups = c("Topo","Satellite"),overlayGroups = c("Assessed sites", "Not-assessed sites", "Rejected sites", "Assessment units","Beneficial uses", "Site-specific standards", "Permits", "Priority permits"),
 				options = leaflet::layersControlOptions(collapsed = TRUE, autoZIndex=FALSE)) %>%
 			#hideGroup("Assessment units") %>%
 			hideGroup("Not-assessed sites") %>%
@@ -101,6 +108,7 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 			hideGroup("Assessed sites") %>%
 			hideGroup("WQP sites") %>%
 			hideGroup("Permits") %>%
+			hideGroup("Priority permits") %>%
 			leaflet::addLegend(position = 'topright',
 						colors = c('green','yellow','orange','red','grey'), 
 						labels = c('Fully supporting', 'Insufficient data, no exceedances', 'Insufficient data, exceedances', 'Not supporting', 'Not assessed')) %>% 
