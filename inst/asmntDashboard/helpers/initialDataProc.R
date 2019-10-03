@@ -25,16 +25,16 @@ na_sites=subset(master_site, IR_FLAG=="ACCEPT" & !IR_MLID %in% site_asmnt$IR_MLI
 
 ## Join site types back to site asmnt (if not already present)
 if(all(names(site_asmnt)!='MonitoringLocationTypeName')){
-	site_types=master_site[,c('IR_MLID','MonitoringLocationTypeName')]
+	site_types=unique(master_site[master_site$IR_MLID==master_site$MonitoringLocationIdentifier,c('IR_MLID','MonitoringLocationTypeName')])
 	site_asmnt=merge(site_asmnt,site_types, all.x=T)
 }
 
+
 ## Join AU types back to site asmnt (if not already present)
 if(all(names(site_asmnt)!='AU_Type')){
-	au_types=master_site[,c('IR_MLID','AU_Type')]
+	au_types=unique(master_site[,c('IR_MLID','AU_Type')])
 	site_asmnt=merge(site_asmnt,au_types, all.x=T)
 }
-
 
 ### Generate impaired params wIDEX list
 sites_ns=subset(site_param_asmnt, AssessCat=='NS' & !is.na(as.character(IR_MLID)) & IR_MLID!='NA')
