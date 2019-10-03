@@ -572,11 +572,12 @@ output$flagUI3=renderUI({
 })
 
 output$flagUI4=renderUI({
+	print(reactive_objects$sel_sites)
 	req(reactive_objects$sel_sites, ml_types_sel_au())
 	conditionalPanel(condition="input.flag_scope=='Site(s)' & input.rev_type=='Generate flag'",
 		shinyWidgets::radioGroupButtons('site_flag_type','Select sites by:', choices=c('MLID','ML type'), checkIcon = list(yes = icon("check"))),
 		conditionalPanel(condition="input.site_flag_type=='MLID'",
-			shinyWidgets::pickerInput("flag_sites", "Site(s):", choices=reactive_objects$sel_sites, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
+			shinyWidgets::pickerInput("flag_sites", "Site(s):", choices=as.character(reactive_objects$sel_sites), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
 		),
 		conditionalPanel(condition="input.site_flag_type=='ML type'",
 			shinyWidgets::pickerInput("flag_ml_types_sel_au", "ML types", choices=ml_types_sel_au(), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
@@ -750,15 +751,18 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 			if(input$flag_sw_ml_or_au=='AU type'){
 				sw_reviews=merge(input$flag_sw_au_type, input$flag_param)
 				sw_reviews$ML_Type=NA
-				names(sw_reviews)=c('AU_Type','ML_Type','R3172ParameterName')
+				print(sw_reviews)
+				names(sw_reviews)=c('AU_Type','R3172ParameterName','ML_Type')
 			}else{
 				sw_reviews=merge(input$flag_sw_ml_type, input$flag_param)
 				sw_reviews$AU_Type=NA
-				names(sw_reviews)=c('ML_Type','AU_Type','R3172ParameterName')
+				print(sw_reviews)
+				names(sw_reviews)=c('ML_Type','R3172ParameterName','AU_Type')
 			}
 			sw_reviews$Reviewer=input$rev_name
 			sw_reviews$Comment=input$rev_comment
 			sw_reviews$ReviewDate=Sys.Date()
+			print(reactive_objects$sw_reviews)
 			reactive_objects$sw_reviews=rbind(reactive_objects$sw_reviews,sw_reviews)
 			print(reactive_objects$sw_reviews)
 			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
