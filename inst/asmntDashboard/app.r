@@ -226,7 +226,7 @@ output$map_rev_filter=renderUI({
 	choices=unique(append(choices, c('Complete', 'Complete with flag(s)', 'Not assessed')))
 	fluidRow(
 		column(1),
-		column(11,shinyWidgets::pickerInput('map_rev_filter', 'Review types', choices, selected='Review needed', multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3")))
+		column(11,shinyWidgets::pickerInput('map_rev_filter', 'Review types', choices, selected=c('New listing', 'New listing, permit'), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3")))
 	)
 })
 
