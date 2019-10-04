@@ -248,10 +248,12 @@ observeEvent(input$map_rev_filter, ignoreInit=T, {
 	})
 
 	if(dim(au_asmnt_poly)[1]>0){
+		view=sf::st_bbox(au_asmnt_poly)
 		asmnt_map_proxy %>%
 			clearGroup(group='Assessment units') %>%
 			addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
-						label=lapply(au_asmnt_poly$lab, HTML))
+						label=lapply(au_asmnt_poly$lab, HTML)) %>%
+			fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4]))
 	}else{
 		asmnt_map_proxy %>%
 			clearGroup(group='Assessment units')
@@ -274,18 +276,18 @@ observeEvent(input$assessment_map_shape_click,{
 
 
 # Turn off AU assessment hover info w/ switch
-observeEvent(input$au_hover, ignoreInit=T, {
-	if(input$au_hover == FALSE){
-		asmnt_map_proxy %>%
-			clearGroup(group='Assessment units') %>%
-			addPolygons(data=reactive_objects$au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~ASSESS_ID, weight=3,color=~col, options = pathOptions(pane = "au_poly"))
-	}else{
-		asmnt_map_proxy %>%
-			clearGroup(group='Assessment units') %>%
-			addPolygons(data=reactive_objects$au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~ASSESS_ID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
-				label=lapply(reactive_objects$au_asmnt_poly$lab, HTML))
-	}
-})
+#observeEvent(input$au_hover, ignoreInit=T, {
+#	if(input$au_hover == FALSE){
+#		asmnt_map_proxy %>%
+#			clearGroup(group='Assessment units') %>%
+#			addPolygons(data=reactive_objects$au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~ASSESS_ID, weight=3,color=~col, options = pathOptions(pane = "au_poly"))
+#	}else{
+#		asmnt_map_proxy %>%
+#			clearGroup(group='Assessment units') %>%
+#			addPolygons(data=reactive_objects$au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~ASSESS_ID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
+#				label=lapply(reactive_objects$au_asmnt_poly$lab, HTML))
+#	}
+#})
 
 # Highlight AU polygon by adding new polygons via proxy
 observeEvent(reactive_objects$selected_aus, ignoreNULL = F, ignoreInit=T, {
@@ -673,10 +675,12 @@ observeEvent(input$mark_complete, ignoreInit=T, {
 		})
 
 		if(dim(au_asmnt_poly)[1]>0){
+			view=sf::st_bbox(au_asmnt_poly)
 			asmnt_map_proxy %>%
 				clearGroup(group='Assessment units') %>%
 				addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
-							label=lapply(au_asmnt_poly$lab, HTML))
+							label=lapply(au_asmnt_poly$lab, HTML)) %>%
+				fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4]))
 		}else{
 			asmnt_map_proxy %>%
 				clearGroup(group='Assessment units')
