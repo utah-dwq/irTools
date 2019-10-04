@@ -308,7 +308,7 @@ observeEvent(input$build_tools,{
 		reactive_objects$sel_sites=sel_sites
 		reactive_objects$sel_data=subset(assessed_data, IR_MLID %in% sel_sites)
 		reactive_objects$sel_crit=subset(criteria, IR_MLID %in% sel_sites)
-		reactive_objects$asmnt_summary=sf::st_drop_geometry(subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus))
+		reactive_objects$asmnt_summary=unique(sf::st_drop_geometry(subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)))
 		showModal(modalDialog(title="Analysis tools ready.",size="l",easyClose=T,
 			"Data and analysis tools ready. Scroll to 'Figures' and 'Data table' panels to review and plot data."))
 	}else{
@@ -410,10 +410,10 @@ content = function(file) {openxlsx::saveWorkbook(reactive_objects$AUexport, file
 observe({
 	if(!is.null(reactive_objects$sel_sites)){
 		siteids=reactive_objects$sel_sites
-		orig_siteids=unique(reactive_objects$master_site[,c('IR_MLID','MonitoringLocationIdentifier')])
+		orig_siteids=unique(reactive_objects$master_site[reactive_objects$master_site$not_in_wqp=='N',c('IR_MLID','MonitoringLocationIdentifier')])
 		orig_siteids=subset(orig_siteids, IR_MLID %in% siteids)
 		orig_siteids=as.vector(unique(orig_siteids[,'MonitoringLocationIdentifier']))
-		siteids=unique(append(as.character(siteids), orig_siteids))
+		siteids=na.omit(unique(append(as.character(siteids), orig_siteids)))
 		#print(siteids)
 		wqp_url=wqTools::readWQP(start_date=input$start_date, end_date=input$end_date, type='result', siteid=siteids, url_only=T)
 		wqp_url=gsub("\\?", "#", wqp_url)
