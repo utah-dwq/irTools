@@ -51,9 +51,9 @@ ui <-fluidPage(
 	column(8, shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1,
 		bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), value=1,
 			#fluidRow(
-				column(4, fileInput("import_assessments", "Import assessment file", accept=".xlsx"),
-				uiOutput('ex_url')),
-				column(2, actionButton('demo_input', icon=icon('upload'), label='Use demo input', style = "margin-top: 25px; color: #fff; background-color: #337ab7; border-color: #2e6da4%"))
+				column(4, fileInput("import_assessments", "Import assessment file", accept=".xlsx"))#,
+				#uiOutput('ex_url')),
+				#column(2, actionButton('demo_input', icon=icon('upload'), label='Use demo input', style = "margin-top: 25px; color: #fff; background-color: #337ab7; border-color: #2e6da4%"))
 			#)
 		),
 		bsCollapsePanel(list(icon('plus-circle'), icon('map-marked-alt'),"Review map"),
@@ -66,14 +66,14 @@ ui <-fluidPage(
 			figuresModUI('figures')
 		),
 		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "View & download data"),
-			fluidRow(downloadButton('exp_dt', label = "Download data in Excel workbook", icon='download', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')),
+			fluidRow(downloadButton('exp_dt', label = "Download data & assessment summary", icon='download', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')),
 			br(),
 			fluidRow(div(DT::DTOutput("dt"), style = list("font-size:65%")))
 		),
 		bsCollapsePanel(list(icon('plus-circle'), icon('database'), "Download raw data from WQP"),
 			fluidRow(
-				column(2, h4('Start date'), dateInput('start_date', '', format='mm/dd/yyyy', value='10/01/2008')),
-				column(2, h4('End date'), dateInput('end_date', '', format='mm/dd/yyyy'))
+				column(2, h4('Start date'), dateInput('start_date', '', format='mm/dd/yyyy', value='10/01/2010')),
+				column(2, h4('End date'), dateInput('end_date', '', format='mm/dd/yyyy', value='09/30/2018'))
 			),
 			uiOutput('wqp_url')
 			#actionButton('dwnld_wqp', 'Download WQP data', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('download'))
@@ -136,7 +136,7 @@ options(warn=0)
 #wqp_sites=wqTools::readWQP(type="sites", statecode="US:49", siteType=c("Lake, Reservoir, Impoundment","Stream", "Spring"))
 
 # Example input url
-output$ex_url <-renderUI(a(href='https://raw.githubusercontent.com/utah-dwq/irTools/master/inst/extdata/site-use-param-asmnt.xlsx',list(icon('question'),"Example input data"),target="_blank"))
+#output$ex_url <-renderUI(a(href='https://raw.githubusercontent.com/utah-dwq/irTools/master/inst/extdata/site-use-param-asmnt.xlsx',list(icon('question'),"Example input data"),target="_blank"))
 
 # Empty reactive objects
 reactive_objects=reactiveValues()
@@ -226,7 +226,7 @@ output$map_rev_filter=renderUI({
 	choices=unique(append(choices, c('Complete', 'Complete with flag(s)', 'Not assessed')))
 	fluidRow(
 		column(1),
-		column(11,shinyWidgets::pickerInput('map_rev_filter', 'Review types', choices, selected='Review needed', multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3")))
+		column(11,shinyWidgets::pickerInput('map_rev_filter', 'Review types', choices, selected=c('New listing', 'New listing, permit'), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3")))
 	)
 })
 
@@ -248,10 +248,12 @@ observeEvent(input$map_rev_filter, ignoreInit=T, {
 	})
 
 	if(dim(au_asmnt_poly)[1]>0){
+		view=sf::st_bbox(au_asmnt_poly)
 		asmnt_map_proxy %>%
 			clearGroup(group='Assessment units') %>%
 			addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
-						label=lapply(au_asmnt_poly$lab, HTML))
+						label=lapply(au_asmnt_poly$lab, HTML)) %>%
+			fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4]))
 	}else{
 		asmnt_map_proxy %>%
 			clearGroup(group='Assessment units')
@@ -274,18 +276,18 @@ observeEvent(input$assessment_map_shape_click,{
 
 
 # Turn off AU assessment hover info w/ switch
-observeEvent(input$au_hover, ignoreInit=T, {
-	if(input$au_hover == FALSE){
-		asmnt_map_proxy %>%
-			clearGroup(group='Assessment units') %>%
-			addPolygons(data=reactive_objects$au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~ASSESS_ID, weight=3,color=~col, options = pathOptions(pane = "au_poly"))
-	}else{
-		asmnt_map_proxy %>%
-			clearGroup(group='Assessment units') %>%
-			addPolygons(data=reactive_objects$au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~ASSESS_ID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
-				label=lapply(reactive_objects$au_asmnt_poly$lab, HTML))
-	}
-})
+#observeEvent(input$au_hover, ignoreInit=T, {
+#	if(input$au_hover == FALSE){
+#		asmnt_map_proxy %>%
+#			clearGroup(group='Assessment units') %>%
+#			addPolygons(data=reactive_objects$au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~ASSESS_ID, weight=3,color=~col, options = pathOptions(pane = "au_poly"))
+#	}else{
+#		asmnt_map_proxy %>%
+#			clearGroup(group='Assessment units') %>%
+#			addPolygons(data=reactive_objects$au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~ASSESS_ID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
+#				label=lapply(reactive_objects$au_asmnt_poly$lab, HTML))
+#	}
+#})
 
 # Highlight AU polygon by adding new polygons via proxy
 observeEvent(reactive_objects$selected_aus, ignoreNULL = F, ignoreInit=T, {
@@ -308,7 +310,7 @@ observeEvent(input$build_tools,{
 		reactive_objects$sel_sites=sel_sites
 		reactive_objects$sel_data=subset(assessed_data, IR_MLID %in% sel_sites)
 		reactive_objects$sel_crit=subset(criteria, IR_MLID %in% sel_sites)
-		reactive_objects$asmnt_summary=sf::st_drop_geometry(subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus))
+		reactive_objects$asmnt_summary=unique(sf::st_drop_geometry(subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)))
 		showModal(modalDialog(title="Analysis tools ready.",size="l",easyClose=T,
 			"Data and analysis tools ready. Scroll to 'Figures' and 'Data table' panels to review and plot data."))
 	}else{
@@ -410,10 +412,10 @@ content = function(file) {openxlsx::saveWorkbook(reactive_objects$AUexport, file
 observe({
 	if(!is.null(reactive_objects$sel_sites)){
 		siteids=reactive_objects$sel_sites
-		orig_siteids=unique(reactive_objects$master_site[,c('IR_MLID','MonitoringLocationIdentifier')])
+		orig_siteids=unique(reactive_objects$master_site[reactive_objects$master_site$not_in_wqp=='N',c('IR_MLID','MonitoringLocationIdentifier')])
 		orig_siteids=subset(orig_siteids, IR_MLID %in% siteids)
 		orig_siteids=as.vector(unique(orig_siteids[,'MonitoringLocationIdentifier']))
-		siteids=unique(append(as.character(siteids), orig_siteids))
+		siteids=na.omit(unique(append(as.character(siteids), orig_siteids)))
 		#print(siteids)
 		wqp_url=wqTools::readWQP(start_date=input$start_date, end_date=input$end_date, type='result', siteid=siteids, url_only=T)
 		wqp_url=gsub("\\?", "#", wqp_url)
@@ -458,7 +460,7 @@ observeEvent(input$build_split_map, {
 			au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
 			view=sf::st_bbox(au_asmnt_poly)
 			site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
-			sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, options=leafletOptions(dragging=F)) %>%
+			sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, dragging=F) %>%#, options=leafletOptions(dragging=F)) %>%
 				addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly")) %>%
 				fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
 				showGroup('Assessed sites') %>% clearControls()
@@ -477,23 +479,24 @@ observeEvent(input$split_save, {
 				splits=splits[2:dim(splits)[1],]
 			}
 			splits=as.data.frame(splits)
-			splits=splits[,!names(splits) %in% '_leaflet_id']
+			splits=splits[,!names(splits) %in% 'X_leaflet_id']
 			splits$ASSESS_ID=reactive_objects$selected_aus[1]
 			splits$Comment=input$split_comment
 			splits$Reviewer=input$rev_name
 			splits$geometry=st_as_text(splits$geometry)
 			splits$ReviewDate=Sys.Date()
-			reactive_objects$au_splits=plyr::rbind.fill(reactive_objects$au_splits, splits)
+			reactive_objects$au_splits=rbind(reactive_objects$au_splits, splits)
 			au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
 			view=sf::st_bbox(au_asmnt_poly)
 			site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
-			sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, options=leafletOptions(dragging=F)) %>%
+			sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, dragging=F) %>%
 				fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
 				clearMarkers() %>% clearShapes() %>% clearControls()
 			reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
 			showModal(modalDialog(title='Split(s) saved.', easyClose=T))
 		}else{showModal(modalDialog(title='Nothing drawn.', 'Finish drawing recommended splits before saving.', easyClose=T))}
 	}else{showModal(modalDialog(title='Reviewer name required.', 'Fill in reviewer name above before saving.', easyClose=T))}
+	print(splits)
 })
 
 ## Cancel splits
@@ -501,7 +504,7 @@ observeEvent(input$split_cancel, ignoreInit=T, {
 	au_asmnt_poly=subset(reactive_objects$au_asmnt_poly, ASSESS_ID %in% reactive_objects$selected_aus)
 	view=sf::st_bbox(au_asmnt_poly)
 	site_asmnt=subset(reactive_objects$site_asmnt, IR_MLID %in% reactive_objects$sel_sites)
-	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, options=leafletOptions(dragging=F)) %>%
+	sel_aus_map=asmntMap(au_asmnt_poly, site_asmnt, reactive_objects$na_sites, reactive_objects$rejected_sites, dragging=F) %>%
 		fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4])) %>%
 		clearMarkers() %>% clearShapes() %>% clearControls()
 	reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
@@ -527,10 +530,10 @@ observeEvent(input$split_cancel, ignoreInit=T, {
 param1=reactive({figures$param1()})
 param_choices=reactive({figures$param_choices()})
 ml_types_all=reactive({
-	unique(reactive_objects$site_asmnt$MonitoringLocationTypeName)
+	na.omit(unique(reactive_objects$site_asmnt$MonitoringLocationTypeName))
 })
 ml_types_sel_au=reactive({
-	unique(reactive_objects$site_asmnt$MonitoringLocationTypeName[reactive_objects$site_asmnt$IR_MLID %in% reactive_objects$sel_sites])
+	na.omit(unique(reactive_objects$site_asmnt$MonitoringLocationTypeName[reactive_objects$site_asmnt$IR_MLID %in% reactive_objects$sel_sites]))
 })
 output$build_to_proceed2=renderText({"Select AU(s) and build analysis tools to proceed..."})
 
@@ -556,7 +559,7 @@ output$flagUI2=renderUI({
 	conditionalPanel(condition="input.flag_scope=='State-wide' & input.rev_type=='Generate flag'",
 		shinyWidgets::radioGroupButtons('flag_sw_ml_or_au', 'Apply flag by:', choices=c('AU type', 'ML type'), checkIcon = list(yes = icon("check"))),
 		conditionalPanel(condition="input.flag_sw_ml_or_au == 'AU type'",
-			shinyWidgets::pickerInput("flag_sw_au_type", "AU types:", choices=unique(reactive_objects$site_asmnt$AU_Type[order(reactive_objects$site_asmnt$AU_Type)]), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
+			shinyWidgets::pickerInput("flag_sw_au_type", "AU types:", choices=na.omit(unique(reactive_objects$site_asmnt$AU_Type[order(reactive_objects$site_asmnt$AU_Type)])), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
 		),
 		conditionalPanel(condition="input.flag_sw_ml_or_au == 'ML type'",
 			shinyWidgets::pickerInput("flag_sw_ml_type", "ML types:", choices=ml_types_all(), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
@@ -576,7 +579,7 @@ output$flagUI4=renderUI({
 	conditionalPanel(condition="input.flag_scope=='Site(s)' & input.rev_type=='Generate flag'",
 		shinyWidgets::radioGroupButtons('site_flag_type','Select sites by:', choices=c('MLID','ML type'), checkIcon = list(yes = icon("check"))),
 		conditionalPanel(condition="input.site_flag_type=='MLID'",
-			shinyWidgets::pickerInput("flag_sites", "Site(s):", choices=reactive_objects$sel_sites, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
+			shinyWidgets::pickerInput("flag_sites", "Site(s):", choices=as.character(reactive_objects$sel_sites), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
 		),
 		conditionalPanel(condition="input.site_flag_type=='ML type'",
 			shinyWidgets::pickerInput("flag_ml_types_sel_au", "ML types", choices=ml_types_sel_au(), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
@@ -672,10 +675,12 @@ observeEvent(input$mark_complete, ignoreInit=T, {
 		})
 
 		if(dim(au_asmnt_poly)[1]>0){
+			view=sf::st_bbox(au_asmnt_poly)
 			asmnt_map_proxy %>%
 				clearGroup(group='Assessment units') %>%
 				addPolygons(data=au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
-							label=lapply(au_asmnt_poly$lab, HTML))
+							label=lapply(au_asmnt_poly$lab, HTML)) %>%
+				fitBounds(paste(view[1]),paste(view[2]),paste(view[3]),paste(view[4]))
 		}else{
 			asmnt_map_proxy %>%
 				clearGroup(group='Assessment units')
@@ -750,15 +755,16 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 			if(input$flag_sw_ml_or_au=='AU type'){
 				sw_reviews=merge(input$flag_sw_au_type, input$flag_param)
 				sw_reviews$ML_Type=NA
-				names(sw_reviews)=c('AU_Type','ML_Type','R3172ParameterName')
+				names(sw_reviews)=c('AU_Type','R3172ParameterName','ML_Type')
 			}else{
 				sw_reviews=merge(input$flag_sw_ml_type, input$flag_param)
 				sw_reviews$AU_Type=NA
-				names(sw_reviews)=c('ML_Type','AU_Type','R3172ParameterName')
+				names(sw_reviews)=c('ML_Type','R3172ParameterName','AU_Type')
 			}
 			sw_reviews$Reviewer=input$rev_name
 			sw_reviews$Comment=input$rev_comment
 			sw_reviews$ReviewDate=Sys.Date()
+			print(reactive_objects$sw_reviews)
 			reactive_objects$sw_reviews=rbind(reactive_objects$sw_reviews,sw_reviews)
 			print(reactive_objects$sw_reviews)
 			showModal(modalDialog(title='Flags applied', 'Your flag has been applied. Continue reviewing selected AUs or mark as complete.', easyClose=T))
@@ -772,7 +778,7 @@ output$exp_rev <- downloadHandler(
 	filename=paste0('asmnt-reviews-', Sys.Date(),'.xlsx'),
 	content = function(file) {writexl::write_xlsx(
 		list(
-			'site-use-param-asmnt'=reactive_objects$site_use_param_asmnt,
+			'site-use-param-asmnt'=subset(reactive_objects$site_use_param_asmnt, AU_review!='Not assessed'),
 			'au-splits'=reactive_objects$au_splits,
 			'au-reviews'=reactive_objects$au_reviews,
 			'site-reviews'=reactive_objects$site_reviews,

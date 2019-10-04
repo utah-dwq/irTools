@@ -5,8 +5,9 @@
 #' @param toxics_assessed A dataframe object of toxic assessments from the assessExcCounts function.
 #' @param conventionals_assessed A dataframe object of conventionals assessments from the assessExcCounts function.
 #' @return A list composed of three dataframes: site-date-use-param records linked with aggregated daily values (if applicable), calculations, and exceedances, site-use-param summaries including sample and exceedance counts, and prepped E.coli data.
-#' @import openxlsx
-#' @import plyr
+#' @importFrom openxlsx loadWorkbook
+#' @importFrom openxlsx readWorkbook
+#' @importFrom plyr rbind.fill
 
 ### TESTING ###
 # See "P:\WQ\Integrated Report\Automation_Development\elise\AU_export_testing\au_export_testing_steps.R" for steps taken up to dataPrep

@@ -2,6 +2,7 @@ initialDataProc=function(site_use_param_asmnt){
 
 #load("C:/Users/jvander/Documents/R/irTools/inst/extdata/asmntDashboard_data.Rdata")
 
+
 # Initial data processing
 ## Extract pollution indicator assessments
 pol_ind=subset(site_use_param_asmnt, pol_ind=='Y')
@@ -24,19 +25,19 @@ na_sites=subset(master_site, IR_FLAG=="ACCEPT" & !IR_MLID %in% site_asmnt$IR_MLI
 
 ## Join site types back to site asmnt (if not already present)
 if(all(names(site_asmnt)!='MonitoringLocationTypeName')){
-	site_types=master_site[,c('IR_MLID','MonitoringLocationTypeName')]
+	site_types=unique(master_site[master_site$IR_MLID==master_site$MonitoringLocationIdentifier,c('IR_MLID','MonitoringLocationTypeName')])
 	site_asmnt=merge(site_asmnt,site_types, all.x=T)
 }
 
+
 ## Join AU types back to site asmnt (if not already present)
 if(all(names(site_asmnt)!='AU_Type')){
-	au_types=master_site[,c('IR_MLID','AU_Type')]
+	au_types=unique(master_site[,c('IR_MLID','AU_Type')])
 	site_asmnt=merge(site_asmnt,au_types, all.x=T)
 }
 
-
 ### Generate impaired params wIDEX list
-sites_ns=subset(site_param_asmnt, AssessCat=='NS' & !is.na(IR_MLID) & IR_MLID!='NA')
+sites_ns=subset(site_param_asmnt, AssessCat=='NS' & !is.na(as.character(IR_MLID)) & IR_MLID!='NA')
 if(dim(sites_ns)[1]>0){
 	impaired_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_ns, value.var='R3172ParameterName')
 	nms=names(impaired_params[2:dim(impaired_params)[2]])
@@ -51,7 +52,7 @@ if(dim(sites_ns)[1]>0){
 }else{site_asmnt$Impaired_params=NA}
 
 ### Generate IDEX params wIDEX list
-sites_IDEX=subset(site_param_asmnt, AssessCat=='IDEX' & !is.na(IR_MLID) & IR_MLID!='NA')
+sites_IDEX=subset(site_param_asmnt, AssessCat=='IDEX' & !is.na(as.character(IR_MLID)) & IR_MLID!='NA')
 if(dim(sites_IDEX)[1]>0){
 	IDEX_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_IDEX, value.var='R3172ParameterName')
 	nms=names(IDEX_params[2:dim(IDEX_params)[2]])
@@ -67,7 +68,7 @@ if(dim(sites_IDEX)[1]>0){
 
 
 ### Generate pollution indicator NS wIDEX list
-if(dim(pol_ind)[1]>0){sites_pi=subset(site_param_pol_ind, AssessCat=='NS' & !is.na(IR_MLID) & IR_MLID!='NA')}
+if(dim(pol_ind)[1]>0){sites_pi=subset(site_param_pol_ind, AssessCat=='NS' & !is.na(as.character(IR_MLID)) & IR_MLID!='NA')}
 if(dim(sites_pi)[1]>0){
 	pi_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_pi, value.var='R3172ParameterName')
 	nms=names(pi_params[2:dim(pi_params)[2]])

@@ -1,4 +1,4 @@
-asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
+asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, dragging=T, ...){
 	permits=read.csv(system.file("extdata", "ut_facilities.csv", package = "irTools"))
 	priority_permits=subset(permits, priority=='Y')
 
@@ -26,7 +26,7 @@ asmntMap=function(au_asmnt_poly, site_asmnt, na_sites, rejected_sites, ...){
 	
 	
 	assessment_map <- 
-		buildMap(plot_polys = F, search='', ...) %>%
+		buildMap(plot_polys = F, search='', dragging=dragging, ...) %>%
 			addMapPane("highlight", zIndex = 413) %>%
 			addMapPane("rejected_sites", zIndex = 414) %>%
 			addMapPane("permits", zIndex = 417) %>%
