@@ -51,8 +51,8 @@ ui <-fluidPage(
 	column(8, shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1,
 		bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), value=1,
 			#fluidRow(
-				column(4, fileInput("import_assessments", "Import assessment file", accept=".xlsx"),
-				uiOutput('ex_url'))#,
+				column(4, fileInput("import_assessments", "Import assessment file", accept=".xlsx")#,
+				#uiOutput('ex_url')),
 				#column(2, actionButton('demo_input', icon=icon('upload'), label='Use demo input', style = "margin-top: 25px; color: #fff; background-color: #337ab7; border-color: #2e6da4%"))
 			#)
 		),
@@ -136,7 +136,7 @@ options(warn=0)
 #wqp_sites=wqTools::readWQP(type="sites", statecode="US:49", siteType=c("Lake, Reservoir, Impoundment","Stream", "Spring"))
 
 # Example input url
-output$ex_url <-renderUI(a(href='https://raw.githubusercontent.com/utah-dwq/irTools/master/inst/extdata/site-use-param-asmnt.xlsx',list(icon('question'),"Example input data"),target="_blank"))
+#output$ex_url <-renderUI(a(href='https://raw.githubusercontent.com/utah-dwq/irTools/master/inst/extdata/site-use-param-asmnt.xlsx',list(icon('question'),"Example input data"),target="_blank"))
 
 # Empty reactive objects
 reactive_objects=reactiveValues()
