@@ -51,7 +51,7 @@ ui <-fluidPage(
 	column(8, shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1,
 		bsCollapsePanel(list(icon('plus-circle'), icon('file-import'),"Import assessments file"), value=1,
 			#fluidRow(
-				column(4, fileInput("import_assessments", "Import assessment file", accept=".xlsx")#,
+				column(4, fileInput("import_assessments", "Import assessment file", accept=".xlsx"))#,
 				#uiOutput('ex_url')),
 				#column(2, actionButton('demo_input', icon=icon('upload'), label='Use demo input', style = "margin-top: 25px; color: #fff; background-color: #337ab7; border-color: #2e6da4%"))
 			#)
