@@ -11,7 +11,8 @@
 #' @importFrom lubridate month
 #' @importFrom lubridate day
 #' @importFrom plyr ddply
-#' @importFrom dplyr bind_rows
+#' @import dplyr
+#' @import tidyr
 #' @export
 
 ## TESTING ###
@@ -221,25 +222,47 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
                                     ecoli.assessed$IR_Cat=="IDEX"|
                                      ecoli.assessed$IR_Cat=="FS",]
   
+  length(unique(ecoli.assessed$IR_MLID))#953
+  
+  ## For MLIDS that have a mix of years that are FS and IDNE, pick the most recent year to represent that category
+  # Find MLID-uses
+  mlid_cats = unique(ecoli.assessed[,c("IR_MLID","BeneficialUse","IR_Cat")])
+  mlid_cats$present = 1
+  cat_table = tidyr::pivot_wider(mlid_cats, names_from = "IR_Cat", values_from = "present")
+  fsid_mlids = subset(cat_table, cat_table$IDNE==1&cat_table$FS==1&is.na(cat_table$NS)&is.na(cat_table$IDEX))
+  
+  nsids = subset(cat_table, !(cat_table$IDNE==1&cat_table$FS==1&is.na(cat_table$NS)&is.na(cat_table$IDEX)))
+  
+  mlid_uses = fsid_mlids[,c("IR_MLID","BeneficialUse")] # 158
+  
+  ecoli.assessed_fsid = merge(mlid_uses, ecoli.assessed, all.x = TRUE)
+  fsid.agg = ecoli.assessed_fsid%>%group_by(IR_MLID,BeneficialUse)%>%filter(Year==max(Year))
+ 
+  # Pull out MLID/Uses assessed above
+  mlids2rem = unique(fsid.agg[,c("IR_MLID","BeneficialUse")])
+  mlids2rem$remove = 1
+  nsid = merge(ecoli.assessed, mlids2rem, all.x = TRUE)
+  nsid$remove = ifelse(is.na(nsid$remove),0,1)
+  nsid_data = nsid[nsid$remove==0,]
+  
   # Represent categories numerically so we can select the "max" category to define the AU
   # Hierarchy of decision making within each subset: NS>TMDLa>IDEX>FS>IDNE
-  ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="NS"]<-5
-  ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="IDEX"]<-3
-  ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="FS"]<-2
-  ecoli.assessed$AssessCat[ecoli.assessed$IR_Cat=="IDNE"]<-1
+  nsid_data$AssessCat[nsid_data$IR_Cat=="NS"]<-4
+  nsid_data$AssessCat[nsid_data$IR_Cat=="IDEX"]<-3
+  nsid_data$AssessCat[nsid_data$IR_Cat=="FS"]<-2
+  nsid_data$AssessCat[nsid_data$IR_Cat=="IDNE"]<-1
   
-  ecoli.assess.agg <- aggregate(AssessCat~IR_MLID+ASSESS_ID+BeneficialUse+BEN_CLASS+R3172ParameterName, data=ecoli.assessed, FUN=max)
+  # Group not supports by MLID and Use and pick the max ranked assessment category
+  #nsid.agg = nsid_data%>%group_by(IR_MLID,BeneficialUse)%>%filter(AssessCat==max(AssessCat))
+  nsid.agg = nsid_data%>%group_by(IR_MLID,BeneficialUse)%>%filter(AssessCat==max(AssessCat), Year==max(Year))
+  nsid.agg = nsid.agg[,!names(nsid.agg)%in%"AssessCat"]
+  #ecoli.assess.agg <- aggregate(AssessCat~IR_MLID+ASSESS_ID+BeneficialUse+BEN_CLASS+R3172ParameterName, data=ecoli.assessed, FUN=max)
   
-  names(ecoli.assess.agg)[names(ecoli.assess.agg)=="AssessCat"]<- "IR_Cat"
+  all.agg = plyr::rbind.fill(fsid.agg, nsid.agg)
   
-  #Renaming assessment categories
-  ecoli.assess.agg$IR_Cat=as.character(ecoli.assess.agg$IR_Cat)
-  ecoli.assess.agg=within(ecoli.assess.agg,{
-    IR_Cat[IR_Cat=="5"]="NS"
-    IR_Cat[IR_Cat=="3"]="IDEX"
-    IR_Cat[IR_Cat=="2"]="FS"
-    IR_Cat[IR_Cat=="1"]="IDNE"
-  })
+  # Add in some columns for app
+  mlid_info = unique(data_rec[,c("IR_MLID","IR_MLNAME","IR_Lat","IR_Long","AU_NAME")])
+  ecoli.assess.agg = merge(all.agg, mlid_info, all.x = TRUE)
   
   ecoli_assessments$ecoli_mlid_asmnts = ecoli.assess.agg
   
