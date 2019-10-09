@@ -24,10 +24,10 @@ source('helpers/figuresMod.R')
 load(system.file("extdata", "asmntDashboard_data.Rdata", package = "irTools"))
 load(system.file("extdata","reviewer_export_data.Rdata", package = "irTools"))
 #load('C:\\Users\\jvander\\Documents\\R\\irTools\\inst\\extdata\\asmntDashboard_data.Rdata')
-#options(warn = -1)
+options(warn = -1)
 
 # Shiny file input size allowed
-#options(shiny.maxRequestSize = 10*1024^2)
+options(shiny.maxRequestSize = 10*1024^2)
 
 # User interface
 ui <-fluidPage(
