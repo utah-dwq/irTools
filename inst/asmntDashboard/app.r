@@ -693,7 +693,7 @@ observeEvent(input$mark_complete, ignoreInit=T, {
 		}
 		# Clear completed AUs from selected AUs
 		reactive_objects$selected_aus=reactive_objects$selected_aus[!reactive_objects$selected_aus %in% flag_aus]
-
+		showModal(modalDialog(title='Reviews marked complete', 'Your reviews have been marked complete. Please remember to export your reviews to save.', easyClose=T))
 	}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
 
 
