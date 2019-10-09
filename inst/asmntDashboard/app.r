@@ -612,15 +612,21 @@ observe({
 })
 
 output$flagUI6=renderUI({
-	req(input$flag_scope)
-	conditionalPanel(condition="input.rev_type=='Generate flag' & input.flag_scope=='Record(s)'",
-		#dateRangeInput('flag_date_range', 'Date range:', start=reactive_objects$start_date, end=reactive_objects$end_date),
-		helpText('Use the box select tool on the multi-site time series plot to select data to flag interactively.')
+	tagList(
+		conditionalPanel(condition="input.rev_type=='Generate flag' & input.flag_scope=='Record(s)'",
+		shinyWidgets::radioGroupButtons('record_flag_type','Select records by:', choices=c('Scatter plot','Record ID'), checkIcon = list(yes = icon("check"))),
+			conditionalPanel(condition="input.record_flag_type=='Scatter plot'",
+				helpText('Use the box select tool on the multi-site time series plot to select data to flag interactively.')
+			),
+			conditionalPanel(condition="input.record_flag_type=='Record ID'",
+				shinyWidgets::pickerInput("flag_record_ids", "Record ID(s):", choices=as.character(unique(reactive_objects$sel_data$ResultIdentifier)), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
+			)
+		)
 	)
 })
 
 output$flagUI7=renderUI({
-	req(input$flag_scope, input$flag_param)
+	#req(input$flag_scope, input$flag_param)
 	conditionalPanel(condition="input.rev_type=='Generate flag'",
 		textInput('rev_comment', 'Comment:', placeholder='Enter comment...')
 	)
@@ -739,9 +745,13 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
 	}
 	if(input$flag_scope=='Record(s)'){
-		if(!is.null(input$rev_name) & input$rev_comment!="" & dim(reactive_objects$selected_rids)[1]>0){
-			reviews=reactive_objects$selected_rids
-			reactive_objects$selected_rids=reactive_objects$selected_rids[0,]
+		if(!is.null(input$rev_name) & input$rev_comment!="" & ((input$record_flag_type=='Scatter plot' & !is.null(reactive_objects$selected_rids))) | (input$record_flag_type=='Record ID' & !is.null(input$flag_record_ids))){
+			if(input$record_flag_type=='Scatter plot'){
+				reviews=reactive_objects$selected_rids
+				reactive_objects$selected_rids=reactive_objects$selected_rids[0,]
+			}else{
+				reviews=unique(reactive_objects$sel_data[reactive_objects$sel_data$ResultIdentifier %in% input$flag_record_ids,c('ResultIdentifier','ActivityStartDate','IR_MLID','IR_MLNAME','ASSESS_ID','R3172ParameterName')])
+			}
 			reviews$Reviewer=input$rev_name
 			reviews$Comment=input$rev_comment
 			reviews$ReviewDate=Sys.Date()
