@@ -167,7 +167,7 @@ if(dim(master_site)[1]>0){
 	sites=sites[,c('UID','lat','long')]
 	coordinates(sites)=c("long","lat")
 	proj4string(sites)=CRS("+init=epsg:4326")
-	sites=st_as_sf(sites)
+	sites=st_as_sf(sites, remove = FALSE)
 	
 	#Intersect sites w/ Utah poly, AU poly, BU poly, and SS poly 
 	master_site <- intpoly(ut_poly,master_site, sites)
@@ -351,10 +351,10 @@ print("Performing spatial site checks...")
 sites=stn_new
 sites$lat=ifelse(is.na(sites$IR_Lat), sites$LatitudeMeasure, sites$IR_Lat)
 sites$long=ifelse(is.na(sites$IR_Long), sites$LongitudeMeasure, sites$IR_Long)
-sites=sites[,c('OrganizationIdentifier','OrganizationFormalName','MonitoringLocationIdentifier','MonitoringLocationName','MonitoringLocationTypeName','ProviderName','lat','long')]
+sites=sites[,c('OrganizationIdentifier','OrganizationFormalName','MonitoringLocationIdentifier','MonitoringLocationName','MonitoringLocationTypeName','ProviderName',"LatitudeMeasure","LongitudeMeasure",'lat','long')]
 coordinates(sites)=c("long","lat")
 proj4string(sites)=CRS("+init=epsg:4326")
-sites=st_as_sf(sites)
+sites=st_as_sf(sites, remove = FALSE)
 
 
 #Intersect sites w/ Utah poly, AU poly, BU poly, SS poly, and GSL poly 
