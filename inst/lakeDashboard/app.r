@@ -112,6 +112,8 @@ server <- function(input, output, session){
 	prof_sites=unique(prof_asmnts_all$profile_asmnts_mlid_param[,c("ASSESS_ID","AU_NAME","IR_MLID","IR_MLNAME","IR_Lat","IR_Long")])
 	prof_sites$MonitoringLocationTypeName="Lake/Reservoir"
 	prof_sites=dplyr::rename(prof_sites, LatitudeMeasure="IR_Lat", LongitudeMeasure="IR_Long", MonitoringLocationIdentifier= "IR_MLID",MonitoringLocationName="IR_MLNAME")
+	prof_sites$LatitudeMeasure=wqTools::facToNum(prof_sites$LatitudeMeasure)
+	prof_sites$LongitudeMeasure=wqTools::facToNum(prof_sites$LongitudeMeasure)
 	
 	# Extract profiles long
 	profiles_long=prof_asmnts_all$profiles_long
