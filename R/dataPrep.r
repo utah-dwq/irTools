@@ -27,7 +27,7 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb,
 #####SETUP#####
 #data=acc_data_criteria
 #split_agg_tds=TRUE
-#translation_wb='ir_translation_workbook_working_v9_ef - no IR_Fraction formula.xlsx'
+#translation_wb='ir_translation_workbook_working_v11_ef - no IR_Fraction formula.xlsx'
 #unit_sheetname="unitConvTable"
 #startRow_unit=1
 #crit_wb="IR_uses_standards_working_v4_ef.xlsx"
@@ -414,7 +414,7 @@ if(any(data$BeneficialUse=="CF")){
 	#plot(calcs$CalculatedCrit~calcs$`cf_max_pH_pH units`)
 	
 	### Bind calculated criteria data back to full dataset
-	calcs=calcs[,unique(c(col_names,'cf_max_Max. Temperature_C','cf_max_pH_pH units','cf_min_Calcium_mg/l','cf_min_Hardness_mg/l','cf_min_Magnesium_mg/l','cf_min_pH_pH units','hardness','CriterionFormula','CalculatedCrit'))]	
+	#calcs=calcs[,unique(c(col_names,'cf_max_Max. Temperature_C','cf_max_pH_pH units','cf_min_Calcium_mg/l','cf_min_Hardness_mg/l','cf_min_Magnesium_mg/l','cf_min_pH_pH units','hardness','CriterionFormula','CalculatedCrit'))]	
 	
 	dim(calcs)
 	dim(data)
@@ -427,7 +427,8 @@ if(any(data$BeneficialUse=="CF")){
 data_n=data
 data_n$reason=NA
 data_n=within(data_n,{
-	reason[is.na(NumericCriterion) & BeneficialUse!='SUP' & BeneficialUse!='CF']="Missing one or more correction factors, unable to calculate criterion"
+	reason[R3172ParameterName!='Aluminum' & is.na(NumericCriterion) & BeneficialUse!='SUP' & BeneficialUse!='CF']="Missing one or more correction factors, unable to calculate criterion"
+	reason[R3172ParameterName=='Aluminum' & is.na(NumericCriterion) & BeneficialUse!='SUP' & BeneficialUse!='CF']="Missing one or more correction factors, unable to calculate criterion, or chronic Aluminum criterion not applicable."
 	})
 data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
 reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
@@ -455,7 +456,7 @@ rm(data_n)
 ####Apply rejections to flag column in data
 flags=reasons
 flags$IR_DataPrep_FLAG="REJECT"
-flags=unique(flags[,c("BeneficialUse","ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","TargetFraction","IR_DataPrep_FLAG")])
+flags=unique(flags[,c("IR_MLID","BeneficialUse","ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","TargetFraction","FrequencyCombined","CriterionLabel","FrequencyNumber","FrequencyUnit","CriteriaQualifier","IR_DataPrep_FLAG")])
 #flags=unique(flags[,!names(flags) %in% 'reason'])
 dimcheck=dim(data)[1]
 data=merge(data,flags,all.x=T)
@@ -484,9 +485,8 @@ result$acc_data=acc_data[,col_names1]
 colnames_export = names(acc_data)[names(acc_data)%in%colnames_exp]
 result$export_data = acc_data[,colnames_export]
 #result$rej_data=data[data$IR_DataPrep_FLAG!="ACCEPT",]
-table(is.na(acc_data$DataLoggerLine))
-table(subset(acc_data, R3172ParameterName=='Arsenic')$IR_Fraction)
-table(acc_data$BeneficialUse)
+subset(acc_data, IR_MLID=='UTAHDWQ_WQX-5995245' & R3172ParameterName=='Aluminum')
+
 
 #######
 ####Extract lake profiles
