@@ -84,9 +84,6 @@ ui <-fluidPage(
 	))),
 
 	#Reviewer toolbar (wide)
-	br(),
-	br(),
-	br(),
 	uiOutput('toolbarUI')
 )
 
