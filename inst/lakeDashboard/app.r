@@ -231,11 +231,12 @@ server <- function(input, output, session){
 	})
 
 
-	# Filter table to match clicked site from map
-	input_table_proxy = DT::dataTableProxy('table_input')
-	observeEvent(reactive_objects$sel_mlid,{
-		input_table_proxy %>% DT::clearSearch() %>% DT::updateSearch(keywords = list(global = "", columns=c("","",paste(reactive_objects$sel_mlid))))
-	})
+	## Filter table to match clicked site from map
+	#input_table_proxy = DT::dataTableProxy('table_input')
+	#observeEvent(reactive_objects$sel_mlid,{
+	#	search=as.character(reactive_objects$sel_mlid)
+	#	input_table_proxy %>% DT::clearSearch() %>% DT::updateSearch(keywords = list(global = NULL, columns=c("","",search)))
+	#})
 
 	# Profile date selection
 	output$date_select <- renderUI({
