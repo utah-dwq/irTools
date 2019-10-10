@@ -211,7 +211,7 @@ observeEvent({
 			clusterOptions=markerClusterOptions(spiderfyOnMaxZoom=T)) %>%
 		leaflet.extras::removeSearchFeatures() %>%
 		leaflet.extras::addSearchFeatures(
-					targetGroups = c('au_ids','au_names', 'locationID', 'locationName'),
+					targetGroups = c('au_ids','au_names','locationID'),
 					options = leaflet.extras::searchFeaturesOptions(
 						zoom=12, openPopup = TRUE, firstTipSubmit = TRUE,
 						autoCollapse = TRUE, hideMarkerOnCollapse = TRUE ))
