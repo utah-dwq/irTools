@@ -56,21 +56,21 @@ ui <-fluidPage(
 				#column(2, actionButton('demo_input', icon=icon('upload'), label='Use demo input', style = "margin-top: 25px; color: #fff; background-color: #337ab7; border-color: #2e6da4%"))
 			#)
 		),
-		bsCollapsePanel(list(icon('plus-circle'), icon('map-marked-alt'),"Review map"),
+		bsCollapsePanel(list(icon('plus-circle'), icon('map-marked-alt'),"Review map"), value=2,
 			# Map
 			uiOutput('map_rev_filter'),
 			shinycssloaders::withSpinner(leaflet::leafletOutput("assessment_map", height="600px"),size=2, color="#0080b7")
 		),
-		bsCollapsePanel(list(icon('plus-circle'), icon('chart-bar'), "Figures"),
+		bsCollapsePanel(list(icon('plus-circle'), icon('chart-bar'), "Figures"), value=3,
 			fluidRow(tableOutput("asmnt_summary")),
 			figuresModUI('figures')
 		),
-		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "View & download data"),
+		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "View & download data"), value=4,
 			fluidRow(downloadButton('exp_dt', label = "Download data & assessment summary", icon='download', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')),
 			br(),
 			fluidRow(div(DT::DTOutput("dt"), style = list("font-size:65%")))
 		),
-		bsCollapsePanel(list(icon('plus-circle'), icon('database'), "Download raw data from WQP"),
+		bsCollapsePanel(list(icon('plus-circle'), icon('database'), "Download raw data from WQP"), value=5,
 			fluidRow(
 				column(2, h4('Start date'), dateInput('start_date', '', format='mm/dd/yyyy', value='10/01/2010')),
 				column(2, h4('End date'), dateInput('end_date', '', format='mm/dd/yyyy', value='09/30/2018'))
@@ -84,10 +84,7 @@ ui <-fluidPage(
 	))),
 
 	#Reviewer toolbar (wide)
-	uiOutput('toolbarUI'),
-	br(),
-	br(),
-	br()
+	uiOutput('toolbarUI')
 )
 
 # Server
@@ -95,7 +92,7 @@ server <- function(input, output, session){
 
 
 # Toolbar UI
-output$build_to_proceed3=renderText({"Select AU(s) and build analysis tools to proceed..."})
+#output$build_to_proceed3=renderText({"Select AU(s) and build analysis tools to proceed..."})
 observeEvent(input$toolbar_reset, ignoreInit=F, ignoreNULL=F, {
 	options(warn=-1)
 	output$toolbarUI=renderUI({
@@ -111,7 +108,7 @@ observeEvent(input$toolbar_reset, ignoreInit=F, ignoreNULL=F, {
 					),
 					fluidRow(column(12, uiOutput('rebuild')))
 				),
-				bsCollapsePanel(list(icon('plus-circle'), icon('edit'),"Review assessments"),
+				bsCollapsePanel(list(icon('plus-circle'), icon('edit'),"Review assessments"), value=2,
 					uiOutput('flagUI1a'),
 					uiOutput('flagUI1b'),
 					uiOutput('flagUI2'),
@@ -122,7 +119,7 @@ observeEvent(input$toolbar_reset, ignoreInit=F, ignoreNULL=F, {
 					uiOutput('flagUI7'),
 					uiOutput('flagUI8')
 				),
-				bsCollapsePanel(list(icon('plus-circle'), icon('draw-polygon'),"Split AU"),
+				bsCollapsePanel(list(icon('plus-circle'), icon('draw-polygon'),"Split AU"), value=3,
 					uiOutput('splitUI')
 				)
 			))
@@ -428,13 +425,13 @@ output$wqp_url <-renderUI(a(href=paste0(reactive_objects$wqp_url),"Download WQP 
 
 
 # AU splits
-output$build_to_proceed=renderText({"Select AU(s) and build analysis tools to proceed..."})
+#output$build_to_proceed=renderText({"Select AU(s) and build analysis tools to proceed..."})
 
 ## AU split UI
 
 output$splitUI=renderUI({
 	if(is.null(reactive_objects$sel_sites)){
-		textOutput('build_to_proceed')
+		#textOutput('build_to_proceed')
 	}else{
 		tagList(
 			actionButton('build_split_map','Build split map', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%',  icon=icon('map-marked-alt')),
@@ -535,11 +532,11 @@ ml_types_all=reactive({
 ml_types_sel_au=reactive({
 	na.omit(unique(reactive_objects$site_asmnt$MonitoringLocationTypeName[reactive_objects$site_asmnt$IR_MLID %in% reactive_objects$sel_sites]))
 })
-output$build_to_proceed2=renderText({"Select AU(s) and build analysis tools to proceed..."})
+#output$build_to_proceed2=renderText({"Select AU(s) and build analysis tools to proceed..."})
 
 output$flagUI1a=renderUI({
 		if(is.null(reactive_objects$sel_sites)){
-			textOutput('build_to_proceed2')
+			#textOutput('build_to_proceed2')
 		}else{
 			tagList(
 				shinyWidgets::radioGroupButtons('rev_type', 'Review type:', choices=c('Generate flag','Mark complete'), checkIcon = list(yes = icon("check")))
@@ -612,15 +609,21 @@ observe({
 })
 
 output$flagUI6=renderUI({
-	req(input$flag_scope)
-	conditionalPanel(condition="input.rev_type=='Generate flag' & input.flag_scope=='Record(s)'",
-		#dateRangeInput('flag_date_range', 'Date range:', start=reactive_objects$start_date, end=reactive_objects$end_date),
-		helpText('Use the box select tool on the multi-site time series plot to select data to flag interactively.')
+	tagList(
+		conditionalPanel(condition="input.rev_type=='Generate flag' & input.flag_scope=='Record(s)'",
+		shinyWidgets::radioGroupButtons('record_flag_type','Select records by:', choices=c('Scatter plot','Record ID'), checkIcon = list(yes = icon("check"))),
+			conditionalPanel(condition="input.record_flag_type=='Scatter plot'",
+				helpText('Use the box select tool on the multi-site time series plot to select data to flag interactively.')
+			),
+			conditionalPanel(condition="input.record_flag_type=='Record ID'",
+				shinyWidgets::pickerInput("flag_record_ids", "Record ID(s):", choices=as.character(unique(reactive_objects$sel_data$ResultIdentifier)), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3", 'live-search'=TRUE))
+			)
+		)
 	)
 })
 
 output$flagUI7=renderUI({
-	req(input$flag_scope, input$flag_param)
+	#req(input$flag_scope, input$flag_param)
 	conditionalPanel(condition="input.rev_type=='Generate flag'",
 		textInput('rev_comment', 'Comment:', placeholder='Enter comment...')
 	)
@@ -687,7 +690,7 @@ observeEvent(input$mark_complete, ignoreInit=T, {
 		}
 		# Clear completed AUs from selected AUs
 		reactive_objects$selected_aus=reactive_objects$selected_aus[!reactive_objects$selected_aus %in% flag_aus]
-
+		showModal(modalDialog(title='Reviews marked complete', 'Your reviews have been marked complete. Please remember to export your reviews to save.', easyClose=T))
 	}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
 
 
@@ -739,9 +742,13 @@ observeEvent(input$flag_apply, ignoreInit=T, {
 		}else{showModal(modalDialog(title='Inputs needed', 'Finish filling out reviewer inputs before saving.', easyClose=T))}
 	}
 	if(input$flag_scope=='Record(s)'){
-		if(!is.null(input$rev_name) & input$rev_comment!="" & dim(reactive_objects$selected_rids)[1]>0){
-			reviews=reactive_objects$selected_rids
-			reactive_objects$selected_rids=reactive_objects$selected_rids[0,]
+		if(!is.null(input$rev_name) & input$rev_comment!="" & ((input$record_flag_type=='Scatter plot' & !is.null(reactive_objects$selected_rids))) | (input$record_flag_type=='Record ID' & !is.null(input$flag_record_ids))){
+			if(input$record_flag_type=='Scatter plot'){
+				reviews=reactive_objects$selected_rids
+				reactive_objects$selected_rids=reactive_objects$selected_rids[0,]
+			}else{
+				reviews=unique(reactive_objects$sel_data[reactive_objects$sel_data$ResultIdentifier %in% input$flag_record_ids,c('ResultIdentifier','ActivityStartDate','IR_MLID','IR_MLNAME','ASSESS_ID','R3172ParameterName')])
+			}
 			reviews$Reviewer=input$rev_name
 			reviews$Comment=input$rev_comment
 			reviews$ReviewDate=Sys.Date()
