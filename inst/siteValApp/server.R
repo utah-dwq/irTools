@@ -262,8 +262,12 @@ observeEvent(input$map_marker_click, {
 	site_click <- input$map_marker_click
 	siteid=site_click$id
 	if(!is.null(siteid)){
-		lat=round(as.numeric(paste(unique(reactive_objects$map_sites[reactive_objects$map_sites$MonitoringLocationIdentifier == siteid,'lat']))[1]),4)
-		long=round(as.numeric(paste(unique(reactive_objects$map_sites[reactive_objects$map_sites$MonitoringLocationIdentifier == siteid,'long']))[1]),4)
+	  lat = unique(reactive_objects$map_sites[reactive_objects$map_sites$MonitoringLocationIdentifier == siteid,'lat'])
+		lat = round(as.numeric(paste(lat[1,])[1]),4)
+		long = unique(reactive_objects$map_sites[reactive_objects$map_sites$MonitoringLocationIdentifier == siteid,'long'])
+		long = round(as.numeric(paste(long[1,])[1]),4)
+	#   lat=round(as.numeric(paste(unique(reactive_objects$map_sites[reactive_objects$map_sites$MonitoringLocationIdentifier == siteid,'lat']))[1]),4)
+	# 	long=round(as.numeric(paste(unique(reactive_objects$map_sites[reactive_objects$map_sites$MonitoringLocationIdentifier == siteid,'long']))[1]),4)
 		latlong_matches=reactive_objects$map_sites[round(reactive_objects$map_sites$lat,4)==lat & round(reactive_objects$map_sites$long,4)==long,]
 		if(dim(latlong_matches)[1] > 1){siteid = as.character(unique(latlong_matches$MonitoringLocationIdentifier))}
 	
