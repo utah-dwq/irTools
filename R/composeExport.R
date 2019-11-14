@@ -1,9 +1,11 @@
 #' Create dataset for secondary reviewer export from assessment dashboard
 #'
 #' Pulls columns of interest from prepped data and calculates basic exceedance summaries for site-use-parameter assessments.
+#' @param screened_data A dataframe object with all of the data screened out pre-data prep using the laboratory, media, detection-quantitation limit, and parameter translation tables.
 #' @param prepped_data A list of objects produced by dataPrep function, including toxics, conventionals, and ecoli dataframes.
 #' @param toxics_assessed A dataframe object of toxic assessments from the assessExcCounts function.
 #' @param conventionals_assessed A dataframe object of conventionals assessments from the assessExcCounts function.
+#' @param include_rejected A logical argument to specify whether the compiled data should include rejected data or not.
 #' @return A list composed of three dataframes: site-date-use-param records linked with aggregated daily values (if applicable), calculations, and exceedances, site-use-param summaries including sample and exceedance counts, and prepped E.coli data.
 #' @importFrom openxlsx loadWorkbook
 #' @importFrom openxlsx readWorkbook
@@ -15,7 +17,7 @@
 # prepped_data = result
 
 #' @export
-composeExport <- function(prepped_data, toxics_assessed, conventionals_assessed){
+composeExport <- function(screened_data, prepped_data, toxics_assessed, conventionals_assessed, include_rejected = TRUE){
 
 compiled_data = list()
 
@@ -32,11 +34,16 @@ columns = openxlsx::readWorkbook(exp_wb, sheet = 1)
 abbrev_cols = columns$COL_KEEP[columns$SHEET=="DA"]
 summ_cols = columns$COL_KEEP[columns$SHEET=="DS"]
 
+#### HANDLING ACCEPTED DATA ####
+
 # With all accepted data, remove CF rows
 dat_accepted = prepped_data$export_data[!prepped_data$export_data$BeneficialUse=="CF",]
+dat_accepted$IR_DataPrep_FLAG = "ACCEPT"
+
 
 # Retain only toxic and conventional records and add WMU
-tox_conv = subset(dat_accepted, dat_accepted$AssessmentType=="Toxic"|dat_accepted$AssessmentType=="Conventional")
+#tox_conv = subset(dat_accepted, dat_accepted$AssessmentType=="Toxic"|dat_accepted$AssessmentType=="Conventional")
+tox_conv = subset(dat_accepted, dat_accepted$AssessmentType=="Toxic"|dat_accepted$AssessmentType=="Conventional"|dat_accepted$AssessmentType=="All")
 before = dim(tox_conv)[1]
 tox_conv = merge(tox_conv, wmus, all.x = TRUE)
 after = dim(tox_conv)[1]
@@ -59,7 +66,7 @@ table(tox_conv1$Exceeds)
 
 col_order = abbrev_cols[abbrev_cols%in%names(tox_conv1)]
 
-compiled_data$toxconv_data_asmnt = tox_conv1[,col_order]
+tox_conv1 = tox_conv1[,col_order]
 
 # Summary data
 summary_tc_assessed = plyr::rbind.fill(conventionals_assessed, toxics_assessed)
@@ -70,6 +77,30 @@ names(summary_tc_assessed)[names(summary_tc_assessed)=="SSC_MLID"] = "siteSpecif
 col_order2 = summ_cols[summ_cols%in%names(summary_tc_assessed)]
 summary_tc_assessed = summary_tc_assessed[,col_order2]
 
+if(include_rejected){
+  # Screened data 
+  screened_data$IR_DataPrep_FLAG = "NOT EVALUATED"
+  screened_data$IR_DataPrep_COMMENT = "These data were screened out of the process before the data prep step."
+  
+  # Data rejected from data prep
+  data_prep_rej = prepped_data$rej_data_reasons
+  data_prep_rej$IR_DataPrep_FLAG = "REJECT"
+  names(data_prep_rej)[names(data_prep_rej)=="reason"] = "IR_DataPrep_COMMENT"
+  
+  dim(data_prep_rej)
+  
+  all_rejected_data = plyr::rbind.fill(screened_data, data_prep_rej)
+  
+  # All data
+  all_data = plyr::rbind.fill(all_rejected_data, tox_conv1)
+  all_data1 = all_data[,names(all_data)%in%ab_col$COL_KEEP] 
+  
+  # Update summary with rejected data
+  all_rej_sum = unique(all_rejected_data[,colnames(all_rejected_data)%in%summ_cols])
+  
+}
+
+compiled_data$toxconv_data_asmnt = tox_conv1
 compiled_data$summary_tc_assessed = summary_tc_assessed
 
 return(compiled_data)
