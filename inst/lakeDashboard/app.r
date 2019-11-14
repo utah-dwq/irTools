@@ -18,12 +18,15 @@ tags$head(
 	  
 	# Header
 	headerPanel(
-		title=tags$a(href='https://deq.utah.gov/division-water-quality/',tags$img(src='deq_dwq_logo_draft.png', height = 125, width = 100*2.85*1.75), target="_blank"),
+		title=tags$a(href='https://deq.utah.gov/division-water-quality/',tags$img(src='deq_dwq_logo.png', height = 75, width = 75*2.85), target="_blank"),
 		tags$head(tags$link(rel = "icon", type = "image/png", href = "dwq_logo_small.png"), windowTitle="Lake profile dashboard")
 	),
 
 	# Input widgets
-	uiOutput('guide_url'),
+	fluidRow(column(5),column(7, 
+		actionButton('help', 'User guide', icon=icon('question'), onclick ="window.open('https://bookdown.org/jakevl/user_guide/user_guide.html', '_blank')", 
+					 style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')
+	)),
 	br(),
 	fluidRow(
 		column(5,
@@ -90,7 +93,6 @@ tags$head(
 server <- function(input, output, session){
 
 	options(warn=-1)
-	output$guide_url <-renderUI(a(href=paste0('https://bookdown.org/jakevl/user_guide'),"User guide",target="_blank"))
 
 	# Loading modal to keep user out of trouble while map draws...
 	showModal(modalDialog(title="MAP LOADING - PLEASE WAIT...","Please wait for map to draw before proceeding.",size="l",footer=NULL))
