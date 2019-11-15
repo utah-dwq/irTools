@@ -5,7 +5,9 @@
 #' @param prepped_data A list of objects produced by dataPrep function, including toxics, conventionals, and ecoli dataframes.
 #' @param toxics_assessed A dataframe object of toxic assessments from the assessExcCounts function.
 #' @param conventionals_assessed A dataframe object of conventionals assessments from the assessExcCounts function.
-#' @param include_rejected A logical argument to specify whether the compiled data should include rejected data or not.
+#' @param include_rejected A logical argument to specify whether the compiled data should include rejected data or not. Defaults to true.
+#' @param create_workbooks A logical argument to specify whether workbooks should be made of the specified parameters. Defaults to FALSE.
+#' @param params A vector of assessment parameter names to be placed in workbooks.
 #' @return A list composed of three dataframes: site-date-use-param records linked with aggregated daily values (if applicable), calculations, and exceedances, site-use-param summaries including sample and exceedance counts, and prepped E.coli data.
 #' @importFrom openxlsx loadWorkbook
 #' @importFrom openxlsx readWorkbook
@@ -16,10 +18,38 @@
 # load("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\AU_export_testing\\au_export_resultdata.RData")
 # prepped_data = result
 
+#blah = composeExport(screened_data = screened_data, prepped_data = result, toxics_assessed = toxics_assessed, conventionals_assessed = conventionals_assessed, include_rejected = FALSE, create_workbooks = FALSE)
+
 #' @export
-composeExport <- function(screened_data, prepped_data, toxics_assessed, conventionals_assessed, include_rejected = TRUE, params){
+composeExport <- function(screened_data, prepped_data, toxics_assessed, conventionals_assessed, include_rejected = TRUE, create_workbooks = FALSE, params=c("Mercury","pH","Max. Temperature","Arsenic","Cadmium","Chromium","Aluminum","Total Ammonia as N","Calcium","Minimum Dissolved Oxygen","Hardness","Magnesium","Nitrate as N")){
 
 compiled_data = list()
+
+# Workbook styles
+Identifier = openxlsx::createStyle(textDecoration = "bold", bgFill = "yellow")
+IR = openxlsx::createStyle(textDecoration = "bold", bgFill = "pink")
+Param = openxlsx::createStyle(textDecoration = "bold", bgFill = "turquoise")
+
+
+# Function for creating Excel workbooks for specified parameters
+param_exp <- function(x){
+  
+  alldat = subset(all_data1, all_data1$CharacteristicName==x|all_data1$R3172ParameterName==x)
+  summdat = subset(summary_tc_assessed, summary_tc_assessed$R3172ParameterName==x)
+  
+  reviewer_export <- openxlsx::createWorkbook()
+  openxlsx::addWorksheet(reviewer_export, sheetName = "Summary")
+  openxlsx::addWorksheet(reviewer_export, sheetName = "Data")
+  openxlsx::writeDataTable(reviewer_export, sheet = "Data", alldat)
+  openxlsx::writeDataTable(reviewer_export, sheet = "Summary", summdat)
+  openxlsx::conditionalFormatting(reviewer_export, sheet = "Data", cols = 1:120, rows = 1, rule = "IR", type = "contains", style = IR)
+  openxlsx::conditionalFormatting(reviewer_export, sheet = "Data", cols = 1:120, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
+  openxlsx::conditionalFormatting(reviewer_export, sheet = "Data", cols = 1:120, rows = 1, rule = "Param", type = "contains",style = Param)
+  openxlsx::conditionalFormatting(reviewer_export, sheet = "Summary", cols = 1:30, rows = 1, rule = "IR", type = "contains", style = IR)
+  openxlsx::conditionalFormatting(reviewer_export, sheet = "Summary", cols = 1:30, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
+  openxlsx::conditionalFormatting(reviewer_export, sheet = "Summary", cols = 1:30, rows = 1, rule = "Param", type = "contains",style = Param)
+  openxlsx::saveWorkbook(reviewer_export, file = paste0(x,"_IR_data_summary.xlsx"))
+}
 
 ### Load watershed management units
 load(system.file("extdata", "wmus_aus.Rdata", package = "irTools"))
@@ -78,6 +108,7 @@ names(summary_tc_assessed)[names(summary_tc_assessed)=="SSC_MLID"] = "siteSpecif
 summary_tc_assessed$MonitoringLocationIdentifier = summary_tc_assessed$IR_MLID
 summary_tc_assessed$IR_Screen_FLAG = "ACCEPT"
 summary_tc_assessed$IR_DataPrep_FLAG = "ACCEPT"
+summary_tc_assessed = merge(summary_tc_assessed, wmus, all.x = TRUE)
 
 col_order2 = summ_cols[summ_cols%in%names(summary_tc_assessed)]
 summary_tc_assessed = summary_tc_assessed[,col_order2]
@@ -110,6 +141,11 @@ if(include_rejected){
 
 compiled_data$toxconv_data_asmnt = all_data1
 compiled_data$summary_tc_assessed = summary_tc_assessed
+
+if(create_workbooks){
+  setwd(choose.dir(getwd(),caption = "Select folder in which to save exports"))
+  lapply(params, FUN=param_exp)
+  }
 
 return(compiled_data)
 }
