@@ -1,7 +1,7 @@
 #' Create dataset for secondary reviewer export from assessment dashboard
 #'
 #' Pulls columns of interest from prepped data and calculates basic exceedance summaries for site-use-parameter assessments.
-#' @param screened_data A dataframe object with all of the data screened out pre-data prep using the laboratory, media, detection-quantitation limit, and parameter translation tables.
+#' @param screened_data A dataframe object with all of the data screened out pre-data prep using the laboratory, media, detection-quantitation limit, and parameter translation tables. This is only required if include_rejected = TRUE.
 #' @param prepped_data A list of objects produced by dataPrep function, including toxics, conventionals, and ecoli dataframes.
 #' @param toxics_assessed A dataframe object of toxic assessments from the assessExcCounts function.
 #' @param conventionals_assessed A dataframe object of conventionals assessments from the assessExcCounts function.
@@ -17,7 +17,7 @@
 # prepped_data = result
 
 #' @export
-composeExport <- function(screened_data, prepped_data, toxics_assessed, conventionals_assessed, include_rejected = TRUE){
+composeExport <- function(screened_data, prepped_data, toxics_assessed, conventionals_assessed, include_rejected = TRUE, params){
 
 compiled_data = list()
 
@@ -66,13 +66,18 @@ table(tox_conv1$Exceeds)
 
 col_order = abbrev_cols[abbrev_cols%in%names(tox_conv1)]
 
-tox_conv1 = tox_conv1[,col_order]
+all_data1 = tox_conv1[,col_order]
 
 # Summary data
 summary_tc_assessed = plyr::rbind.fill(conventionals_assessed, toxics_assessed)
 names(summary_tc_assessed)[names(summary_tc_assessed)=="SampleCount"] = "MLIDSampleCount"
 names(summary_tc_assessed)[names(summary_tc_assessed)=="ExcCount"] = "MLIDExceedanceCount"
 names(summary_tc_assessed)[names(summary_tc_assessed)=="SSC_MLID"] = "siteSpecificAssessment"
+
+# Add the following columns for clarity in summary tab of export
+summary_tc_assessed$MonitoringLocationIdentifier = summary_tc_assessed$IR_MLID
+summary_tc_assessed$IR_Screen_FLAG = "ACCEPT"
+summary_tc_assessed$IR_DataPrep_FLAG = "ACCEPT"
 
 col_order2 = summ_cols[summ_cols%in%names(summary_tc_assessed)]
 summary_tc_assessed = summary_tc_assessed[,col_order2]
@@ -81,11 +86,12 @@ if(include_rejected){
   # Screened data 
   screened_data$IR_DataPrep_FLAG = "NOT EVALUATED"
   screened_data$IR_DataPrep_COMMENT = "These data were screened out of the process before the data prep step."
-  
+  screened_data$IR_Screen_FLAG = "REJECT"
   # Data rejected from data prep
   data_prep_rej = prepped_data$rej_data_reasons
   data_prep_rej$IR_DataPrep_FLAG = "REJECT"
   names(data_prep_rej)[names(data_prep_rej)=="reason"] = "IR_DataPrep_COMMENT"
+  data_prep_rej$IR_Screen_FLAG = "ACCEPT"
   
   dim(data_prep_rej)
   
@@ -93,14 +99,16 @@ if(include_rejected){
   
   # All data
   all_data = plyr::rbind.fill(all_rejected_data, tox_conv1)
-  all_data1 = all_data[,names(all_data)%in%ab_col$COL_KEEP] 
+  all_data1 = all_data[,names(all_data)%in%abbrev_cols] 
   
   # Update summary with rejected data
+  all_rej_sum = all_rejected_data
   all_rej_sum = unique(all_rejected_data[,colnames(all_rejected_data)%in%summ_cols])
-  
+  all_rej_sum$IR_Cat = "REJECT"
+  summary_tc_assessed = plyr::rbind.fill(summary_tc_assessed, all_rej_sum)
 }
 
-compiled_data$toxconv_data_asmnt = tox_conv1
+compiled_data$toxconv_data_asmnt = all_data1
 compiled_data$summary_tc_assessed = summary_tc_assessed
 
 return(compiled_data)
