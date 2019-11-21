@@ -59,7 +59,7 @@ ui <-fluidPage(
 		bsCollapsePanel(list(icon('plus-circle'), icon('map-marked-alt'),"Review map"), value=2,
 			# Map
 			uiOutput('map_rev_filter'),
-			shinycssloaders::withSpinner(leaflet::leafletOutput("assessment_map", height="600px"),size=2, color="#0080b7")
+			shinycssloaders::withSpinner(leaflet::leafletOutput("assessment_map", height="600px", width="100%"),size=2, color="#0080b7")
 		),
 		bsCollapsePanel(list(icon('plus-circle'), icon('chart-bar'), "Figures"), value=3,
 			fluidRow(tableOutput("asmnt_summary")),

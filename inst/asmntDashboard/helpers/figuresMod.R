@@ -31,7 +31,7 @@ figuresModUI <- function(id){
 				fluidRow(column(4,radioButtons(ns("compare_plottype"), "Plot type", choices = c("Time series","Boxplot", "Concentration map"), selected = "Time series", inline = TRUE))),
 				conditionalPanel(paste0("input['", ns("compare_plottype"),"'] == 'Time series'"), plotlyOutput(ns('multi_site_ts'), height='600px')),
 				conditionalPanel(paste0("input['", ns("compare_plottype"),"'] == 'Boxplot'"), plotlyOutput(ns('multi_site_bp'), height='600px')),
-				conditionalPanel(paste0("input['", ns("compare_plottype"),"'] == 'Concentration map'"), shinycssloaders::withSpinner(leafletOutput(ns('conc_map'), height='600px'),size=2, color="#0080b7"))
+				conditionalPanel(paste0("input['", ns("compare_plottype"),"'] == 'Concentration map'"), shinycssloaders::withSpinner(leafletOutput(ns('conc_map'), height='600px', width="100%"),size=2, color="#0080b7"))
 			),
 			tabPanel("Multiple parameters", 
 				plotlyOutput(ns("multi_param_ts"))
@@ -294,8 +294,6 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 	output$conc_map <- leaflet::renderLeaflet({
 		conc_map
 	})
-	
-	
 	
 	observeEvent(reactive_objects$sel_crit, {
 		output$conc_map <- leaflet::renderLeaflet({
