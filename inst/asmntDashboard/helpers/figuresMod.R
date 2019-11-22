@@ -292,17 +292,37 @@ figuresMod <- function(input, output, session, sel_data, sel_crit){
 	conc_map=removeMeasure(conc_map)
     
 	output$conc_map <- leaflet::renderLeaflet({
+		isolate({
+			if(!is.null(reactive_objects$param1) & dim(reactive_objects$param1)[1]>0){
+				sites=reactive_objects$param1
+				sites=sites[!is.na(sites$plot_value),]
+				count=aggregate(plot_value~IR_MLID+IR_Lat+IR_Long+target_unit, sites, FUN='length')
+				names(count)[names(count)=='plot_value'] = 'count'
+				sites=aggregate(plot_value~IR_MLID+IR_MLNAME+IR_Lat+IR_Long+target_unit, sites, FUN='mean', na.rm=TRUE)
+				sites=merge(sites,count,all.x=T)
+				sites$radius=scales::rescale(sites$plot_value, c(5,35))
+				min_lat=min(sites$IR_Lat)*0.999
+				min_lng=min(sites$IR_Long)*0.999
+				max_lat=max(sites$IR_Lat)*1.001
+				max_lng=max(sites$IR_Long)*1.001
+				leg_labs=c(signif(quantile(sites$plot_value, 0.10),3), signif(median(sites$plot_value),3), signif(quantile(sites$plot_value, 0.90),3))
+				leg_sizes=c(quantile(sites$radius, 0.10), median(sites$radius), quantile(sites$radius, 0.90))*2
+				conc_map = conc_map %>% flyToBounds(min_lng,min_lat,max_lng,max_lat) %>%	
+					addCircleMarkers(data = sites, lat=~IR_Lat, lng=~IR_Long, group="Sites", layerId=~IR_MLID, color='blue', stroke=F, fillOpacity=0.5,
+						radius = ~radius, options = pathOptions(pane = "site_markers"),
+						popup = paste0(
+							"MLID: ", sites$IR_MLID,
+							"<br> ML name: ", sites$IR_MLNAME,
+							"<br> Average Parameter Value: ", sites$plot_value,
+							"<br> Sample Count: ", sites$count)
+					) %>%
+				addLegendCustom(colors = c("blue", "blue", "blue"), labels = leg_labs, sizes = leg_sizes, title=reactive_objects$ylab)
+			}
+		})
+
 		conc_map
 	})
 	
-	observeEvent(reactive_objects$sel_crit, {
-		output$conc_map <- leaflet::renderLeaflet({
-			conc_map
-		})
-		
-		conc_proxy = leaflet::leafletProxy("conc_map")
-	
-	})
 	
     
 	# Map proxy
