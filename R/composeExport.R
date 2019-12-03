@@ -73,7 +73,7 @@ dat_accepted$IR_DataPrep_FLAG = "ACCEPT"
 
 # Retain only toxic and conventional records and add WMU
 #tox_conv = subset(dat_accepted, dat_accepted$AssessmentType=="Toxic"|dat_accepted$AssessmentType=="Conventional")
-tox_conv = subset(dat_accepted, dat_accepted$AssessmentType=="Toxic"|dat_accepted$AssessmentType=="Conventional"|dat_accepted$AssessmentType=="All")
+tox_conv = subset(dat_accepted, dat_accepted$AssessmentType=="Toxic"|dat_accepted$AssessmentType=="Conventional"|dat_accepted$AssessmentType=="All"|dat_accepted$BeneficialUse=="CF")
 before = dim(tox_conv)[1]
 tox_conv = merge(tox_conv, wmus, all.x = TRUE)
 after = dim(tox_conv)[1]
@@ -145,6 +145,24 @@ compiled_data$summary_tc_assessed = summary_tc_assessed
 if(create_workbooks){
   setwd(choose.dir(getwd(),caption = "Select folder in which to save exports"))
   lapply(params, FUN=param_exp)
+  
+  # restoparams = unique(c(as.character(all_data1$CharacteristicName[!all_data1$CharacteristicName%in%params]),as.character(all_data1$R3172ParameterName[!all_data1$R3172ParameterName%in%params])))
+  # restodat = subset(all_data1, all_data1$CharacteristicName%in%restoparams|all_data1$R3172ParameterName%in%restoparams)
+  # restosummdat = subset(summary_tc_assessed, summary_tc_assessed$R3172ParameterName%in%restoparams)
+  # reviewer_export <- openxlsx::createWorkbook()
+  # openxlsx::addWorksheet(reviewer_export, sheetName = "Summary")
+  # openxlsx::addWorksheet(reviewer_export, sheetName = "Data")
+  # openxlsx::writeDataTable(reviewer_export, sheet = "Data", alldat)
+  # openxlsx::writeDataTable(reviewer_export, sheet = "Summary", summdat)
+  # openxlsx::conditionalFormatting(reviewer_export, sheet = "Data", cols = 1:120, rows = 1, rule = "IR", type = "contains", style = IR)
+  # openxlsx::conditionalFormatting(reviewer_export, sheet = "Data", cols = 1:120, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
+  # openxlsx::conditionalFormatting(reviewer_export, sheet = "Data", cols = 1:120, rows = 1, rule = "Param", type = "contains",style = Param)
+  # openxlsx::conditionalFormatting(reviewer_export, sheet = "Summary", cols = 1:30, rows = 1, rule = "IR", type = "contains", style = IR)
+  # openxlsx::conditionalFormatting(reviewer_export, sheet = "Summary", cols = 1:30, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
+  # openxlsx::conditionalFormatting(reviewer_export, sheet = "Summary", cols = 1:30, rows = 1, rule = "Param", type = "contains",style = Param)
+  # openxlsx::saveWorkbook(reviewer_export, file = paste0(x,"_IR_data_summary.xlsx"))
+  
+  
   }
 
 return(compiled_data)
