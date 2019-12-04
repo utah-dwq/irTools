@@ -496,20 +496,22 @@ subset(acc_data, IR_MLID=='UTAHDWQ_WQX-5995245' & R3172ParameterName=='Aluminum'
 #Extract e coli
 result$ecoli=acc_data[acc_data$R3172ParameterName=="E. coli",]
 
-drop_vars=c("ResultIdentifier","DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode", "IR_ActivityType", "TargetActivityType",
-			"R317Descrp","IR_DetCond", "MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","IR_Fraction","CharacteristicName",
-			"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG")
 
 #############
 #######Toxics
 ######
 if(any(acc_data$AssessmentType=="Toxic")){
 
+drop_vars=c("ResultIdentifier","DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode", "IR_ActivityType", "TargetActivityType",
+			"R317Descrp","IR_DetCond", "MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","IR_Fraction","CharacteristicName",
+			"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG")
+
 ## Extract radium data
 result$radium=acc_data[acc_data$R3172ParameterName=='Radium 226, 228 (Combined)',]
 
 toxics_raw=subset(acc_data, AssessmentType=="Toxic" & BeneficialUse!="CF")
 toxics_raw=toxics_raw[toxics_raw$R3172ParameterName!='Radium 226, 228 (Combined)',]
+toxics_raw=toxics_raw[,col_names]
 
 	#split streams & lakes
 	toxics_strms=toxics_raw[which(toxics_raw$AU_Type=="River/Stream"),]
@@ -558,6 +560,7 @@ drop_vars=c("ResultIdentifier","DataLoggerLine","OrganizationIdentifier","Activi
 
 if(any(acc_data$AssessmentType=="Conventional")){
 	conv_raw=acc_data[which(acc_data$AssessmentType=="Conventional" & acc_data$BeneficialUse!="CF"),]
+	conv_raw=conv_raw[,col_names]
 	
 	#split streams & lakes
 	conv_strms=conv_raw[which(conv_raw$AU_Type=="River/Stream"),]
