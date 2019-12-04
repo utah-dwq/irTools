@@ -24,7 +24,7 @@
 #' @export
 dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb, cf_formulas_sheetname, startRow_unit=1, startRow_formulas=1, split_agg_tds=TRUE){
 
-#####SETUP#####
+######SETUP#####
 #data=acc_data_criteria
 #split_agg_tds=TRUE
 #translation_wb='ir_translation_workbook_working_v11_ef - no IR_Fraction formula.xlsx'
@@ -33,7 +33,7 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb,
 #crit_wb="IR_uses_standards_working_v4_ef.xlsx"
 #cf_formulas_sheetname="cf_formulas"
 #startRow_formulas=3
-########
+#########
 
 result=list()
 
@@ -263,8 +263,7 @@ data_n$reason=NA
 data_n=within(data_n,{
 	reason[IR_UnitConv_FLAG=="REJECT"]="Inappropriate units for conversion or assessment"
 	})
-data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
-reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+reasons=plyr::rbind.fill(reasons, data_n[!is.na(data_n$reason),])
 table(reasons$BeneficialUse)
 #print(table(reasons$reason))
 rm(data_n)
@@ -275,8 +274,7 @@ rm(data_n)
 #data_n=within(data_n,{
 #	reason[IRParameterName=="pH" & (IR_Value<=0 | IR_Value>16)]="Reported pH value <=0 or >16"
 #	})
-#data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
-#reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+#reasons=plyr::rbind.fill(reasons, data_n[!is.na(data_n$reason),])
 ##print(table(reasons$reason))
 #rm(data_n)
 #
@@ -286,8 +284,7 @@ rm(data_n)
 #data_n=within(data_n,{
 #	reason[IRParameterName=="Max. Temperature" & (IR_Value<-10 | IR_Value>40)]="Reported temperature value <-10 or >40"
 #	})
-#data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
-#reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+#reasons=plyr::rbind.fill(reasons, data_n[!is.na(data_n$reason),])
 ##print(table(reasons$reason))
 #rm(data_n)
 
@@ -430,8 +427,7 @@ data_n=within(data_n,{
 	reason[R3172ParameterName!='Aluminum' & is.na(NumericCriterion) & BeneficialUse!='SUP' & BeneficialUse!='CF']="Missing one or more correction factors, unable to calculate criterion"
 	reason[R3172ParameterName=='Aluminum' & is.na(NumericCriterion) & BeneficialUse!='SUP' & BeneficialUse!='CF']="Missing one or more correction factors, unable to calculate criterion, or chronic Aluminum criterion not applicable."
 	})
-data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
-reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+reasons=plyr::rbind.fill(reasons, data_n[!is.na(data_n$reason),])
 table(reasons$BeneficialUse)
 #print(table(reasons$reason))
 rm(data_n)
@@ -447,8 +443,7 @@ suppressWarnings({
 })
 table(data_n$reason)
 
-data_n=data_n[!is.na(data_n$reason),names(data_n) %in% names(reasons)]
-reasons=rbind(reasons, data_n[!is.na(data_n$reason),])
+reasons=plyr::rbind.fill(reasons, data_n[!is.na(data_n$reason),])
 table(reasons$BeneficialUse)
 #print(table(reasons$reason))
 rm(data_n)
