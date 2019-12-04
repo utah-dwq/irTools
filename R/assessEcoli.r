@@ -53,7 +53,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   uses_stds <- unique(data_raw[c("BeneficialUse","CriterionLabel","NumericCriterion")])
   
   # Remove duplicates from data
-  data_raw <- data_raw[,!names(data_raw)%in%c("ActivityIdentifier","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","CriterionLabel","NumericCriterion")]
+  data_raw <- data_raw[,!names(data_raw)%in%c("AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","CriterionLabel","NumericCriterion")]
   data_raw <- unique(data_raw)
   
   # Convert dates to R dates
@@ -91,7 +91,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   # Aggregate to daily values.
   data_processed=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate+Year,data=data_rec,FUN=function(x){exp(mean(log(x)))})
   
-  cols2keep = c("ActivityStartDate","IR_MLID","IR_MLNAME","ASSESS_ID","AU_NAME","AU_Type","BEN_CLASS","R3172ParameterName",
+  cols2keep = c("ActivityStartDate","ActivityIdentifier","IR_MLID","IR_MLNAME","ASSESS_ID","AU_NAME","AU_Type","BEN_CLASS","R3172ParameterName",
                 "IR_Value","IR_Unit","IR_DetCond","IR_Fraction","IR_ActivityType","IR_Lat","IR_Long","DataLoggerLine",
                 "ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","R317Descrp","ActivityDepthHeightMeasure.MeasureUnitCode")
   
