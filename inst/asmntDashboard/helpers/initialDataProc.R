@@ -36,7 +36,7 @@ if(all(names(site_asmnt)!='AU_Type')){
 	site_asmnt=merge(site_asmnt,au_types, all.x=T)
 }
 
-### Generate impaired params wIDEX list
+### Generate impaired params list
 sites_ns=subset(site_param_asmnt, AssessCat=='NS' & !is.na(as.character(IR_MLID)) & IR_MLID!='NA')
 if(dim(sites_ns)[1]>0){
 	impaired_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_ns, value.var='R3172ParameterName')
@@ -51,7 +51,7 @@ if(dim(sites_ns)[1]>0){
 	site_asmnt=merge(site_asmnt, impaired_params, all.x=T)
 }else{site_asmnt$Impaired_params=NA}
 
-### Generate IDEX params wIDEX list
+### Generate IDEX params list
 sites_IDEX=subset(site_param_asmnt, AssessCat=='IDEX' & !is.na(as.character(IR_MLID)) & IR_MLID!='NA')
 if(dim(sites_IDEX)[1]>0){
 	IDEX_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_IDEX, value.var='R3172ParameterName')
@@ -67,7 +67,7 @@ if(dim(sites_IDEX)[1]>0){
 }else{site_asmnt$IDEX_params=NA}
 
 
-### Generate pollution indicator NS wIDEX list
+### Generate pollution indicator NS list
 if(dim(pol_ind)[1]>0){sites_pi=subset(site_param_pol_ind, AssessCat=='NS' & !is.na(as.character(IR_MLID)) & IR_MLID!='NA')}
 if(dim(sites_pi)[1]>0){
 	pi_params=reshape2::dcast(IR_MLID~R3172ParameterName, data=sites_pi, value.var='R3172ParameterName')
@@ -88,7 +88,7 @@ au_param_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('ASSESS_
 au_param_pol_ind=irTools::rollUp(list(pol_ind), group_vars=c('ASSESS_ID','AU_NAME','R3172ParameterName'), cat_var="AssessCat", print=F, expand_uses=F)
 au_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('ASSESS_ID','AU_NAME'), cat_var="AssessCat", print=F, expand_uses=F)
 
-### Generate impaired params wIDEX list
+### Generate impaired params list
 aus_ns=subset(au_param_asmnt, AssessCat=='NS')
 if(dim(aus_ns)[1]>0){
 	impaired_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_ns, value.var='R3172ParameterName')
@@ -103,7 +103,7 @@ if(dim(aus_ns)[1]>0){
 	au_asmnt=merge(au_asmnt, impaired_params, all.x=T)
 }else{au_asmnt$Impaired_params=NA}
 
-### Generate IDEX params wIDEX list
+### Generate IDEX params list
 aus_IDEX=subset(au_param_asmnt, AssessCat=='IDEX')
 if(dim(aus_IDEX)[1]>0){
 	IDEX_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_IDEX, value.var='R3172ParameterName')
@@ -119,7 +119,7 @@ if(dim(aus_IDEX)[1]>0){
 }else{au_asmnt$IDEX_params=NA}
 
 
-### Generate IDEX params wIDEX list
+### Generate IDEX params list
 if(dim(pol_ind)[1]>0){aus_pi=subset(au_param_pol_ind, AssessCat=='NS')}
 if(dim(aus_pi)[1]>0){
 	pi_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_pi, value.var='R3172ParameterName')
