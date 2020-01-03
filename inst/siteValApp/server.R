@@ -509,7 +509,7 @@ observeEvent(input$merge_cancel, {removeModal()})
 observeEvent(input$merge_ok, {
 	merge_mlids=reactive_objects$table_selected_mlids
 	merged_lat_long=reactive_objects$table_selected_table
-	merged_lat_long=merged_lat_long[merged_lat_long$MonitoringLocationIdentifier == input$merge_mlid,c('MonitoringLocationIdentifier','LatitudeMeasure', 'LongitudeMeasure')]
+	merged_lat_long=merged_lat_long[merged_lat_long$MonitoringLocationIdentifier == input$merge_mlid,]
 	reactive_objects$sites=within(reactive_objects$sites, {
 		IR_FLAG[MonitoringLocationIdentifier %in% merge_mlids] = "ACCEPT"
 		IR_COMMENT[MonitoringLocationIdentifier %in% merge_mlids] = "Two or more sites merged"
@@ -517,6 +517,13 @@ observeEvent(input$merge_ok, {
 		IR_MLNAME[MonitoringLocationIdentifier %in% merge_mlids] = paste(input$merge_mlname)
 		IR_Lat[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$LatitudeMeasure
 		IR_Long[MonitoringLocationIdentifier %in% merge_mlids]  = merged_lat_long$LongitudeMeasure
+		ASSESS_ID[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$ASSESS_ID
+		AU_NAME[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$AU_NAME
+		AU_Type[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$AU_Type
+		Water_Type[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$Water_Type
+		R317Descrp[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$R317Descrp
+		ss_R317Descrp[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$ss_R317Descrp
+		BEN_CLASS[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$BEN_CLASS
 		lat[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$LatitudeMeasure
 		long[MonitoringLocationIdentifier %in% merge_mlids]  = merged_lat_long$LongitudeMeasure
 		IR_FLAG_REASONS[MonitoringLocationIdentifier %in% merge_mlids]="Merge"
