@@ -287,8 +287,9 @@ server <- function(input, output, session){
 	output$profile_table=DT::renderDataTable({
 		req(reactive_objects$table_data)
 		DT::datatable(reactive_objects$table_data, selection='multiple',
-			options = list(scrollY = '500px', paging = FALSE, scrollX = TRUE, searching=F)
+			options = list(scrollY = '500px', paging = FALSE, scrollX = TRUE, searching=F, digits = 3)
 		) %>%
+		DT::formatRound(columns=c('Depth_m','DO_mgL','pH','Temp_degC'), digits=3)  %>%
 		DT::formatStyle("DO_mgL", "do_exc", backgroundColor = DT::styleEqual(1, "orange"))  %>%
 		DT::formatStyle("pH", "pH_exc", backgroundColor = DT::styleEqual(1, "orange"))  %>%
 		DT::formatStyle("Temp_degC", "temp_exc", backgroundColor = DT::styleEqual(1, "orange"))
