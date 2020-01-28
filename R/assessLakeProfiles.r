@@ -20,10 +20,10 @@ assessLakeProfiles <- function(data, do_crit=list("3A"=4, "3B"=3), temp_crit=lis
 
 ##### Testing setup
 #load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
-data=profile_data_asmnt
-uses_assessed=c("3A","3B")
-do_crit=list("3A"=4, "3B"=3)
-temp_crit=list("3A"=20, "3B"=27)
+#data=profile_data_asmnt
+#uses_assessed=c("3A","3B")
+#do_crit=list("3A"=4, "3B"=3)
+#temp_crit=list("3A"=20, "3B"=27)
 #####
 
 # Make numeric criterion numeric
