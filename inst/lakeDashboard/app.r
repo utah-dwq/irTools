@@ -130,7 +130,8 @@ server <- function(input, output, session){
 
 	# Remove any sites that do not produce any valid profiles
 	prof_sites=prof_sites[prof_sites$MonitoringLocationIdentifier %in% profiles_long$MonitoringLocationIdentifier,]
-
+	prof_sites<<-prof_sites
+	
 	# Extract profiles wide
 	profiles_wide=prof_asmnts_all$profiles_wide
 	profiles_wide=profiles_wide[profiles_wide$ActivityIdentifier %in% profiles_long$ActivityIdentifier,]
@@ -164,7 +165,7 @@ server <- function(input, output, session){
 
     session$onFlushed(once = T, function() {
 		output$map <- leaflet::renderLeaflet({
-			buildMap(sites=prof_sites, plot_polys=TRUE, au_poly=lake_aus) %>% leaflet::showGroup('Assessment units') %>% leaflet::clearControls()
+			buildMap(sites=prof_sites, plot_polys=TRUE, au_poly=lake_aus) %>% leaflet::showGroup('Assessment units') %>% leaflet::clearControls() %>% addMapPane("highlight", zIndex = 418)
 		})
     })
 
@@ -186,7 +187,16 @@ server <- function(input, output, session){
 		reactive_objects$sel_mlid=siteid
 		reactive_objects$selected_au=as.character(mlid_param_asmnts[mlid_param_asmnts$IR_MLID==siteid,"ASSESS_ID"][1])
 	})
-
+	
+	# Highlight selected marker
+	observeEvent(reactive_objects$sel_mlid, {
+		map_proxy %>%
+			clearGroup(group='highlight') %>%
+			addCircleMarkers(data=subset(prof_sites, MonitoringLocationIdentifier %in% reactive_objects$sel_mlid), lat=~LatitudeMeasure, lng=~LongitudeMeasure,
+				group='highlight', options = pathOptions(pane = "highlight"), radius = 20, color='chartreuse', opacity = 0.75, fillOpacity = 0.4)
+	})
+	
+	
 	# Map AU click (to identify selected AU and site)
 	observeEvent(input$map_shape_click,{
 		au_click = input$map_shape_click$id
