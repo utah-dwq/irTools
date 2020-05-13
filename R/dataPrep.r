@@ -596,10 +596,11 @@ if(any(acc_data$AssessmentType=="Conventional")){
 			conv_lakes_daily=aggDVbyfun(conv_lakes,	drop_vars=drop_vars,	value_var="IR_Value", agg_var="DailyAggFun")
 		}
 		
-		if(dim(conv_lakes)[1]>0){		
+		#Select out lakes TDS
+		if(dim(conv_lakes_daily)[1]>0){		
 			#Separate lakes TDS (different assessment methods)
-			result$lakes_tds=conv_lakes[conv_lakes$R3172ParameterName=="Total Dissolved Solids",]
-			conv_lakes=conv_lakes[conv_lakes$R3172ParameterName!="Total Dissolved Solids",]
+			result$lakes_tds=conv_lakes_daily[conv_lakes_daily$R3172ParameterName=="Total Dissolved Solids",]
+			conv_lakes_daily=conv_lakes_daily[conv_lakes_daily$R3172ParameterName!="Total Dissolved Solids",]
 		}
 	}
 	
