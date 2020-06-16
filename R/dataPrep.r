@@ -27,7 +27,7 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb,
 ######SETUP#####
 #data=acc_data_criteria
 #split_agg_tds=TRUE
-#translation_wb='ir_translation_workbook_working_v11_ef - no IR_Fraction formula.xlsx'
+#translation_wb='ir_translation_workbook_working_v12_ef - no IR_Fraction formula.xlsx'
 #unit_sheetname="unitConvTable"
 #startRow_unit=1
 #crit_wb="IR_uses_standards_working_v4_ef.xlsx"
@@ -456,7 +456,15 @@ flags=unique(flags[,c("IR_MLID","BeneficialUse","ActivityStartDate","ActivityIde
 dimcheck=dim(data)[1]
 data=merge(data,flags,all.x=T)
 #result$data_flags=data
+
+assoc_rej_records=subset(data, IR_DataPrep_FLAG=="REJECT" & !ResultIdentifier %in% reasons$ResultIdentifier)
+assoc_rej_records=assoc_rej_records[,!names(assoc_rej_records) %in% "IR_DataPrep_FLAG"]
+assoc_rej_records$reason="Associated with a rejected record"
+
+reasons=rbind(reasons, assoc_rej_records)
+
 result$rej_data_reasons=reasons
+
 
 if(dimcheck!=dim(data)[1]){
 	stop("ERROR: Error in applying data prep flags. Data dimension[1] has changed.")
