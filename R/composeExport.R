@@ -1,13 +1,14 @@
 #' Create dataset for secondary reviewer export from assessment dashboard
 #'
 #' Pulls columns of interest from prepped data and calculates basic exceedance summaries for site-use-parameter assessments.
-#' @param screened_data A dataframe object with all of the data screened out pre-data prep using the laboratory, media, detection-quantitation limit, and parameter translation tables. This is only required if include_rejected = TRUE.
 #' @param prepped_data A list of objects produced by dataPrep function, including toxics, conventionals, and ecoli dataframes.
 #' @param toxics_assessed A dataframe object of toxic assessments from the assessExcCounts function.
 #' @param conventionals_assessed A dataframe object of conventionals assessments from the assessExcCounts function.
-#' @param include_rejected A logical argument to specify whether the compiled data should include rejected data or not. Defaults to true.
 #' @param create_workbooks A logical argument to specify whether workbooks should be made of the specified parameters. Defaults to FALSE.
+#' @param path A folder path name in which to drop the exported workbooks. Only required if create_workbooks is true.
 #' @param params A vector of assessment parameter names to be placed in workbooks.
+#' @param include_rejected A logical argument to specify whether the export workbooks should include rejected data or not. Defaults to true.
+#' @param rejected_data A dataframe object with all of the data screened out using the laboratory, media, detection-quantitation limit, parameter translation tables, and data prep screens. This is only required if include_rejected = TRUE.
 #' @return A list composed of three dataframes: site-date-use-param records linked with aggregated daily values (if applicable), calculations, and exceedances, site-use-param summaries including sample and exceedance counts, and prepped E.coli data.
 #' @importFrom openxlsx loadWorkbook
 #' @importFrom openxlsx readWorkbook
@@ -21,16 +22,16 @@
 #blah = composeExport(screened_data = screened_data, prepped_data = result, toxics_assessed = toxics_assessed, conventionals_assessed = conventionals_assessed, include_rejected = FALSE, create_workbooks = FALSE)
 
 #' @export
-composeExport <- function(screened_data, prepped_data, toxics_assessed, conventionals_assessed, include_rejected = TRUE, create_workbooks = FALSE, params=c("Mercury","pH","Max. Temperature","Arsenic","Cadmium","Chromium","Aluminum","Total Ammonia as N","Calcium","Minimum Dissolved Oxygen","Hardness","Magnesium","Nitrate as N")){
+composeExport <- function(prepped_data, toxics_assessed, conventionals_assessed, include_rejected = TRUE, rejected_data, create_workbooks = FALSE, params=c("Mercury","pH","Max. Temperature","Arsenic","Cadmium","Chromium","Aluminum","Total Ammonia as N","Calcium","Minimum Dissolved Oxygen","Hardness","Magnesium","Nitrate as N"), path){
 
 compiled_data = list()
 
 # Workbook styles
-Identifier = openxlsx::createStyle(textDecoration = "bold", bgFill = "yellow")
-IR = openxlsx::createStyle(textDecoration = "bold", bgFill = "pink")
-Param = openxlsx::createStyle(textDecoration = "bold", bgFill = "turquoise")
-
-
+if(create_workbooks){
+  Identifier = openxlsx::createStyle(textDecoration = "bold", bgFill = "yellow")
+  IR = openxlsx::createStyle(textDecoration = "bold", bgFill = "pink")
+  Param = openxlsx::createStyle(textDecoration = "bold", bgFill = "turquoise")
+}
 # Function for creating Excel workbooks for specified parameters
 param_exp <- function(x){
   
@@ -48,6 +49,16 @@ param_exp <- function(x){
   openxlsx::conditionalFormatting(reviewer_export, sheet = "Summary", cols = 1:30, rows = 1, rule = "IR", type = "contains", style = IR)
   openxlsx::conditionalFormatting(reviewer_export, sheet = "Summary", cols = 1:30, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
   openxlsx::conditionalFormatting(reviewer_export, sheet = "Summary", cols = 1:30, rows = 1, rule = "Param", type = "contains",style = Param)
+  if(include_rejected){
+    rej_data1 = subset(rejected_data, rejected_data$CharacteristicName==x)
+    rej_data2 = subset(rejected_data, rejected_data$R3172ParameterName==x)
+    rej_dat = merge(rej_data1, rej_data2, all = TRUE)
+    openxlsx::addWorksheet(reviewer_export, sheetName = "Rejected")
+    openxlsx::writeDataTable(reviewer_export, sheet = "Rejected", rej_dat)
+    openxlsx::conditionalFormatting(reviewer_export, sheet = "Rejected", cols = 1:285, rows = 1, rule = "IR", type = "contains", style = IR)
+    openxlsx::conditionalFormatting(reviewer_export, sheet = "Rejected", cols = 1:285, rows = 1, rule = "Identifier", type = "contains",style = Identifier)
+    openxlsx::conditionalFormatting(reviewer_export, sheet = "Rejected", cols = 1:285, rows = 1, rule = "Param", type = "contains",style = Param)
+  }
   openxlsx::saveWorkbook(reviewer_export, file = paste0(x,"_IR_data_summary.xlsx"))
 }
 
@@ -73,7 +84,7 @@ dat_accepted$IR_DataPrep_FLAG = "ACCEPT"
 
 # Retain only toxic and conventional records and add WMU
 #tox_conv = subset(dat_accepted, dat_accepted$AssessmentType=="Toxic"|dat_accepted$AssessmentType=="Conventional")
-tox_conv = subset(dat_accepted, dat_accepted$AssessmentType=="Toxic"|dat_accepted$AssessmentType=="Conventional"|dat_accepted$AssessmentType=="All"|dat_accepted$BeneficialUse=="CF")
+tox_conv = subset(dat_accepted, dat_accepted$AssessmentType=="Toxic"|dat_accepted$AssessmentType=="Conventional"|dat_accepted$AssessmentType=="All")
 before = dim(tox_conv)[1]
 tox_conv = merge(tox_conv, wmus, all.x = TRUE)
 after = dim(tox_conv)[1]
@@ -113,37 +124,11 @@ summary_tc_assessed = merge(summary_tc_assessed, wmus, all.x = TRUE)
 col_order2 = summ_cols[summ_cols%in%names(summary_tc_assessed)]
 summary_tc_assessed = summary_tc_assessed[,col_order2]
 
-if(include_rejected){
-  # Screened data 
-  screened_data$IR_DataPrep_FLAG = "NOT EVALUATED"
-  screened_data$IR_DataPrep_COMMENT = "These data were screened out of the process before the data prep step."
-  screened_data$IR_Screen_FLAG = "REJECT"
-  # Data rejected from data prep
-  data_prep_rej = prepped_data$rej_data_reasons
-  data_prep_rej$IR_DataPrep_FLAG = "REJECT"
-  names(data_prep_rej)[names(data_prep_rej)=="reason"] = "IR_DataPrep_COMMENT"
-  data_prep_rej$IR_Screen_FLAG = "ACCEPT"
-  
-  dim(data_prep_rej)
-  
-  all_rejected_data = plyr::rbind.fill(screened_data, data_prep_rej)
-  
-  # All data
-  all_data = plyr::rbind.fill(all_rejected_data, tox_conv1)
-  all_data1 = all_data[,names(all_data)%in%abbrev_cols] 
-  
-  # Update summary with rejected data
-  all_rej_sum = all_rejected_data
-  all_rej_sum = unique(all_rejected_data[,colnames(all_rejected_data)%in%summ_cols])
-  all_rej_sum$IR_Cat = "REJECT"
-  summary_tc_assessed = plyr::rbind.fill(summary_tc_assessed, all_rej_sum)
-}
-
 compiled_data$toxconv_data_asmnt = all_data1
 compiled_data$summary_tc_assessed = summary_tc_assessed
 
 if(create_workbooks){
-  setwd(choose.dir(getwd(),caption = "Select folder in which to save exports"))
+  setwd(path)
   lapply(params, FUN=param_exp)
   
   # restoparams = unique(c(as.character(all_data1$CharacteristicName[!all_data1$CharacteristicName%in%params]),as.character(all_data1$R3172ParameterName[!all_data1$R3172ParameterName%in%params])))
