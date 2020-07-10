@@ -51,6 +51,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   
   # Obtain unique use/criterion 
   uses_stds <- unique(data_raw[c("BeneficialUse","CriterionLabel","NumericCriterion")])
+  uses_stds$NumericCriterion==as.numeric(uses_stds$NumericCriterion)
   
   # Remove duplicates from data
   data_raw <- data_raw[,!names(data_raw)%in%c("AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","CriterionLabel","NumericCriterion")]
@@ -78,7 +79,9 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     # Separate rec and non-rec season samples
     data_rec <- data_raw[data_raw$Rec_Season=="Yes",]
     data_nonrec <- data_raw[data_raw$Rec_Season=="No",]
-    data_nonrec$IR_Cat <- "Not Assessed - Out of Rec Season"
+    if(dim(data_nonrec)[1]>0){
+      data_nonrec$IR_Cat <- "Not Assessed - Out of Rec Season"
+    }
     
     # Place non-rec season samples in own REJECT object
     ecoli_assessments$non_assessed_data <- data_nonrec
