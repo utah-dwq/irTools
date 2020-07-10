@@ -51,7 +51,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   
   # Obtain unique use/criterion 
   uses_stds <- unique(data_raw[c("BeneficialUse","CriterionLabel","NumericCriterion")])
-  uses_stds$NumericCriterion==as.numeric(uses_stds$NumericCriterion)
+  uses_stds$NumericCriterion=as.numeric(uses_stds$NumericCriterion)
   
   # Remove duplicates from data
   data_raw <- data_raw[,!names(data_raw)%in%c("AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","CriterionLabel","NumericCriterion")]
