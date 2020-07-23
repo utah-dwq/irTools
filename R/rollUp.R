@@ -15,10 +15,11 @@
 rollUp <- function(data, group_vars=c("ASSESS_ID","BeneficialUse","R3172ParameterName"), cat_var="IR_Cat", expand_uses=TRUE, print=TRUE){
 
 ##### Testing setup
-#data=list(prelim_asmnts)
-#group_vars = c("BEN_CLASS","IR_MLID","IR_MLNAME","IR_Lat","IR_Long","ASSESS_ID","AU_NAME", "R3172ParameterName","BeneficialUse","pol_ind")
+#data=list(asmnt)
+#group_vars = c("ASSESS_ID","AU_NAME")
 #expand_uses=FALSE
-#cat_var="IR_Cat"
+#print=FALSE
+#cat_var="AssessCat_auto"
 #####
 
 # Combine all assessed data into one dataframe for roll up
@@ -39,6 +40,7 @@ names(dat_all)[names(dat_all)==cat_var]="IR_Cat"
 dat_all=as.data.frame(dat_all)
 dat_all=subset(dat_all, !is.na(dat_all$IR_Cat))
 # Hierarchy of decision making within each subset: NS>TMDLa>IDEX>IDNE>FS
+dat_all$AssessCat=NA
 dat_all$AssessCat[dat_all$IR_Cat=="NS"]<-5
 #dat_all$AssessCat[dat_all$IR_Cat=="TMDLa"]<- 4 - (JV) turning off TMDL approved for now. Not sure if we want to include this here yet or as a sort of "secondary review" type step
 dat_all$AssessCat[dat_all$IR_Cat=="IDEX"]<-3
