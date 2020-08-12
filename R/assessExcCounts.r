@@ -37,7 +37,7 @@ assessExcCounts=function(data, min_n, max_exc_count=NA, max_exc_pct=NA, max_exc_
 	
 	
 	data=within(data,{
-		max_allow_exc=ceiling(data$SampleCount*max_exc_pct/100) #Note, will produce all NAs if is.na(max_exc_pct)
+		max_allow_exc=round(data$SampleCount*max_exc_pct/100) #Note, will produce all NAs if is.na(max_exc_pct)
 		max_allow_exc_id=ceiling(SampleCount*max_exc_pct_id/100) #Note, will produce all NAs if is.na(max_exc_pct_id)
 	})
 	
