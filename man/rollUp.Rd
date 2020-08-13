@@ -4,9 +4,13 @@
 \alias{rollUp}
 \title{Summarize assessments to different spatial resolutions}
 \usage{
-rollUp(data, group_vars = c("ASSESS_ID", "BeneficialUse",
-  "R3172ParameterName"), cat_var = "IR_Cat", expand_uses = TRUE,
-  print = TRUE)
+rollUp(
+  data,
+  group_vars = c("ASSESS_ID", "BeneficialUse", "R3172ParameterName"),
+  cat_var = "IR_Cat",
+  expand_uses = TRUE,
+  print = TRUE
+)
 }
 \arguments{
 \item{data}{A list of assessment output objects to be rolled up to a different spatial resolution.}

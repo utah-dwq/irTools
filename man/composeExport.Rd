@@ -4,27 +4,35 @@
 \alias{composeExport}
 \title{Create dataset for secondary reviewer export from assessment dashboard}
 \usage{
-composeExport(screened_data, prepped_data, toxics_assessed,
-  conventionals_assessed, include_rejected = TRUE,
-  create_workbooks = FALSE, params = c("Mercury", "pH",
-  "Max. Temperature", "Arsenic", "Cadmium", "Chromium", "Aluminum",
-  "Total Ammonia as N", "Calcium", "Minimum Dissolved Oxygen", "Hardness",
-  "Magnesium", "Nitrate as N"))
+composeExport(
+  prepped_data,
+  toxics_assessed,
+  conventionals_assessed,
+  include_rejected = TRUE,
+  rejected_data,
+  create_workbooks = FALSE,
+  params = c("Mercury", "pH", "Max. Temperature", "Arsenic", "Cadmium", "Chromium",
+    "Aluminum", "Total Ammonia as N", "Calcium", "Minimum Dissolved Oxygen", "Hardness",
+    "Magnesium", "Nitrate as N"),
+  path
+)
 }
 \arguments{
-\item{screened_data}{A dataframe object with all of the data screened out pre-data prep using the laboratory, media, detection-quantitation limit, and parameter translation tables. This is only required if include_rejected = TRUE.}
-
 \item{prepped_data}{A list of objects produced by dataPrep function, including toxics, conventionals, and ecoli dataframes.}
 
 \item{toxics_assessed}{A dataframe object of toxic assessments from the assessExcCounts function.}
 
 \item{conventionals_assessed}{A dataframe object of conventionals assessments from the assessExcCounts function.}
 
-\item{include_rejected}{A logical argument to specify whether the compiled data should include rejected data or not. Defaults to true.}
+\item{include_rejected}{A logical argument to specify whether the export workbooks should include rejected data or not. Defaults to true.}
+
+\item{rejected_data}{A dataframe object with all of the data screened out using the laboratory, media, detection-quantitation limit, parameter translation tables, and data prep screens. This is only required if include_rejected = TRUE.}
 
 \item{create_workbooks}{A logical argument to specify whether workbooks should be made of the specified parameters. Defaults to FALSE.}
 
 \item{params}{A vector of assessment parameter names to be placed in workbooks.}
+
+\item{path}{A folder path name in which to drop the exported workbooks. Only required if create_workbooks is true.}
 }
 \value{
 A list composed of three dataframes: site-date-use-param records linked with aggregated daily values (if applicable), calculations, and exceedances, site-use-param summaries including sample and exceedance counts, and prepped E.coli data.

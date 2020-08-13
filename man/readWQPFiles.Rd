@@ -4,8 +4,14 @@
 \alias{readWQPFiles}
 \title{Read WQP Files}
 \usage{
-readWQPFiles(file_select, narrowresult_file, sites_file, activity_file,
-  detquantlim_file, orph_check = TRUE)
+readWQPFiles(
+  file_select,
+  narrowresult_file,
+  sites_file,
+  activity_file,
+  detquantlim_file,
+  orph_check = TRUE
+)
 }
 \arguments{
 \item{file_select}{Logical. If TRUE, navigation window will pop up for manual selection of files. If FALSE, function requires full path names to files.}

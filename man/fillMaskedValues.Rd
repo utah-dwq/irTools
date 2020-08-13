@@ -4,11 +4,18 @@
 \alias{fillMaskedValues}
 \title{Select quantitation limits, determine detection condition, and fill masked values as appropriate.}
 \usage{
-fillMaskedValues(results, detquantlim, translation_wb,
+fillMaskedValues(
+  results,
+  detquantlim,
+  translation_wb,
   detLimitTypeTable_sheetname = "detLimitTypeTable",
   unitConvTable_sheetname = "unitConvTable",
-  detLimitTypeTable_startRow = 2, unitConvTable_startRow = 1,
-  unitConvTable_startCol = 1, lql_fac = 0.5, uql_fac = 1)
+  detLimitTypeTable_startRow = 2,
+  unitConvTable_startRow = 1,
+  unitConvTable_startCol = 1,
+  lql_fac = 0.5,
+  uql_fac = 1
+)
 }
 \arguments{
 \item{results}{A WQP results (must include narrow result, merged, wide objects OK) R-object name.}

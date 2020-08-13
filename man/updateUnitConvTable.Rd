@@ -4,8 +4,13 @@
 \alias{updateUnitConvTable}
 \title{Update IR unit conversion table}
 \usage{
-updateUnitConvTable(data, translation_wb, sheetname = "unitConvTable",
-  startRow = 1, startCol = 1)
+updateUnitConvTable(
+  data,
+  translation_wb,
+  sheetname = "unitConvTable",
+  startRow = 1,
+  startCol = 1
+)
 }
 \arguments{
 \item{data}{A merged WQP results-activity R-object that has had detection limit values filled (passed through fillMaskedValues function) and numeric criteria assigned (passed through assignCriteria function).}

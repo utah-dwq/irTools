@@ -4,8 +4,12 @@
 \alias{autoValidateWQPsites}
 \title{Auto-validate USEPA WQP stations}
 \usage{
-autoValidateWQPsites(sites_object, master_site_file, waterbody_type_file,
-  correct_longitude = FALSE)
+autoValidateWQPsites(
+  sites_object,
+  master_site_file,
+  waterbody_type_file,
+  correct_longitude = FALSE
+)
 }
 \arguments{
 \item{sites_object}{Sites object queried from WQP to be reviewed.}

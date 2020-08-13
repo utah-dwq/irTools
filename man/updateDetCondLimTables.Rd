@@ -4,11 +4,17 @@
 \alias{updateDetCondLimTables}
 \title{Update detection condition and limit type tables}
 \usage{
-updateDetCondLimTables(results, detquantlim, translation_wb,
+updateDetCondLimTables(
+  results,
+  detquantlim,
+  translation_wb,
   detConditionTable_sheetname = "detConditionTable",
-  detConditionTable_startRow = 2, detConditionTable_startCol = 1,
+  detConditionTable_startRow = 2,
+  detConditionTable_startCol = 1,
   detLimitTypeTable_sheetname = "detLimitTypeTable",
-  detLimitTypeTable_startRow = 2, detLimitTypeTable_startCol = 1)
+  detLimitTypeTable_startRow = 2,
+  detLimitTypeTable_startCol = 1
+)
 }
 \arguments{
 \item{results}{A WQP results (must include narrow result, merged, wide objects OK) R-object name.}

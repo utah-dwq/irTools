@@ -4,9 +4,16 @@
 \alias{prepAttains}
 \title{Prepares rolled up AU-Use and AU-Use-Parameter assessments for ATTAINS upload}
 \usage{
-prepAttains(current_assessment, trans_wb, pull_attains = TRUE,
-  assess_path, param_path, last_reporting_cycle, current_reporting_cycle,
-  filesave = TRUE)
+prepAttains(
+  current_assessment,
+  trans_wb,
+  pull_attains = TRUE,
+  assess_path,
+  param_path,
+  last_reporting_cycle,
+  current_reporting_cycle,
+  filesave = TRUE
+)
 }
 \arguments{
 \item{current_assessment}{A list of assessment output objects to be rolled up to the AU-use and (for cat 5 only) AU-use-parameter resolutions.}

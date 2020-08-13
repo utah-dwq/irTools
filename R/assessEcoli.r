@@ -6,6 +6,7 @@
 #' @param SeasonStartDate A string in the form "mm-dd" to define beginning of rec season over which to perform assessments.
 #' @param SeasonEndDate A string in the form "mm-dd" to define end of rec season over which to perform assessments.
 #' @param rec_season Logical. If TRUE, restricts assessments to recreation season data.
+#' @param max_exc_pct Maximum allowable exceedance percentage for full support (exceedance pcts > max_exc_pct are considered not supporting - one of max_exc_count or max_exc_pct must be specified
 #' @return Returns list with three objects: assessments from all Scenarios on all data, and ecoli assessments aggregated over scenario and year and rolled up to site level.
 #' @importFrom lubridate year
 #' @importFrom lubridate month
@@ -31,7 +32,7 @@
 # test2 <- unique_mlids2[!unique_mlids2%in%unique_mlids1] # Empty
 
 
-assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31"){
+assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31", max_exc_pct){
  
   # data <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
   # SeasonStartDate="05-01"
@@ -50,7 +51,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   gmean <- function(x){exp(mean(log(x)))}
   
   # Obtain unique use/criterion 
-  uses_stds <- unique(data_raw[c("BeneficialUse","CriterionLabel","NumericCriterion")])
+  uses_stds <- unique(data_raw[,c("BeneficialUse","CriterionLabel","NumericCriterion")])
   uses_stds$NumericCriterion=as.numeric(uses_stds$NumericCriterion)
   
   # Remove duplicates from data
@@ -108,6 +109,13 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     consec.groups <- sum(ceiling(diff(consecutive.groupings)/2)) # Determine length of each sequential group, divide by two, and round up to get the max number of samples occurring at least 48 hours apart
     return(consec.groups)
   }
+  
+  # Rounding function to ensure if 10% of the sample count is x.5 or higher, it will round up, and if it's x.4 or lower, it will round down.
+  rounding = function(x,max_exc_pct){
+    y = x*max_exc_pct/100+0.5
+    z = floor(y)
+    return(z)
+  }
 
 ##### SCENARIO A #####
   
@@ -117,7 +125,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     out <- x[1,c("IR_MLID","BeneficialUse","Year")]
     out$Scenario = "A"
     out$SampleCount = length(x$ActivityStartDate)
-    out$ExcCountLim = ifelse(out_48_hr>=5,ceiling(out_48_hr*.1),1)
+    out$ExcCountLim = ifelse(out_48_hr>=5,rounding(out_48_hr,max_exc_pct),1)
     out$ExcCount = length(x$IR_Value[x$IR_Value>stdcrit])
     if(out_48_hr<5){
       out$IR_Cat = ifelse(out$ExcCount>=out$ExcCountLim,"IDEX","IDNE")

@@ -4,9 +4,16 @@
 \alias{dataPrep}
 \title{Final data prep step before assessments}
 \usage{
-dataPrep(data, translation_wb, unit_sheetname = "unitConvTable", crit_wb,
-  cf_formulas_sheetname, startRow_unit = 1, startRow_formulas = 1,
-  split_agg_tds = TRUE)
+dataPrep(
+  data,
+  translation_wb,
+  unit_sheetname = "unitConvTable",
+  crit_wb,
+  cf_formulas_sheetname,
+  startRow_unit = 1,
+  startRow_formulas = 1,
+  split_agg_tds = TRUE
+)
 }
 \arguments{
 \item{data}{A merged, translated, and numeric criteria assigned WQP results R-object. Target units for conversions are defined by units associated with assigned numeric critera.}

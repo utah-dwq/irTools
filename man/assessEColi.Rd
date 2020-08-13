@@ -4,8 +4,13 @@
 \alias{assessEColi}
 \title{Assess E.coli data at the year/site level.}
 \usage{
-assessEColi(data, rec_season = TRUE, SeasonStartDate = "05-01",
-  SeasonEndDate = "10-31")
+assessEColi(
+  data,
+  rec_season = TRUE,
+  SeasonStartDate = "05-01",
+  SeasonEndDate = "10-31",
+  max_exc_pct
+)
 }
 \arguments{
 \item{data}{A prepped dataframe object (likely the ecoli object within the prepped_data list--prepped_data$ecoli) containing e.coli data at the site/use/parameter level with standards assigned.}
@@ -15,6 +20,8 @@ assessEColi(data, rec_season = TRUE, SeasonStartDate = "05-01",
 \item{SeasonStartDate}{A string in the form "mm-dd" to define beginning of rec season over which to perform assessments.}
 
 \item{SeasonEndDate}{A string in the form "mm-dd" to define end of rec season over which to perform assessments.}
+
+\item{max_exc_pct}{Maximum allowable exceedance percentage for full support (exceedance pcts > max_exc_pct are considered not supporting - one of max_exc_count or max_exc_pct must be specified}
 }
 \value{
 Returns list with three objects: assessments from all Scenarios on all data, and ecoli assessments aggregated over scenario and year and rolled up to site level.

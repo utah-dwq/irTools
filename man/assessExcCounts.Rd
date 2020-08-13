@@ -4,8 +4,15 @@
 \alias{assessExcCounts}
 \title{Perform assessments based on sample & exceedance counts (conventional & toxic assessments)}
 \usage{
-assessExcCounts(data, min_n, max_exc_count = NA, max_exc_pct = NA,
-  max_exc_count_id = NA, max_exc_pct_id = NA, id_cols = c())
+assessExcCounts(
+  data,
+  min_n,
+  max_exc_count = NA,
+  max_exc_pct = NA,
+  max_exc_count_id = NA,
+  max_exc_pct_id = NA,
+  id_cols = c()
+)
 }
 \arguments{
 \item{data}{Site-use-parameter-criterion specific sample and  exceedance counts(i.e. output from countExceedances() )}
