@@ -124,8 +124,9 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     stdcrit = uses_stds$NumericCriterion[uses_stds$BeneficialUse==x$BeneficialUse[1]&uses_stds$CriterionLabel=="max_crit"]
     out <- x[1,c("IR_MLID","BeneficialUse","Year")]
     out$Scenario = "A"
-    out$SampleCount = length(x$ActivityStartDate)
-    out$ExcCountLim = ifelse(out_48_hr>=5,rounding(out_48_hr,max_exc_pct),1)
+    ncount = length(x$ActivityStartDate)
+    out$SampleCount = ncount
+    out$ExcCountLim = ifelse(out_48_hr>=5,rounding(ncount,max_exc_pct),1)
     out$ExcCount = length(x$IR_Value[x$IR_Value>stdcrit])
     if(out_48_hr<5){
       out$IR_Cat = ifelse(out$ExcCount>=out$ExcCountLim,"IDEX","IDNE")
