@@ -20,7 +20,8 @@
 # prepped_data = result
 
 #blah = composeExport(screened_data = screened_data, prepped_data = result, toxics_assessed = toxics_assessed, conventionals_assessed = conventionals_assessed, include_rejected = FALSE, create_workbooks = FALSE)
-
+#"Minimum Dissolved Oxygen","pH",
+# blah = composeExport(prepped_data, toxics_assessed, conventionals_assessed, include_rejected = TRUE, rejected_data = all_rejected_records, create_workbooks = TRUE, params = c("Aluminum","Arsenic","Boron","Cadmium","Copper","E. coli","Max. Temperature","Iron","Lead","Nitrates as N","Selenium","Total Ammonia as N","Total Dissolved Solids","Zinc","Total Phosphorus as P","Radium 226, 228 (Combined)"), path = path)
 #' @export
 composeExport <- function(prepped_data, toxics_assessed, conventionals_assessed, include_rejected = TRUE, rejected_data, create_workbooks = FALSE, params=c("Mercury","pH","Max. Temperature","Arsenic","Cadmium","Chromium","Aluminum","Total Ammonia as N","Calcium","Minimum Dissolved Oxygen","Hardness","Magnesium","Nitrate as N"), path){
 
@@ -60,11 +61,13 @@ param_exp <- function(x){
     openxlsx::conditionalFormatting(reviewer_export, sheet = "Rejected", cols = 1:285, rows = 1, rule = "Param", type = "contains",style = Param)
   }
   openxlsx::saveWorkbook(reviewer_export, file = paste0(x,"_IR_data_summary.xlsx"))
+  rm(list = ls())
+  gc()
 }
 
 ### Load watershed management units
 load(system.file("extdata", "wmus_aus.Rdata", package = "irTools"))
-wmus = unique(wmus)
+# wmus = unique(au_wmu)
 
 ### Upload export translation workbook
 exp_file=system.file("extdata", "IR_export_translations.xlsx", package = "irTools")
