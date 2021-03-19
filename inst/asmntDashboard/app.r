@@ -66,7 +66,7 @@ ui <-fluidPage(
 			figuresModUI('figures')
 		),
 		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "View & download data"), value=4,
-			fluidRow(downloadButton('exp_dt', label = "Download data & assessment summary", icon='download', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')),
+			fluidRow(downloadButton('exp_dt', label = "Download data & assessment summary", icon=icon('download'), style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')),
 			br(),
 			fluidRow(div(DT::DTOutput("dt"), style = list("font-size:65%")))
 		),
