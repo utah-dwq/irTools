@@ -278,7 +278,6 @@ server <- function(input, output, session){
 
 		one_profile=unique(one_profile[,c("DataLoggerLine","ActivityIdentifier","ActivityStartDate","R3172ParameterName","IR_Value","IR_Unit","MonitoringLocationIdentifier")])
 
-
 		profilePlot(one_profile, parameter = "R3172ParameterName",
 			units = "IR_Unit",
 			depth = "Profile depth", do = "Dissolved oxygen (DO)",
