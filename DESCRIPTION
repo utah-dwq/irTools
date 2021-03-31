@@ -7,7 +7,7 @@ Depends: R (>= 3.5.0)
 YEAR: 2018
 COPYRIGHT HOLDER: Utah Division of Water Quality
 License: MIT + file LICENSE
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Encoding: UTF-8
 Imports:
 	dplyr,
