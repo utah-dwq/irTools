@@ -49,11 +49,10 @@ wqpdat$detquantlim <- read.csv(detquantlim_file, colClasses=c("DetectionQuantita
   
 ### Check for duplicates ###
 print("----REMOVING EXACT DUPLICATES-----")
-attach(wqpdat)
 narrowresult <- unique(narrowresult)
-sites <- unique(sites)
+wqpdat$sites <- unique(wqpdat$sites)
 activity <- unique(activity)
-detquantlim <- unique(detquantlim)
+wqpdat$detquantlim <- unique(wqpdat$detquantlim)
 
 ### Create merged_results object ###
 wqpdat$merged_results=merge(narrowresult,activity,all.x=T)
