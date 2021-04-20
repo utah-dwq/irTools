@@ -10,6 +10,7 @@
 #' @importFrom sf st_drop_geometry
 #' @importFrom DT renderDT
 #' @importFrom DT datatable
+#' @importFrom shinyWidgets pickerInput
 
 #' @export
 siteValApp=function(){
