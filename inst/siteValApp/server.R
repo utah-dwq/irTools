@@ -395,38 +395,39 @@ observeEvent(input$reject, {
 			"Select site(s) in map & table to make a review.")
 	)}else{
 		showModal(modalDialog(title="OK to REJECT site(s)?",size="l", footer=NULL,
-		DT::renderDT({
-			DT::datatable(reactive_objects$table_selected_table,
-				selection='none', rownames=FALSE, filter="none",
-				options = list(scrollY = TRUE, paging = FALSE, scrollX=TRUE, dom="t")
-			)
-		}),
-		br(),
-		selectInput("reject_reason", label="Reason for rejecting (applied to all selected sites)", choices=c('',reactive_objects$reject_reasons[order(reactive_objects$reject_reasons)]), selected=''),
-		textInput('reject_comment', 'Additional comments & documentation'),
-		actionButton('reject_ok', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('minus-circle')),
-		actionButton('reject_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
+			DT::renderDT({
+				DT::datatable(reactive_objects$table_selected_table,
+					selection='none', rownames=FALSE, filter="none",
+					options = list(scrollY = TRUE, paging = FALSE, scrollX=TRUE, dom="t")
+				)
+			}),
+			br(),
+			shinyWidgets::pickerInput("reject_reason", label="Reason for rejecting (applied to all selected sites)", choices=c('',reactive_objects$reject_reasons[order(reactive_objects$reject_reasons)]), selected=''),
+			textInput('reject_comment', 'Additional comments & documentation'),
+			actionButton('reject_ok', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('minus-circle')),
+			actionButton('reject_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
 		))
 	}
 })
+
 observeEvent(input$rejres_ok, {
 	if(length(reactive_objects$table_selected_mlids)==0){
 		showModal(modalDialog(title="Error.",size="l",easyClose=T,
 			"Select site(s) in map & table to make a review.")
 	)}else{
 		showModal(modalDialog(title="OK to REJECT site(s)?",size="l", footer=NULL,
-		DT::renderDT({
-			DT::datatable(reactive_objects$table_selected_table,
-				selection='none', rownames=FALSE, filter="none",
-				options = list(scrollY = TRUE, paging = FALSE, scrollX=TRUE, dom="t")
-			)
-		}),
-		br(),
-		selectInput("reject_reason", label="Reason for rejecting (applied to all selected sites)", choices=c('',reactive_objects$reject_reasons[order(reactive_objects$reject_reasons)]), selected=''),
-		textInput('reject_comment', 'Additional comments & documentation'),
-		actionButton('reject_ok', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('minus-circle')),
-		actionButton('reject_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
-		))
+			DT::renderDT({
+				DT::datatable(reactive_objects$table_selected_table,
+					selection='none', rownames=FALSE, filter="none",
+					options = list(scrollY = TRUE, paging = FALSE, scrollX=TRUE, dom="t")
+				)
+			}),
+			br(),
+			shinyWidgets::pickerInput("reject_reason", label="Reason for rejecting (applied to all selected sites)", choices=c('',reactive_objects$reject_reasons[order(reactive_objects$reject_reasons)]), selected=''),
+			textInput('reject_comment', 'Additional comments & documentation'),
+			actionButton('reject_ok', 'Reject', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('minus-circle')),
+			actionButton('reject_cancel', 'Cancel', style='color: #fff; background-color: #337ab7; border-color: #2e6da4;font-size:120%', icon=icon('window-close'))
+			))
 	}
 })
 
@@ -485,9 +486,9 @@ observeEvent(input$merge, {
 			)
 		}),
 		br(),
-		selectInput("merge_mlid", label="MLID to merge TO:", choices=reactive_objects$table_selected_mlids),
+		shinyWidgets::pickerInput("merge_mlid", label="MLID to merge TO:", choices=reactive_objects$table_selected_mlids),
 		renderUI({
-			selectInput("merge_mlname", label="ML name to merge TO:", choices=reactive_objects$table_selected_table$MonitoringLocationName,
+			shinyWidgets::pickerInput("merge_mlname", label="ML name to merge TO:", choices=reactive_objects$table_selected_table$MonitoringLocationName,
 				selected=reactive_objects$merge_select_mlname)
 		}),
 		textInput('merge_comment', 'Additional comments & documentation'),
