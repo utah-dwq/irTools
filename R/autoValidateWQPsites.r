@@ -289,9 +289,9 @@ if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_n
 reason_n=ifelse(stn_new$OrganizationIdentifier%in%c("OST_SHPD_TEST","DEMOTEST"),"Organization identifier indicates test/demo",NA)
 if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
-# Reject datums that != NAD27, NAD83, or WGS84 or is UNKWN
-reason_n=ifelse(!stn_new$HorizontalCoordinateReferenceSystemDatumName %in% c('NAD27','NAD83','WGS84'),"Horizontal datum not NAD27, NAD83, or WGS84 and/or is unknown",NA)
-if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
+# # Reject datums that != NAD27, NAD83, or WGS84 or is UNKWN
+# reason_n=ifelse(!stn_new$HorizontalCoordinateReferenceSystemDatumName %in% c('NAD27','NAD83','WGS84'),"Horizontal datum not NAD27, NAD83, or WGS84 and/or is unknown",NA)
+# if(length(reason_n)>0){rej_reasons_att=rbind(rej_reasons_att,na.omit(cbind(stn_new$MonitoringLocationIdentifier,reason_n)))}
 
 #Reject sites with ConstructionDateText populated
 reason_n=ifelse(!is.na(stn_new$ConstructionDateText),"Construction date text populated",NA)

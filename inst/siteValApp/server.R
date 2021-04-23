@@ -296,7 +296,7 @@ observeEvent(reactive_objects$selected_sites, ignoreNULL=F, {
 output$selected_sites_table=DT::renderDT({
 	req(reactive_objects$selected_sites)
 	reactive_objects$selected_sites_table=as.data.frame(sf::st_drop_geometry(reactive_objects$map_sites[reactive_objects$map_sites$MonitoringLocationIdentifier %in% reactive_objects$selected_sites,
-		c("MonitoringLocationIdentifier","OrganizationIdentifier","MonitoringLocationName","MonitoringLocationTypeName",
+		c("UID","MonitoringLocationIdentifier","OrganizationIdentifier","MonitoringLocationName","MonitoringLocationTypeName",
 		  "IR_FLAG_REASONS","IR_FLAG", "OrganizationFormalName","ProviderName","IR_MLID","IR_MLNAME","ASSESS_ID",
 		  "AU_NAME","AU_Type","Water_Type","R317Descrp","ss_R317Descrp",
 		  "BEN_CLASS","LatitudeMeasure","LongitudeMeasure","IR_Lat","IR_Long","IR_COMMENT", "ReviewComment")]))
