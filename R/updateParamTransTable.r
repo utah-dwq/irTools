@@ -3,20 +3,20 @@
 #' This function identifies parameter/fraction/unit/method combinations in WQP data for which an IR translation has not yet been defined and appends them to the translation table for review.
 #'
 #' @param data A WQP results (merged or narrow result) R-object
-#' @param detquantlim WQP detection/quantitation limit object
 #' @param translation_wb Full path and filename for IR translation workbook
+#' @param standards_wb Full path and filename for IR standards workbook
 
 #' @param paramTransTable_sheetname Name of sheet in workbook holding parameter translation table. Defaults to "paramTransTable".
-#' @param paramTransTable_startRow Row to start reading the paramTransTable excel sheet from (in case additional headers have been added). Defaults to 4.
-#' @param paramTransTable_startCol Col to start writing the paramTransTable excel sheet to (to the right of all formula based columns). Defaults to 16.
-
-#' @param WQPParamCASID_sheetname Name of sheet in workbook holding parameter/CAS ID table. Defaults to "WQPParamCASID".
-#' @param WQPParamCASID_startRow Row to start reading the WQPParamCASID excel sheet from (in case additional headers have been added). Defaults to 3.
-#' @param WQPParamCASID_startCol Col to start writing the WQPParamCASID excel sheet to (to the right of all formula based columns). Defaults to 1.
+#' @param paramTransTable_startRow Row to start reading the paramTransTable excel sheet from (in case additional headers have been added). Defaults to 1.
+#' @param paramTransTable_startCol Col to start writing the paramTransTable excel sheet to (to the right of all formula based columns). Defaults to 1.
+#' 
+#' @param CASLookup_sheetname Name of sheet in workbook holding CAS lookup table from WQP. Defaults to "CASLookup".
+#' @param CASLookup_startRow Row to start reading the CASLookup excel sheet from (in case additional headers have been added). Defaults to 2.
+#' @param CASLookup_startCol Col to start writing the CASLookup excel sheet to (to the right of all formula based columns). Defaults to 1.
 
 #' @param paramFractionGroup_sheetname Name of sheet in workbook holding the WQP fraction names. Defaults to "paramFractionGroup".
-#' @param paramFractionGroup_startRow Row to start reading the paramFractionGroup excel sheet from (in case additional headers have been added). Defaults to 3.
-#' @param paramFractionGroup_startCol Col to start writing the paramFractionGroup excel sheet to (to the right of all formula based columns, note col w/ header 'spacer' in table). Defaults to 3.
+#' @param paramFractionGroup_startRow Row to start reading the paramFractionGroup excel sheet from (in case additional headers have been added). Defaults to 2.
+#' @param paramFractionGroup_startCol Col to start writing the paramFractionGroup excel sheet to (to the right of all formula based columns, note col w/ header 'spacer' in table). Defaults to 2.
 
 #' @return Appends any new parameter/fraction/unit combinations in WQP data to translation_wb. This updates the input translation_wb with those new rows with system date in the "DateAdded" column.
 
@@ -28,97 +28,76 @@
 #' @importFrom openxlsx getSheetNames
 
 #' @export
-updateParamTrans=function(data, detquantlim=detquantlim, translation_wb,
-						  paramTransTable_sheetname="paramTransTable", paramTransTable_startRow=4, paramTransTable_startCol=16,
-						  WQPParamCASID_sheetname="WQPParamCASID", WQPParamCASID_startRow=2, WQPParamCASID_startCol=1,
-						  paramFractionGroup_sheetname="paramFractionGroup", paramFractionGroup_startRow=3, paramFractionGroup_startCol=2
+updateParamTrans=function(data, translation_wb, standards_wb,
+						  paramTransTable_sheetname="paramTransTable", paramTransTable_startRow=1, paramTransTable_startCol=1,
+						  CASLookup_sheetname="CASLookup", CASLookup_startRow=2, CASLookup_startCol=1,
+						  paramFractionGroup_sheetname="paramFractionGroup", paramFractionGroup_startRow=2, paramFractionGroup_startCol=2
 						){
 
 ###################						  
 ####TESTING SETUP
-##translation_wb="P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\03translation\\IR_translation_workbook.xlsx"
-#data=mrf_sub
-#datatype="object"
-#paramTransTable_sheetname="paramTransTable"
-#paramTransTable_startRow=4
-#paramTransTable_startCol=16
-#WQPParamCASID_sheetname="WQPParamCASID"
-#WQPParamCASID_startRow=2
-#WQPParamCASID_startCol=1
-#paramFractionGroup_sheetname="paramFractionGroup"
-#paramFractionGroup_startRow=3
-#paramFractionGroup_startCol=2
+# translation_wb = "C:\\Users\\ehinman\\Desktop\\translation_workbook_2022_redo_draft.xlsx"
+
 ##################
 
-
-#Reading translation workbook and table
+# Read in translation workbook
 trans_wb=openxlsx::loadWorkbook(translation_wb)
 sheetnames=openxlsx::getSheetNames(translation_wb)
 for(n in 1:length(sheetnames)){
-	openxlsx::removeFilter(trans_wb, sheetnames[n])
-	}
+  openxlsx::removeFilter(trans_wb, sheetnames[n])
+}
 
-param_translation=data.frame(openxlsx::readWorkbook(trans_wb, sheet=paramTransTable_sheetname, startRow=paramTransTable_startRow, detectDates=TRUE))
-param_translation=param_translation[,paramTransTable_startCol:dim(param_translation)[2]]
+# Open CAS Lookup table from WQP
+caslookup = data.frame(openxlsx::readWorkbook(trans_wb, sheet=CASLookup_sheetname, startRow=CASLookup_startRow, detectDates=TRUE))
+names(caslookup)[names(caslookup)=="Name"] = "CharacteristicName"
+names(caslookup)[names(caslookup)=="CAS.Number"] = "CAS_WQP"
 
-param_cas=data.frame(openxlsx::readWorkbook(trans_wb, sheet=WQPParamCASID_sheetname, startRow=WQPParamCASID_startRow, detectDates=TRUE))
-param_cas=param_cas[,WQPParamCASID_startCol:dim(param_cas)[2]]
+# Match up CAS numbers to parameter names
+chars = data.frame("CharacteristicName" = unique(update_table_data$CharacteristicName))
+chars$InData = "Y"
+chars_cas = merge(chars, caslookup, all.x = TRUE)
+chars_cas1 = chars_cas[,names(chars_cas)%in%c("CharacteristicName","CAS_WQP","InData")]
 
-
-#Store input col names for future sorting
-cnames=names(param_translation)
-cnames_u=names(param_cas)
-
-#Remove in current dataset column
-param_translation=param_translation[,!names(param_translation)%in%"InData"]
-param_cas=param_cas[,!names(param_cas)%in%"InData"]
-
-#Merge detquantlim to data
-data_dql=merge(data,detquantlim,all.x=T)
-
-#Fill is.na units in data w/detquantlim units
-data_dql$ResultMeasure.MeasureUnitCode[is.na(data_dql$ResultMeasure.MeasureUnitCode)]=data_dql$DetectionQuantitationLimitMeasure.MeasureUnitCode[is.na(data_dql$ResultMeasure.MeasureUnitCode)]
-
-#Identifying unique parameters in input data
-parameters=data.frame(unique(data_dql[,c("ActivityMediaName","CharacteristicName","MethodSpecificationName","ResultSampleFractionText","ResultMeasure.MeasureUnitCode","ResultAnalyticalMethod.MethodIdentifier","ResultAnalyticalMethod.MethodIdentifierContext","ResultAnalyticalMethod.MethodName","ResultAnalyticalMethod.MethodQualifierTypeName","MethodDescriptionText")]))
-#Add in current dataset column to parameters before merging
-parameters$InData="Y"
-parameters[parameters==""]=NA #Set blanks to NA for merge
-
-parameters_unique=data.frame(unique(data_dql[,"CharacteristicName"]))
-names(parameters_unique)="CharacteristicName"
-parameters_unique$InData="Y"
-parameters_unique[parameters_unique==""]=NA #Set blanks to NA for merge
+# Open paramTransTable
+paramtrans = data.frame(openxlsx::readWorkbook(trans_wb, sheet = "paramTransTable", startRow = paramTransTable_startRow))
+paramtrans$DateAdded = as.Date(paramtrans$DateAdded, origin = "1899-12-30")
+paramtrans = paramtrans[,!names(paramtrans)%in%c("InData","CAS_WQP","CAS_check","InStandards")]
 
 #Merge parameters w/ translation table (all=T (full outer join) gives a new translation table with all rows in translation table + any new parameters)
-params_trans_merge=merge(parameters,param_translation,all=T)
+param_new = merge(paramtrans, chars_cas1, all = TRUE)
+param_new$CAS_check = ifelse(param_new$CAS_DWQ==param_new$CAS_WQP, "same","different")
+param_new$CAS_check = ifelse(is.na(param_new$CAS_DWQ)&!is.na(param_new$CAS_WQP),"WQP CAS with no DWQ CAS", param_new$CAS_check)
+param_new$CAS_check = ifelse(is.na(param_new$CAS_WQP)&!is.na(param_new$CAS_DWQ),"DWQ CAS with no WQP CAS", param_new$CAS_check)
+param_new$CAS_check = ifelse(is.na(param_new$CAS_WQP)&is.na(param_new$CAS_DWQ),"No CAS", param_new$CAS_check)
 
-parameters_unique_trans_merge=merge(parameters_unique,param_cas,all=T)
+# Open standards table and extract parameters
+crit= data.frame(openxlsx::readWorkbook(standards_wb,sheet = "criteria", startRow = 3))
+crit = unique(crit[,c("CAS","IRParameterName","R3172ParameterName")])
+ss_crit = data.frame(openxlsx::readWorkbook(standards_wb,sheet = "ss_criteria", startRow = 4))
+ss_crit = unique(ss_crit[,c("CAS","IRParameterName","R3172ParameterName")])
+crits = unique(rbind(crit, ss_crit))
+crits$InStandards = "Y"
+names(crits)[names(crits)=="CAS"] = "CAS_DWQ"
 
-params_trans_merge=params_trans_merge[,cnames] #Reorder columns by translation table input
-parameters_unique_trans_merge=parameters_unique_trans_merge[,cnames_u] #Reorder columns by translation table input
+# Merge standards with paramtrans table
+paramtrans_crit = merge(param_new, crits, all.x = TRUE)
 
-#Generate fractions table
-fractions=data.frame(unique(data_dql$ResultSampleFractionText))
+#Generate fractions table by merging fractions from activity/narrowresult data to detquantlim data.
+fractions=data.frame(unique(update_table_data$ResultSampleFractionText))
 fraction_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=paramFractionGroup_sheetname, startRow=paramFractionGroup_startRow, detectDates=TRUE))
 fraction_table=fraction_table[,paramFractionGroup_startCol:dim(fraction_table)[2]]
 names(fractions)[1]=names(fraction_table)[1]
 fractions_merge=merge(fractions,fraction_table,all=T)
 new_fractions_count=dim(fractions_merge)[1]-dim(fraction_table)[1]
 
-new_params_count=dim(params_trans_merge)[1]-dim(param_translation)[1]
-new_params_cas_count=dim(parameters_unique_trans_merge)[1]-dim(param_cas)[1]
-params_trans_merge$DateAdded[is.na(params_trans_merge$DateAdded)]=Sys.Date()
+new_params_count=dim(paramtrans_crit)[1]-dim(paramtrans)[1]
+paramtrans_crit$DateAdded[is.na(paramtrans_crit$DateAdded)]=Sys.Date()
 
-openxlsx::writeData(trans_wb, paramTransTable_sheetname, params_trans_merge, startRow=(paramTransTable_startRow+1), startCol=paramTransTable_startCol,colNames=F)
-print(paste("paramTransTable updated.", new_params_count,"new parameter/fraction/unit/method combinations identified."))
+openxlsx::writeData(trans_wb, paramTransTable_sheetname, paramtrans_crit)
+print(paste("paramTransTable updated.", new_params_count,"new parameter/CAS combinations identified."))
 
-openxlsx::writeData(trans_wb, paramFractionGroup_sheetname, fractions_merge, startRow=(paramFractionGroup_startRow+1), startCol=paramFractionGroup_startCol,colNames=F)
+openxlsx::writeData(trans_wb, paramFractionGroup_sheetname, fractions_merge, startRow = paramFractionGroup_startRow, startCol = paramFractionGroup_startCol)
 print(paste("paramFractionGroup table updated.", new_fractions_count,"new fractions identified."))
-
-openxlsx::writeData(trans_wb, WQPParamCASID_sheetname, parameters_unique_trans_merge, startRow=(WQPParamCASID_startRow+1), startCol=WQPParamCASID_startCol,colNames=F)
-print(paste("WQPParamCASID table updated.", new_params_cas_count,"new parameters identified."))
-
 
 openxlsx::saveWorkbook(trans_wb, translation_wb, overwrite = TRUE)
 print("Translation workbook updated & saved.")
