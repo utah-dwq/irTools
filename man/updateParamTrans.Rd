@@ -6,43 +6,43 @@
 \usage{
 updateParamTrans(
   data,
-  detquantlim = detquantlim,
   translation_wb,
+  standards_wb,
   paramTransTable_sheetname = "paramTransTable",
-  paramTransTable_startRow = 4,
-  paramTransTable_startCol = 16,
-  WQPParamCASID_sheetname = "WQPParamCASID",
-  WQPParamCASID_startRow = 2,
-  WQPParamCASID_startCol = 1,
+  paramTransTable_startRow = 1,
+  paramTransTable_startCol = 1,
+  CASLookup_sheetname = "CASLookup",
+  CASLookup_startRow = 2,
+  CASLookup_startCol = 1,
   paramFractionGroup_sheetname = "paramFractionGroup",
-  paramFractionGroup_startRow = 3,
+  paramFractionGroup_startRow = 2,
   paramFractionGroup_startCol = 2
 )
 }
 \arguments{
 \item{data}{A WQP results (merged or narrow result) R-object}
 
-\item{detquantlim}{WQP detection/quantitation limit object}
-
 \item{translation_wb}{Full path and filename for IR translation workbook}
+
+\item{standards_wb}{Full path and filename for IR standards workbook}
 
 \item{paramTransTable_sheetname}{Name of sheet in workbook holding parameter translation table. Defaults to "paramTransTable".}
 
-\item{paramTransTable_startRow}{Row to start reading the paramTransTable excel sheet from (in case additional headers have been added). Defaults to 4.}
+\item{paramTransTable_startRow}{Row to start reading the paramTransTable excel sheet from (in case additional headers have been added). Defaults to 1.}
 
-\item{paramTransTable_startCol}{Col to start writing the paramTransTable excel sheet to (to the right of all formula based columns). Defaults to 16.}
+\item{paramTransTable_startCol}{Col to start writing the paramTransTable excel sheet to (to the right of all formula based columns). Defaults to 1.}
 
-\item{WQPParamCASID_sheetname}{Name of sheet in workbook holding parameter/CAS ID table. Defaults to "WQPParamCASID".}
+\item{CASLookup_sheetname}{Name of sheet in workbook holding CAS lookup table from WQP. Defaults to "CASLookup".}
 
-\item{WQPParamCASID_startRow}{Row to start reading the WQPParamCASID excel sheet from (in case additional headers have been added). Defaults to 3.}
+\item{CASLookup_startRow}{Row to start reading the CASLookup excel sheet from (in case additional headers have been added). Defaults to 2.}
 
-\item{WQPParamCASID_startCol}{Col to start writing the WQPParamCASID excel sheet to (to the right of all formula based columns). Defaults to 1.}
+\item{CASLookup_startCol}{Col to start writing the CASLookup excel sheet to (to the right of all formula based columns). Defaults to 1.}
 
 \item{paramFractionGroup_sheetname}{Name of sheet in workbook holding the WQP fraction names. Defaults to "paramFractionGroup".}
 
-\item{paramFractionGroup_startRow}{Row to start reading the paramFractionGroup excel sheet from (in case additional headers have been added). Defaults to 3.}
+\item{paramFractionGroup_startRow}{Row to start reading the paramFractionGroup excel sheet from (in case additional headers have been added). Defaults to 2.}
 
-\item{paramFractionGroup_startCol}{Col to start writing the paramFractionGroup excel sheet to (to the right of all formula based columns, note col w/ header 'spacer' in table). Defaults to 3.}
+\item{paramFractionGroup_startCol}{Col to start writing the paramFractionGroup excel sheet to (to the right of all formula based columns, note col w/ header 'spacer' in table). Defaults to 2.}
 }
 \value{
 Appends any new parameter/fraction/unit combinations in WQP data to translation_wb. This updates the input translation_wb with those new rows with system date in the "DateAdded" column.
