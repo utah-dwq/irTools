@@ -66,21 +66,17 @@ paramtrans = paramtrans[,!names(paramtrans)%in%c("InData","CAS_WQP","CAS_check",
 #Merge parameters w/ translation table (all=T (full outer join) gives a new translation table with all rows in translation table + any new parameters)
 param_new = merge(paramtrans, chars_cas1, all = TRUE)
 param_new$CAS_check = ifelse(param_new$CAS_DWQ==param_new$CAS_WQP, "same","different")
-param_new$CAS_check = ifelse(is.na(param_new$CAS_DWQ)&!is.na(param_new$CAS_WQP),"WQP CAS with no DWQ CAS", param_new$CAS_check)
-param_new$CAS_check = ifelse(is.na(param_new$CAS_WQP)&!is.na(param_new$CAS_DWQ),"DWQ CAS with no WQP CAS", param_new$CAS_check)
-param_new$CAS_check = ifelse(is.na(param_new$CAS_WQP)&is.na(param_new$CAS_DWQ),"No CAS", param_new$CAS_check)
 
-# Open standards table and extract parameters
+# Open standards table and extract CAS numbers
 crit= data.frame(openxlsx::readWorkbook(standards_wb,sheet = "criteria", startRow = 3))
-crit = unique(crit[,c("CAS","IRParameterName","R3172ParameterName")])
+crit = unique(crit$CAS)
 ss_crit = data.frame(openxlsx::readWorkbook(standards_wb,sheet = "ss_criteria", startRow = 4))
-ss_crit = unique(ss_crit[,c("CAS","IRParameterName","R3172ParameterName")])
-crits = unique(rbind(crit, ss_crit))
-crits$InStandards = "Y"
-names(crits)[names(crits)=="CAS"] = "CAS_DWQ"
+ss_crit = unique(ss_crit$CAS)
+crits = unique(c(crit, ss_crit))
 
-# Merge standards with paramtrans table
-paramtrans_crit = merge(param_new, crits, all.x = TRUE)
+# Flag data records with CAS numbers represented in standards
+paramtrans_crit = param_new
+paramtrans_crit$CAS_in_Stds = ifelse(paramtrans_crit$CAS_WQP%in%crits,"Y",NA)
 
 #Generate fractions table by merging fractions from activity/narrowresult data to detquantlim data.
 fractions=data.frame(unique(update_table_data$ResultSampleFractionText))
