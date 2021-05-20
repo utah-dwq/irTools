@@ -58,7 +58,8 @@ labs=data.frame(unique(data[,c("LaboratoryName","LaboratoryAccreditationIndicato
 labs[labs==""]=NA
 labs$InData="Y"
 
-lab_table=data.frame(readWorkbook(trans_wb, sheet=labNameActivityTable_sheetname, startRow=labNameActivityTable_startRow, detectDates=TRUE))
+lab_table=data.frame(readWorkbook(trans_wb, sheet=labNameActivityTable_sheetname, startRow=labNameActivityTable_startRow))
+lab_table$DateAdded = openxlsx::convertToDate(lab_table$DateAdded)
 column_names=names(lab_table)
 lab_table=lab_table[,!names(lab_table)%in%"InData"]
 

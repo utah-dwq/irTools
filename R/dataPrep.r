@@ -161,7 +161,7 @@ with(subset(reasons, reason=='Non-assessed fraction or fraction not defined, & f
 ##################################
 
 #Read unit conversion table from translation workbook (loaded above)
-unit_convs=data.frame(openxlsx::readWorkbook(translation_wb, sheet=unit_sheetname, startRow=startRow_unit, detectDates=TRUE))
+unit_convs=data.frame(openxlsx::readWorkbook(translation_wb, sheet=unit_sheetname, startRow=startRow_unit))
 
 # UNIT CONV TABLE CHECKS: make sure all IR_UnitConv_FLAG and UnitConversionFactor (for ACCEPT combinations) are populated
 if(any(is.na(unit_convs$IR_FLAG))){
@@ -364,7 +364,7 @@ if(any(data$BeneficialUse=="CF")){
 	}
 	
 	### Read formula table
-	cf_formulas=data.frame(openxlsx::readWorkbook(criterion_wb, sheet=cf_formulas_sheetname, startRow=startRow_formulas, detectDates=TRUE))
+	cf_formulas=data.frame(openxlsx::readWorkbook(criterion_wb, sheet=cf_formulas_sheetname, startRow=startRow_formulas))
 	cf_formulas=cf_formulas[,names(cf_formulas) %in% c("CAS","BeneficialUse","FrequencyNumber","FrequencyUnit","CF","CriterionFormula","ParameterQualifier","CriterionUnits")]
 	names(calcs)[names(calcs) %in% names(cf_formulas)]
 	

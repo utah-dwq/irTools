@@ -48,7 +48,7 @@ for(n in 1:length(sheetnames)){
 }
 
 # Open CAS Lookup table from WQP
-caslookup = data.frame(openxlsx::readWorkbook(trans_wb, sheet=CASLookup_sheetname, startRow=CASLookup_startRow, detectDates=TRUE))
+caslookup = data.frame(openxlsx::readWorkbook(trans_wb, sheet=CASLookup_sheetname, startRow=CASLookup_startRow))
 names(caslookup)[names(caslookup)=="Name"] = "CharacteristicName"
 names(caslookup)[names(caslookup)=="CAS.Number"] = "CAS_WQP"
 
@@ -60,7 +60,7 @@ chars_cas1 = chars_cas[,names(chars_cas)%in%c("CharacteristicName","CAS_WQP","In
 
 # Open paramTransTable
 paramtrans = data.frame(openxlsx::readWorkbook(trans_wb, sheet = "paramTransTable", startRow = paramTransTable_startRow))
-paramtrans$DateAdded = as.Date(paramtrans$DateAdded, origin = "1899-12-30")
+paramtrans$DateAdded = openxlsx::convertToDate(paramtrans$DateAdded)
 paramtrans = paramtrans[,!names(paramtrans)%in%c("InData","CAS_WQP","CAS_check","InStandards")]
 
 #Merge parameters w/ translation table (all=T (full outer join) gives a new translation table with all rows in translation table + any new parameters)

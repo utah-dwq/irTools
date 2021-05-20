@@ -58,7 +58,7 @@ for(n in 1:length(sheetnames)){
 
 
 #Join rankings from detLimitTypeTable to dql
-detLimitTypeTable=data.frame(openxlsx::readWorkbook(trans_wb, sheet=detLimitTypeTable_sheetname, startRow=detLimitTypeTable_startRow, detectDates=TRUE))
+detLimitTypeTable=data.frame(openxlsx::readWorkbook(trans_wb, sheet=detLimitTypeTable_sheetname, startRow=detLimitTypeTable_startRow))
 detLimitTypeTable=detLimitTypeTable[,c("DetectionQuantitationLimitTypeName","IRLimitPriorityRanking_lower","IRLimitPriorityRanking_upper")]
 
 dql=merge(detquantlim,detLimitTypeTable,all.x=T)
@@ -164,7 +164,8 @@ if(dim(r_lu_units)[1]>0){
   print("Unit conversion(s) needed between detection limit unit(s) and result unit(s). Checking for new unit conversions...")
   r_lu_units$InData = "Y"
   ##Merge to unitConvTable##
-  unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=unitConvTable_sheetname, startRow=unitConvTable_startRow, detectDates=TRUE))
+  unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=unitConvTable_sheetname, startRow=unitConvTable_startRow))
+  unitconv_table$DateAdded = openxlsx::convertToDate(unitconv_table$DateAdded)
   unitconv_table=unitconv_table[,!names(unitconv_table)%in%"InData"] # Refresh InData column 
   unitmerge <- merge(r_lu_units,unitconv_table, all=TRUE)
   

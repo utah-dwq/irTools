@@ -76,7 +76,8 @@ all_unit_combos$InData="Y"
 all_unit_combos[all_unit_combos==""]<-NA
 
 # Load unitConvTable sheet, set all blanks to NA, and reset InData column.
-unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=sheetname, startRow=startRow, detectDates=TRUE))
+unitconv_table=data.frame(openxlsx::readWorkbook(trans_wb, sheet=sheetname, startRow=startRow))
+unitconv_table$DateAdded = openxlsx::convertToDate(unitconv_table$DateAdded)
 column_names=names(unitconv_table)
 unitconv_table=unitconv_table[,!names(unitconv_table)%in%"InData"]
 

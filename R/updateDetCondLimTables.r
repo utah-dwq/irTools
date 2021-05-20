@@ -68,7 +68,7 @@ names(detconds)="ResultDetectionConditionText"
 detconds[detconds==""]=NA
 detconds$InData="Y"
 
-detConditionTable=data.frame(openxlsx::readWorkbook(trans_wb, sheet=detConditionTable_sheetname, startRow=detConditionTable_startRow, detectDates=TRUE))
+detConditionTable=data.frame(openxlsx::readWorkbook(trans_wb, sheet=detConditionTable_sheetname, startRow=detConditionTable_startRow))
 detConditionTable_names=names(detConditionTable)
 detConditionTable=detConditionTable[,!names(detConditionTable)%in%"InData"]
 
