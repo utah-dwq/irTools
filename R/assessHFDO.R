@@ -35,8 +35,6 @@ assessHFDO <- function(data, min_n=10){
   data$time=as.Date(lubridate::hms(data$ActivityStartTime.Time), origin=lubridate::origin)
   data$hour=lubridate::hour(data$time)
   head(data)
- 
-  data$IR_Unit="mg/l" #Manually added for the time being - should be added in the data process in the future.
   data$NumericCriterion = as.numeric(data$NumericCriterion) #For some reason criteria were data type "character"
   
   data=droplevels(data)
@@ -65,12 +63,15 @@ assessHFDO <- function(data, min_n=10){
     # ID complete days (those w/ 24 complete_hours)
     complete_days=hour_count[hour_count$complete_hours==24,]
     complete_days=complete_days[order(complete_days$ActivityStartDate),]
-    
+    complete_days$ActivityStartDate = as.character(complete_days$ActivityStartDate)
+   
     #Subset data to complete days
-    y=x[x$ActivityStartDate %in% complete_days$ActivityStartDate,]
+    x$ActivityStartDate = as.character(x$ActivityStartDate)
+    y=merge(complete_days, x, all.x = TRUE)
     
     #Generate daily means or mins
     daily_aggs=aggregate(IR_Value~ActivityStartDate, y, FUN=x$DailyAggFun[1])
+    daily_aggs$ActivityStartDate = as.Date(daily_aggs$ActivityStartDate, format = "%Y-%m-%d")
     return(daily_aggs)
   }
   
@@ -83,18 +84,18 @@ assessHFDO <- function(data, min_n=10){
   ## Assess daily minima
   min.do <- function(x){
     out <- x[1,c("IR_MLID","R3172ParameterName","BeneficialUse","BEN_CLASS","ASSESS_ID","ss_R317Descrp","ParameterQualifier","NumericCriterion","AsmntAggPeriod","AsmntAggFun","IR_Unit","CriterionUnits","AsmntAggPeriodUnit")]
-    if(length(x$ActivityStartDate)<10){
+    if(length(x$ActivityStartDate)<min_n){
       out$SampleCount = length(x$ActivityStartDate)
       out$ExcCount = NA
       out$IR_Cat = "Not assessed: insufficient data"
     }else{
       x$Exc = ifelse(x$IR_Value<x$NumericCriterion,1,0)
-      tenpct = ceiling(dim(x)[1]*.1)
+      out$Exc = sum(x$Exc)
       out$SampleCount = dim(x)[1]
       out$Min_Date <- min(x$ActivityStartDate)
       out$Max_Date <- max(x$ActivityStartDate)
-      out$ExcCount = sum(x$Exc)
-      out$IR_Cat = ifelse(sum(x$Exc)>tenpct,"NS","FS")
+      out$ExcPerc = out$Exc/out$SampleCount
+      out$IR_Cat = ifelse(out$ExcPerc>0.1,"NS","FS")
       
     }
     return(out) 
@@ -195,10 +196,10 @@ movingwindow_assess <- function(x){
   out$dates=list(startdat)
   out$exceed = list(exceed)
   out$NumericCriterion = list(numcrit)
-  tenpct = ceiling(length(datmean)*.1) 
   out$SampleCount = length(datmean)
-  out$ExcCount = length(exceed[exceed==1])
-  out$IR_Cat = ifelse(out$ExcCount>tenpct,"NS","FS")
+  out$Exc = sum(exceed)
+  out$ExcPerc = sum(exceed)/length(datmean)
+  out$IR_Cat = ifelse(out$ExcPerc>0.1,"NS","FS")
   return(out)
 }
 # EH note: removed "group" as a variable. I do not think it's needed anymore.
@@ -206,7 +207,7 @@ movingwindow_assess <- function(x){
 thirty_seven_assessed <- plyr::ddply(.data=adeq_space_values, c("IR_MLID", "BeneficialUse", "ss_R317Descrp","IR_Unit", "CriterionUnits", "AsmntAggPeriod", "AsmntAggPeriodUnit","AsmntAggFun","ParameterQualifier"), .fun=movingwindow_assess)
 
 #Extract 30 & 7 d means
-thirty_seven_means=tidyr::unnest(thirty_seven_assessed,.drop=FALSE)
+thirty_seven_means=tidyr::unnest(thirty_seven_assessed)
 names(thirty_seven_means)[names(thirty_seven_means)=="means"]="mean"
 names(thirty_seven_means)[names(thirty_seven_means)=="dates"]="start_date"
 thirty_seven_means$start_date = as.Date(thirty_seven_means$start_date, origin = "1970-01-01")
@@ -220,7 +221,7 @@ allHFDO_asmnts = plyr::rbind.fill(min_do_assessed,thirty_seven_assessed)
 HFDO_assessed$allHFDO_asmnts = allHFDO_asmnts
 
 ### Roll up to site-use assessment ###
-allHFDO_asmnts.list <- list(allHFDO_asmnts)
+allHFDO_asmnts.list <- list(allHFDO_asmnts[,!names(allHFDO_asmnts)%in%c("exceed","NumericCriterion")])
 site_use_rollup = irTools::rollUp(allHFDO_asmnts.list,group_vars = c("IR_MLID","BeneficialUse","R3172ParameterName"),expand_uses=TRUE,print=TRUE)
 HFDO_assessed$site_use_rollup = site_use_rollup
 
