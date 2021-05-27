@@ -70,8 +70,8 @@ crit_wb=openxlsx::loadWorkbook(crit_wb)
 crit_table=data.frame(openxlsx::readWorkbook(crit_wb, sheet=crit_sheetname, startRow=crit_startRow, detectDates=TRUE))
 ss_table=data.frame(openxlsx::readWorkbook(crit_wb, sheet=ss_sheetname, startRow=ss_startRow, detectDates=TRUE))
 
-if(any(names(data) =='CASLinked')){
-	names(data)[names(data) =='CASLinked']='CAS'
+if(any(names(data) =='CAS_DWQ')){
+	names(data)[names(data) =='CAS_DWQ']='CAS'
 }
 
 names(data)[names(data) %in% names(crit_table)]
@@ -104,8 +104,8 @@ rm(uses_flat)
 #Merge criteria to data w/ flattened uses
 data_uses_flat_crit=merge(data_uses_flat,crit_table,all.x=T)
 dim_check=dim(data_uses_flat_crit)[1]
-any(data_uses_flat_crit$R3172ParameterName=='Sulfate', na.rm=T)
-any(data_uses_flat_crit$CAS=='14808-79-8', na.rm=T)
+any(data_uses_flat_crit$R3172ParameterName=='Sulfate', na.rm=T) # no R3172P sulfate because no standards
+any(data_uses_flat_crit$CAS=='14808-79-8', na.rm=T) # but sulfate exists in dataset
 
 #Remove "CF" & SUP from comma-separated BEN_CLASS column (for future use in rollUp)
 data_uses_flat_crit$BEN_CLASS=gsub(",CF","",data_uses_flat_crit$BEN_CLASS)
