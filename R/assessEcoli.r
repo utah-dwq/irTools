@@ -6,7 +6,6 @@
 #' @param SeasonStartDate A string in the form "mm-dd" to define beginning of rec season over which to perform assessments.
 #' @param SeasonEndDate A string in the form "mm-dd" to define end of rec season over which to perform assessments.
 #' @param rec_season Logical. If TRUE, restricts assessments to recreation season data.
-#' @param max_exc_pct Maximum allowable exceedance percentage for full support (exceedance pcts > max_exc_pct are considered not supporting - one of max_exc_count or max_exc_pct must be specified
 #' @return Returns list with three objects: assessments from all Scenarios on all data, and ecoli assessments aggregated over scenario and year and rolled up to site level.
 #' @importFrom lubridate year
 #' @importFrom lubridate month
@@ -32,7 +31,7 @@
 # test2 <- unique_mlids2[!unique_mlids2%in%unique_mlids1] # Empty
 
 
-assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31", max_exc_pct){
+assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", SeasonEndDate="10-31"){
  
   # data <- read.csv("P:\\WQ\\Integrated Report\\Automation_Development\\elise\\e.coli_demo\\01_rawdata\\ecoli_example_data.csv")
   # SeasonStartDate="05-01"
@@ -110,12 +109,12 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     return(consec.groups)
   }
   
-  # Rounding function to ensure if 10% of the sample count is x.5 or higher, it will round up, and if it's x.4 or lower, it will round down.
-  rounding = function(x,max_exc_pct){
-    y = x*max_exc_pct/100+0.5
-    z = floor(y)
-    return(z)
-  }
+  # # Rounding function to ensure if 10% of the sample count is x.5 or higher, it will round up, and if it's x.4 or lower, it will round down.
+  # rounding = function(x,max_exc_pct){
+  #   y = x*max_exc_pct/100+0.5
+  #   z = floor(y)
+  #   return(z)
+  # }
 
 ##### SCENARIO A #####
   
@@ -126,12 +125,14 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
     out$Scenario = "A"
     ncount = length(x$ActivityStartDate)
     out$SampleCount = ncount
-    out$ExcCountLim = ifelse(out_48_hr>=5,rounding(ncount,max_exc_pct),1)
     out$ExcCount = length(x$IR_Value[x$IR_Value>stdcrit])
+    out$Percent_Exceed = ifelse(out_48_hr>=10,out$ExcCount/out$SampleCount,NA)
     if(out_48_hr<5){
-      out$IR_Cat = ifelse(out$ExcCount>=out$ExcCountLim,"IDEX","IDNE")
+      out$IR_Cat = ifelse(out$ExcCount>=1,"IDEX","IDNE")
     }else{
-      out$IR_Cat = ifelse(out$ExcCount>out$ExcCountLim,"NS","ScenB")
+      if(out_48_hr<10){
+        out$IR_Cat = ifelse(out$ExcCount>1,"NS","ScenB")
+      }else{out$IR_Cat = ifelse(out$Percent_Exceed>0.1,"NS","ScenB")}
     }
     return(out)
     }
