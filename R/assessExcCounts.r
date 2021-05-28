@@ -35,36 +35,37 @@ assessExcCounts=function(data, min_n, max_exc_count=NA, max_exc_pct=NA, max_exc_
 	
 	data$IR_Cat=NA
 	
-	rounding = function(x,max_exc_pct){
-	  y = x*max_exc_pct/100+0.5
-	  z = floor(y)
-	  return(z)
-	}
+	# rounding = function(x,max_exc_pct){
+	#   y = x*max_exc_pct/100+0.5
+	#   z = floor(y)
+	#   return(z)
+	# }
 	
 	
-	data=within(data,{
-		max_allow_exc=rounding(SampleCount,max_exc_pct) #Note, will produce all NAs if is.na(max_exc_pct)
-		max_allow_exc_id=ceiling(SampleCount*max_exc_pct_id/100) #Note, will produce all NAs if is.na(max_exc_pct_id)
-	})
+	# data=within(data,{
+	# 	max_allow_exc=rounding(SampleCount,max_exc_pct) #Note, will produce all NAs if is.na(max_exc_pct)
+	# 	max_allow_exc_id=ceiling(SampleCount*max_exc_pct_id/100) #Note, will produce all NAs if is.na(max_exc_pct_id)
+	# })
 	
 	if(!is.na(max_exc_pct)){ #Exceedance pct based sufficient data assessments
-	
 		if(!is.na(max_exc_count_id)){ #Exceedance count based insufficient data assessments
 			data=within(data,{
-				IR_Cat[SampleCount>=min_n & ExcCount>max_allow_exc]="NS"
-				IR_Cat[SampleCount>=min_n & ExcCount<=max_allow_exc]="FS"
+			  Percent_Exceed = NA
+				IR_Cat[SampleCount>=min_n & (ExcCount/SampleCount)>max_exc_pct]="NS"
+				IR_Cat[SampleCount>=min_n & (ExcCount/SampleCount)<=max_exc_pct]="FS"
 				IR_Cat[SampleCount<min_n & ExcCount>max_exc_count_id]="IDEX"
 				IR_Cat[SampleCount<min_n & ExcCount<=max_exc_count_id]="IDNE"
 			})
 		}else{  #Exceedance pct based insufficient data assessments
 			data=within(data,{
-				IR_Cat[SampleCount>=min_n & ExcCount>max_allow_exc]="NS"
-				IR_Cat[SampleCount>=min_n & ExcCount<=max_allow_exc]="FS"
-				IR_Cat[SampleCount<min_n & ExcCount>max_allow_exc_id]="IDEX"
-				IR_Cat[SampleCount<min_n & ExcCount<=max_allow_exc_id]="IDNE"
+				IR_Cat[SampleCount>=min_n & (ExcCount/SampleCount)>max_exc_pct]="NS"
+				IR_Cat[SampleCount>=min_n & (ExcCount/SampleCount)<=max_exc_pct]="FS"
+				IR_Cat[SampleCount<min_n & (ExcCount/SampleCount)>max_exc_pct_id]="IDEX"
+				IR_Cat[SampleCount<min_n & (ExcCount/SampleCount)<=max_exc_pct_id]="IDNE"
+				Percent_Exceed[SampleCount>=min_n] = ExcCount/SampleCount
 			})
 		}
-
+	  data$Percent_Exceed = ifelse(data$SampleCount>=min_n, data$ExcCount/data$SampleCount, NA)
 	}else{ #Exceedance count based assessments
 		if(!is.na(max_exc_count_id)){ #Exceedance count based insufficient data assessments
 			data=within(data,{
@@ -77,13 +78,12 @@ assessExcCounts=function(data, min_n, max_exc_count=NA, max_exc_pct=NA, max_exc_
 			data=within(data,{
 				IR_Cat[SampleCount>=min_n & ExcCount>max_exc_count]="NS"
 				IR_Cat[SampleCount>=min_n & ExcCount<=max_exc_count]="FS"
-				IR_Cat[SampleCount<min_n & ExcCount>max_allow_exc_id]="IDEX"
-				IR_Cat[SampleCount<min_n & ExcCount<=max_allow_exc_id]="IDNE"
+				IR_Cat[SampleCount<min_n & (ExcCount/SampleCount)>max_exc_pct_id]="IDEX"
+				IR_Cat[SampleCount<min_n & (ExcCount/SampleCount)<=max_exc_pct_id]="IDNE"
 			})
 		}
 	}
 
-data=data[,!names(data) %in% c("max_allow_exc_id","max_allow_exc")]
 return(data)
 
 }
