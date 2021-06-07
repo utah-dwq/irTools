@@ -58,11 +58,11 @@ assessExcCounts=function(data, min_n, max_exc_count=NA, max_exc_pct=NA, max_exc_
 			})
 		}else{  #Exceedance pct based insufficient data assessments
 			data=within(data,{
+			  Percent_Exceed = NA
 				IR_Cat[SampleCount>=min_n & (ExcCount/SampleCount)>max_exc_pct]="NS"
 				IR_Cat[SampleCount>=min_n & (ExcCount/SampleCount)<=max_exc_pct]="FS"
 				IR_Cat[SampleCount<min_n & (ExcCount/SampleCount)>max_exc_pct_id]="IDEX"
 				IR_Cat[SampleCount<min_n & (ExcCount/SampleCount)<=max_exc_pct_id]="IDNE"
-				Percent_Exceed[SampleCount>=min_n] = ExcCount/SampleCount
 			})
 		}
 	  data$Percent_Exceed = ifelse(data$SampleCount>=min_n, data$ExcCount/data$SampleCount, NA)
