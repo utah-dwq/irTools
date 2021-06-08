@@ -66,7 +66,7 @@ param_exp <- function(x){
 }
 
 ### Load watershed management units
-load(system.file("extdata", "wmus_aus.Rdata", package = "irTools"))
+load(system.file("extdata", "au_wmu.Rdata", package = "irTools"))
 # wmus = unique(au_wmu)
 
 ### Upload export translation workbook
@@ -89,7 +89,7 @@ dat_accepted$IR_DataPrep_FLAG = "ACCEPT"
 #tox_conv = subset(dat_accepted, dat_accepted$AssessmentType=="Toxic"|dat_accepted$AssessmentType=="Conventional")
 tox_conv = subset(dat_accepted, dat_accepted$AssessmentType=="Toxic"|dat_accepted$AssessmentType=="Conventional"|dat_accepted$AssessmentType=="All")
 before = dim(tox_conv)[1]
-tox_conv = merge(tox_conv, wmus, all.x = TRUE)
+tox_conv = merge(tox_conv, au_wmu, all.x = TRUE)
 after = dim(tox_conv)[1]
 
 before==after
