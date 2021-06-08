@@ -365,19 +365,20 @@ if(any(data$BeneficialUse=="CF")){
 	
 	### Read formula table
 	cf_formulas=data.frame(openxlsx::readWorkbook(criterion_wb, sheet=cf_formulas_sheetname, startRow=startRow_formulas))
-	cf_formulas=cf_formulas[,names(cf_formulas) %in% c("CAS","BeneficialUse","FrequencyNumber","FrequencyUnit","CF","CriterionFormula","ParameterQualifier","CriterionUnits")]
+	ssc_cf_formulas = subset(cf_formulas, !is.na(cf_formulas$ss_R317Descrp))
+	cf_formulas=unique(cf_formulas[,names(cf_formulas) %in% c("CAS","BeneficialUse","FrequencyNumber","FrequencyUnit","CF","CriterionFormula","ParameterQualifier","CriterionUnits")])
 	names(calcs)[names(calcs) %in% names(cf_formulas)]
 	
 	### Merge formulas to data
 	dimcheck=dim(calcs)[1]
-	calcs=merge(calcs, cf_formulas, all.x=T)
+	calcs = merge(calcs, cf_formulas, all.x = TRUE) # NOTE: the only reason this works with the ammonia SSC is that the ParameterQualifiers and uses are unique to the site-specific polygons. This may be an issue in the future.
 	if(dim(calcs)[1] != dimcheck){
-		stop("ERORR assiging formulas to parameters with calculated criteria (1).")
+		stop("ERROR assiging formulas to parameters with calculated criteria (1).")
 	}
 	
 	table(calcs$R3172ParameterName, calcs$CriterionFormula)[rowSums(table(calcs$R3172ParameterName, calcs$CriterionFormula))>0,]
 	if(any(is.na(calcs$CriterionFormula))){
-		stop("ERORR assiging formulas to parameters with calculated criteria (2).")
+		stop("ERROR assiging formulas to parameters with calculated criteria (2).")
 	}
 	
 	
