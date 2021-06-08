@@ -14,7 +14,7 @@ if(dim(pol_ind)[1]>0){site_param_pol_ind=irTools::rollUp(list(pol_ind), group_va
 site_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('IR_MLID','IR_MLNAME','IR_Lat','IR_Long','ASSESS_ID','AU_NAME'), cat_var="AssessCat", print=F, expand_uses=F)
 
 ## Read master site list
-master_site_file=system.file("extdata", "0_master_site_file_SLCOWS_11132019.xlsx", package = "irTools")
+master_site_file=system.file("extdata", "0_master_site_file_SLCOWS_060821.xlsx", package = "irTools")
 master_site=as.data.frame(readxl::read_excel(master_site_file, 'sites'))
 
 ## ID rejected site locations

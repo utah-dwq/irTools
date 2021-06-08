@@ -122,7 +122,7 @@ names(summary_tc_assessed)[names(summary_tc_assessed)=="SSC_MLID"] = "siteSpecif
 summary_tc_assessed$MonitoringLocationIdentifier = summary_tc_assessed$IR_MLID
 summary_tc_assessed$IR_Screen_FLAG = "ACCEPT"
 summary_tc_assessed$IR_DataPrep_FLAG = "ACCEPT"
-summary_tc_assessed = merge(summary_tc_assessed, wmus, all.x = TRUE)
+summary_tc_assessed = merge(summary_tc_assessed, au_wmu, all.x = TRUE)
 
 col_order2 = summ_cols[summ_cols%in%names(summary_tc_assessed)]
 summary_tc_assessed = summary_tc_assessed[,col_order2]
