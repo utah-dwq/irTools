@@ -54,6 +54,9 @@ param_exp <- function(x){
     rej_data1 = subset(rejected_data, rejected_data$CharacteristicName==x)
     rej_data2 = subset(rejected_data, rejected_data$R3172ParameterName==x)
     rej_dat = merge(rej_data1, rej_data2, all = TRUE)
+    if("NOTES"%in%names(rej_dat)){
+      names(rej_dat)[names(rej_dat)=="NOTES"] = "SLCO_NOTES"
+    }
     openxlsx::addWorksheet(reviewer_export, sheetName = "Rejected")
     openxlsx::writeDataTable(reviewer_export, sheet = "Rejected", rej_dat)
     openxlsx::conditionalFormatting(reviewer_export, sheet = "Rejected", cols = 1:285, rows = 1, rule = "IR", type = "contains", style = IR)
