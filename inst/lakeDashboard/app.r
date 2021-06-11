@@ -130,7 +130,11 @@ server <- function(input, output, session){
 
 	# Remove any sites that do not produce any valid profiles
 	prof_sites=prof_sites[prof_sites$MonitoringLocationIdentifier %in% profiles_long$MonitoringLocationIdentifier,]
-	prof_sites<<-prof_sites
+	prof_sites$QA=ifelse(grepl("Duplicate",prof_sites$MonitoringLocationName) | grepl("Replicate",prof_sites$MonitoringLocationName) | grepl("Dummy",prof_sites$MonitoringLocationName) | 
+                        grepl("replaced",prof_sites$MonitoringLocationName) | grepl("Blank",prof_sites$MonitoringLocationName) | grepl("QA",prof_sites$MonitoringLocationName) | 
+                        grepl("QC",prof_sites$MonitoringLocationName),"QA","Not QA")
+	prof_sites=subset(prof_sites, QA!="QA")
+	#prof_sites<<-prof_sites
 	
 	# Extract profiles wide
 	profiles_wide=prof_asmnts_all$profiles_wide
