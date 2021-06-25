@@ -8,8 +8,7 @@ assessEColi(
   data,
   rec_season = TRUE,
   SeasonStartDate = "05-01",
-  SeasonEndDate = "10-31",
-  max_exc_pct
+  SeasonEndDate = "10-31"
 )
 }
 \arguments{
@@ -20,8 +19,6 @@ assessEColi(
 \item{SeasonStartDate}{A string in the form "mm-dd" to define beginning of rec season over which to perform assessments.}
 
 \item{SeasonEndDate}{A string in the form "mm-dd" to define end of rec season over which to perform assessments.}
-
-\item{max_exc_pct}{Maximum allowable exceedance percentage for full support (exceedance pcts > max_exc_pct are considered not supporting - one of max_exc_count or max_exc_pct must be specified}
 }
 \value{
 Returns list with three objects: assessments from all Scenarios on all data, and ecoli assessments aggregated over scenario and year and rolled up to site level.
