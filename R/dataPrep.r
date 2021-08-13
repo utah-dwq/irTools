@@ -69,7 +69,7 @@ aggDVbyfun=function(x, value_var, drop_vars, agg_var){
 #Column names to pass through function
 col_names=c("ResultIdentifier","OrganizationIdentifier","ActivityIdentifier","ActivityStartDate","ActivityStartTime.Time","IR_ActivityType","IR_MLID","IR_MLNAME","MonitoringLocationIdentifier","MonitoringLocationTypeName","R317Descrp","IR_Lat","IR_Long",
 													"ASSESS_ID","AU_NAME","AU_Type","BeneficialUse","BEN_CLASS","CharacteristicName","ParameterGroupName",
-													"CAS", "IRParameterName", "R3172ParameterName","IR_Value","IR_Unit","ResultMeasure.MeasureUnitCode","IR_DetCond","ResultSampleFractionText","IR_Fraction","CriterionUnits","TargetFraction",
+													"CAS", "RuleParameterName", "R3172ParameterName","IR_Value","IR_Unit","ResultMeasure.MeasureUnitCode","IR_DetCond","ResultSampleFractionText","IR_Fraction","CriterionUnits","TargetFraction",
 													"IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit",
 													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
 													"AssessmentType","TableDescription","CriterionLabel","CriterionType","ParameterQualifier", "FrequencyCombined", "FrequencyNumber", "FrequencyUnit","TargetActivityType",
@@ -366,7 +366,7 @@ if(any(data$BeneficialUse=="CF")){
 	### Read formula table
 	cf_formulas=data.frame(openxlsx::readWorkbook(criterion_wb, sheet=cf_formulas_sheetname, startRow=startRow_formulas))
 	# ssc_cf_formulas = subset(cf_formulas, !is.na(cf_formulas$ss_R317Descrp))
-	cf_formulas=unique(cf_formulas[,names(cf_formulas) %in% c("CAS","BeneficialUse","FrequencyNumber","FrequencyUnit","CF","CriterionFormula","ParameterQualifier","CriterionUnits", "SS_calc")])
+	cf_formulas=unique(cf_formulas[,names(cf_formulas) %in% c("CAS","BeneficialUse","TableDescription","FrequencyNumber","FrequencyUnit","CF","CriterionFormula","ParameterQualifier","CriterionUnits", "SS_calc")])
 	names(calcs)[names(calcs) %in% names(cf_formulas)]
 	
 	### Merge formulas to data
@@ -452,7 +452,7 @@ rm(data_n)
 ####Apply rejections to flag column in data
 flags=reasons
 flags$IR_DataPrep_FLAG="REJECT"
-flags=unique(flags[,c("IR_MLID","BeneficialUse","ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","TargetFraction","FrequencyCombined","CriterionLabel","FrequencyNumber","FrequencyUnit","CriteriaQualifier","IR_DataPrep_FLAG")])
+flags=unique(flags[,c("IR_MLID","BeneficialUse","ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","TableDescription","TargetFraction","FrequencyCombined","CriterionLabel","FrequencyNumber","FrequencyUnit","CriteriaQualifier","IR_DataPrep_FLAG")])
 #flags=unique(flags[,!names(flags) %in% 'reason'])
 dimcheck=dim(data)[1]
 data=merge(data,flags,all.x=T)
