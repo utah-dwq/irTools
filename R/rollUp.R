@@ -43,8 +43,8 @@ dat_all=subset(dat_all, !is.na(dat_all$IR_Cat))
 dat_all$AssessCat=NA
 dat_all$AssessCat[dat_all$IR_Cat=="NS"]<-5
 #dat_all$AssessCat[dat_all$IR_Cat=="TMDLa"]<- 4 - (JV) turning off TMDL approved for now. Not sure if we want to include this here yet or as a sort of "secondary review" type step
-dat_all$AssessCat[dat_all$IR_Cat=="IDEX"]<-3
-dat_all$AssessCat[dat_all$IR_Cat=="FS"]<-2
+dat_all$AssessCat[dat_all$IR_Cat=="FS"]<-3
+dat_all$AssessCat[dat_all$IR_Cat=="IDEX"]<-2
 dat_all$AssessCat[dat_all$IR_Cat=="IDNE"]<-1
 dat_all$AssessCat[dat_all$IR_Cat=="ID"]<-0
 
