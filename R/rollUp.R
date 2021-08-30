@@ -64,8 +64,8 @@ rollup$AssessCat=as.character(rollup$AssessCat)
 rollup=within(rollup,{
 	AssessCat[AssessCat=="5"]="NS"
 	AssessCat[AssessCat=="4"]="TMDLa"
-	AssessCat[AssessCat=="3"]="IDEX"
-	AssessCat[AssessCat=="2"]="FS"
+	AssessCat[AssessCat=="3"]="FS"
+	AssessCat[AssessCat=="2"]="IDEX"
 	AssessCat[AssessCat=="1"]="IDNE"
 	AssessCat[AssessCat=="0"]="ID"
 })
