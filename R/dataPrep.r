@@ -511,8 +511,8 @@ result$ecoli=acc_data[acc_data$R3172ParameterName=="E. coli",]
 ######
 if(any(acc_data$AssessmentType=="Toxic")){
 
-drop_vars=c("ResultIdentifier","DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode", "IR_ActivityType", "TargetActivityType",
-			"R317Descrp","IR_DetCond", "MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","IR_Fraction","CharacteristicName",
+drop_vars=c("ResultIdentifier","DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ResultMeasure.MeasureUnitCode","ActivityDepthHeightMeasure.MeasureUnitCode", "IR_ActivityType", "TargetActivityType",
+			"R317Descrp","IR_DetCond", "MonitoringLocationIdentifier","MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","IR_Fraction","CharacteristicName",
 			"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG")
 
 ## Extract radium data
@@ -562,8 +562,8 @@ toxics_raw=toxics_raw[,col_names]
 #############
 #######Conventionals
 ######
-drop_vars=c("ResultIdentifier","DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode", "IR_ActivityType", "TargetActivityType",
-			"R317Descrp","IR_DetCond", "MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","CharacteristicName","IR_Fraction",
+drop_vars=c("ResultIdentifier","DataLoggerLine","OrganizationIdentifier","ActivityIdentifier", "ActivityStartTime.Time","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode","ResultMeasure.MeasureUnitCode","IR_ActivityType", "TargetActivityType",
+			"R317Descrp","IR_DetCond","MonitoringLocationIdentifier","MonitoringLocationTypeName","IR_LowerLimitValue","IR_LowerLimitUnit","IR_UpperLimitValue","IR_UpperLimitUnit","ResultSampleFractionText","CharacteristicName","IR_Fraction",
 			'cf_max_Max..Temperature_C','cf_max_pH_pH.units','cf_min_Calcium_mg.l','cf_min_Hardness_mg.l','cf_min_Magnesium_mg.l','cf_min_pH_pH.units','hardness','CriterionFormula','CalculatedCrit',
 			"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG")
 
