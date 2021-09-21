@@ -1,6 +1,6 @@
 ### Utah DWQ Lake Dashboard
 ### Jake Vander Laan, Utah DWQ, jvander@utah.gov
-### Version 2.0, 8/14/2019
+### Version 3.0 2022 including 2022 IR data
 
 library(wqTools)
 library(leaflet)
