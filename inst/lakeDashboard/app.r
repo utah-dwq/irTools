@@ -121,7 +121,7 @@ server <- function(input, output, session){
 	profiles_long=prof_asmnts_all$profiles_long
 	
 	### Delete when data are fixed
-	profiles_long=subset(profiles_long, !(ASSESS_ID %in% c("UT-L-16020201-004_01", "UT-L-16020201-004_02") & (ActivityStartDate >= "2021-03-15" | ActivityStartDate=="2019-11-04" | ActivityStartDate=="2018-10-10"))) ###drop faulty Utah Lake profiles
+	profiles_long=subset(profiles_long, !(ASSESS_ID %in% c("UT-L-16020201-004_01", "UT-L-16020201-004_02") & (ActivityStartDate >= "2021-03-15") | ActivityStartDate=="2019-11-04" | ActivityStartDate=="2018-10-10")) ###drop faulty Utah Lake profiles
 	###
 	
 	profiles_long$MonitoringLocationIdentifier=profiles_long$IR_MLID
