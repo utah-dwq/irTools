@@ -4,27 +4,16 @@
 \alias{validateSites}
 \title{Validate monitoring locations for the IR}
 \usage{
-validateSites(
-  sites,
-  trans_wb,
-  manual_rej_path,
-  slco = FALSE,
-  nearby = FALSE,
-  buffer = 50
-)
+validateSites(sites, trans_wb, manual_path, slco = FALSE)
 }
 \arguments{
 \item{sites}{Sites object queried from WQP to be reviewed.}
 
 \item{trans_wb}{Full path and filename of translation workbook containing the waterbody type table used in th screening process.}
 
-\item{manual_rej_path}{Path to workbook containing manual site rejections from previous IR's}
+\item{manual_path}{Path to workbook containing manual site changes from previous IR's}
 
 \item{slco}{Logical. Default is FALSE. If TRUE, function will use the grepl function to automatically merge SLCOWS and UTAHDWQ sites containing the same two-letter, 4-number combination code used to denote SLCo monitoring locations.}
-
-\item{nearby}{Logical. Default is FALSE. If TRUE, function will calculate a distance matrix and flag sites for REVIEW that are within X m of each other.}
-
-\item{buffer}{Numeric. Meter (m) buffer used to determine nearby sites if nearby is set to TRUE. Function will flag sites for review that are within the m buffer specified here.}
 }
 \value{
 Exports a new, undated master site list to the location & filename provided by the user.
