@@ -13,7 +13,7 @@
 #' @import plyr
 #' @import dplyr
 #' @import tidyr
-
+#' @export validateSites
 validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   stn=sites
   stn[stn==""]=NA #Make sure all blanks are NA
