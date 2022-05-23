@@ -20,5 +20,6 @@ A list consisting of nr, activity, detquantlim, sites, filtered sites, and merge
 }
 \description{
 This function reads dataframes downloaded from EPA's WQP, removes duplicates, and converts result values with non-numeric characters to NA (with the exception of those with <|>|,).
+Converts all non-result value columns in nr, activity, detquantlim, and sites objects to character, including dates.
 Replaces hard coding in bookdown and readWQPFiles function.
 }

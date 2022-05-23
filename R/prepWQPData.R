@@ -1,6 +1,7 @@
 #' Prep WQP Data
 #'
 #' This function reads dataframes downloaded from EPA's WQP, removes duplicates, and converts result values with non-numeric characters to NA (with the exception of those with <|>|,).
+#' Converts all non-result value columns in nr, activity, detquantlim, and sites objects to character, including dates.
 #' Replaces hard coding in bookdown and readWQPFiles function.
 #'
 #' @param nr A narrow result dataframe from EPA's WQP
@@ -14,9 +15,13 @@ prepWQPData <- function(irdata, check=TRUE){
   
   # Get unique records - WQP had some duplication issues in 04/2022
   nr = unique(irdata$nr)
+  nr[] = lapply(nr,as.character)
   activity = unique(irdata$activity)
+  activity[] = lapply(activity,as.character)
   detquantlim = unique(irdata$detquantlim)
+  detquantlim[] = lapply(detquantlim,as.character)
   sites = unique(irdata$sites)
+  sites[] = lapply(sites,as.character)
   
   # Create original raw value column 
   nr$ResultMeasureValue_raw = nr$ResultMeasureValue
@@ -26,6 +31,13 @@ prepWQPData <- function(irdata, check=TRUE){
   # chars1 = unique(nr[,"ResultMeasureValue"][which(is.na(suppressWarnings(as.numeric(nr[,"ResultMeasureValue"]))))])
   # Convert result values to numeric - results in NAs for values containing characters.
   nr$ResultMeasureValue = suppressWarnings(wqTools::facToNum(nr$ResultMeasureValue))
+  
+  # Create original raw value column 
+  detquantlim$DetectionQuantitationLimitMeasure.MeasureValue_raw = detquantlim$DetectionQuantitationLimitMeasure.MeasureValue
+  # Remove commas, inequality signs from result value column.
+  detquantlim$DetectionQuantitationLimitMeasure.MeasureValue = gsub(",|<|>","",detquantlim$DetectionQuantitationLimitMeasure.MeasureValue)
+  # Convert result values to numeric - results in NAs for values containing characters.
+  detquantlim$DetectionQuantitationLimitMeasure.MeasureValue = suppressWarnings(wqTools::facToNum(detquantlim$DetectionQuantitationLimitMeasure.MeasureValue))
   
   # filter to sites with data
   sites_filtered = subset(sites, sites$MonitoringLocationIdentifier%in%unique(nr$MonitoringLocationIdentifier))
