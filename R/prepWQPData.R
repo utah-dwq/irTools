@@ -11,9 +11,11 @@
 #' @return A list consisting of nr, activity, detquantlim, sites, filtered sites, and merged_results (nr combined with activity) dataframes with special characters converted to NA for the ResultMeasureValue column. Saves an rdata file named "irdata_wqp_raw.Rdata" containing the six data WQP objects.
 
 #' @export
-prepWQPData <- function(irdata, check=TRUE){
+prepWQPData <- function(irdata, cols, check=TRUE){
   
   # Get unique records - WQP had some duplication issues in 04/2022
+  print("Reading in dataframes, removing duplicate values, converting all columns to character...")
+  
   nr = unique(irdata$nr)
   nr[] = lapply(nr,as.character)
   activity = unique(irdata$activity)
@@ -23,6 +25,7 @@ prepWQPData <- function(irdata, check=TRUE){
   sites = unique(irdata$sites)
   sites[] = lapply(sites,as.character)
   
+  print("In narrowresult and detquantlim, converting result values to numeric and character strings to NA...")
   # Create original raw value column 
   nr$ResultMeasureValue_raw = nr$ResultMeasureValue
   # chars = unique(nr[,"ResultMeasureValue"][which(is.na(suppressWarnings(as.numeric(nr[,"ResultMeasureValue"]))))])
@@ -39,8 +42,12 @@ prepWQPData <- function(irdata, check=TRUE){
   # Convert result values to numeric - results in NAs for values containing characters.
   detquantlim$DetectionQuantitationLimitMeasure.MeasureValue = suppressWarnings(wqTools::facToNum(detquantlim$DetectionQuantitationLimitMeasure.MeasureValue))
   
+  print("Filtering to sites with data, converting latitude and longitude measures to numeric, composing a merged results object, saving irdata object to working directory.")
   # filter to sites with data
   sites_filtered = subset(sites, sites$MonitoringLocationIdentifier%in%unique(nr$MonitoringLocationIdentifier))
+  sites_filtered$LatitudeMeasure = suppressWarnings(wqTools::facToNum(sites_filtered$LatitudeMeasure))
+  sites_filtered$LongitudeMeasure = suppressWarnings(wqTools::facToNum(sites_filtered$LongitudeMeasure))
+  
   merged_results = merge(nr, activity, all.x = TRUE)
   
   # built irdata list of dataframes from WQP

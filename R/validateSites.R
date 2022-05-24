@@ -10,9 +10,7 @@
 #' @return Exports a new, undated master site list to the location & filename provided by the user.
 
 #' @import sp
-#' @import plyr
 #' @import dplyr
-#' @import tidyr
 #' @export validateSites
 validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   stn=sites
@@ -32,48 +30,70 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   rej_reasons_att=data.frame(matrix(nrow=0,ncol=2))
   
   # If [MonitoringLocationDescriptionText] contains "Duplicate","Replicate","Dummy","replaced","Blank","QA", or "QC", reject as QAQC
-  reason_n = stn[grepl("Duplicate|Replicate|Dummy|replaced|Blank|QA|QC",stn$MonitoringLocationDescriptionText),]%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Attributes indicate dup, rep, blank, dummy, or QAQC site")
-  if(dim(reason_n)[1]>0){rej_reasons_att=rbind(rej_reasons_att,reason_n)}
+  reason_n=data.frame(MonitoringLocationIdentifier=stn$MonitoringLocationIdentifier[grepl("Duplicate|Replicate|Dummy|replaced|Blank|QA|QC",stn$MonitoringLocationDescriptionText)])
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Attributes indicate dup, rep, blank, dummy, or QAQC site"
+    rej_reasons_att=rbind(rej_reasons_att,reason_n)}
   
   # If [OrganizationIdentifier] is test or demo, reject site.
-  reason_n=stn%>%filter(OrganizationIdentifier%in%c("OST_SHPD_TEST","DEMOTEST"))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Organization identifier indicates test/demo")
-  if(dim(reason_n)[1]>0){rej_reasons_att=rbind(rej_reasons_att,reason_n)}
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, stn$OrganizationIdentifier%in%c("OST_SHPD_TEST","DEMOTEST"))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Organization identifier indicates test/demo"
+    rej_reasons_att=rbind(rej_reasons_att,reason_n)}
   
   #Reject sites with ConstructionDateText populated
-  reason_n=stn%>%filter(!is.na(ConstructionDateText))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Construction date text populated")
-  if(dim(reason_n)[1]>0){rej_reasons_att=rbind(rej_reasons_att,reason_n)}
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, !is.na(stn$ConstructionDateText))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Construction date text populated"
+    rej_reasons_att=rbind(rej_reasons_att,reason_n)}
   
   #Reject sites with WellDepthMeasure.MeasureValue populated
-  reason_n=stn%>%filter(!is.na(WellDepthMeasure.MeasureValue))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Well depth measure populated")
-  if(dim(reason_n)[1]>0){rej_reasons_att=rbind(rej_reasons_att,reason_n)}
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, !is.na(stn$WellDepthMeasure.MeasureValue))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Well depth measure populated"
+    rej_reasons_att=rbind(rej_reasons_att,reason_n)}
   
   #Reject sites with WellDepthMeasure.MeasureUnitCode populated
-  reason_n=stn%>%filter(!is.na(WellDepthMeasure.MeasureUnitCode))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Well depth measure unit code populated")
-  if(dim(reason_n)[1]>0){rej_reasons_att=rbind(rej_reasons_att,reason_n)}
-  
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, !is.na(stn$WellDepthMeasure.MeasureUnitCode))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Well depth measure unit code populated"
+    rej_reasons_att=rbind(rej_reasons_att,reason_n)}
+
   #Reject sites with WellHoleDepthMeasure.MeasureValue populated
-  reason_n=stn%>%filter(!is.na(WellHoleDepthMeasure.MeasureValue))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Well hole depth measure populated")
-  if(dim(reason_n)[1]>0){rej_reasons_att=rbind(rej_reasons_att,reason_n)}
-  
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, !is.na(stn$WellHoleDepthMeasure.MeasureValue))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Well hole depth measure populated"
+    rej_reasons_att=rbind(rej_reasons_att,reason_n)}
+
   #Reject sites with WellHoleDepthMeasure.MeasureUnitCode populated
-  reason_n=stn%>%filter(!is.na(WellHoleDepthMeasure.MeasureUnitCode))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Well hole depth measure unit code populated")
-  if(dim(reason_n)[1]>0){rej_reasons_att=rbind(rej_reasons_att,reason_n)}
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, !is.na(stn$WellHoleDepthMeasure.MeasureUnitCode))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Well hole depth measure unit code populated"
+    rej_reasons_att=rbind(rej_reasons_att,reason_n)}
   
   #Reject sites with AquiferName populated
-  reason_n=stn%>%filter(!is.na(AquiferName))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Aquifer name populated: associated with unassessed wells")
-  if(dim(reason_n)[1]>0){rej_reasons_att=rbind(rej_reasons_att,reason_n)}
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, !is.na(stn$AquiferName))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Aquifer name populated: associated with unassessed wells"
+    rej_reasons_att=rbind(rej_reasons_att,reason_n)}
   
   #Reject sites with FormationTypeText populated
-  reason_n=stn%>%filter(!is.na(FormationTypeText))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Formation type populated: associated with unassessed wells")
-  if(dim(reason_n)[1]>0){rej_reasons_att=rbind(rej_reasons_att,reason_n)}
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, !is.na(stn$FormationTypeText))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Formation type populated: associated with unassessed wells"
+    rej_reasons_att=rbind(rej_reasons_att,reason_n)}
   
   #Reject sites with AquiferTypeName populated
-  reason_n=stn%>%filter(!is.na(AquiferTypeName))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Aquifer type name populated: associated with unassessed wells")
-  if(dim(reason_n)[1]>0){rej_reasons_att=rbind(rej_reasons_att,reason_n)}
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, !is.na(stn$AquiferTypeName))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Aquifer type name populated: associated with unassessed wells"
+    rej_reasons_att=rbind(rej_reasons_att,reason_n)}
   
   #Reject sites where MonitoringLocationTypeName !%in% site_type_keep argument
-  reason_n=stn%>%filter(!MonitoringLocationTypeName%in%site_type_keep)%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Non-assessed site type")
-  if(dim(reason_n)[1]>0){rej_reasons_att=rbind(rej_reasons_att,reason_n)}
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, !stn$MonitoringLocationTypeName%in%site_type_keep)$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Non-assessed site type"
+    rej_reasons_att=rbind(rej_reasons_att,reason_n)}
   
   names(rej_reasons_att)=c("MonitoringLocationIdentifier","Reason")
   rej_reasons_att$ReasonType="Attribute based"
@@ -103,28 +123,38 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   rej_reasons_spat=data.frame(matrix(nrow=0,ncol=2))
   
   #Reject by is.na(AU)
-  reason_n=stn%>%filter(is.na(ASSESS_ID))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Undefined AU")
-  if(dim(reason_n)[1]>0){rej_reasons_spat=rbind(rej_reasons_spat,reason_n)}
-  
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, is.na(stn$ASSESS_ID))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Undefined AU"
+    rej_reasons_spat=rbind(rej_reasons_spat,reason_n)}
+    
   #Reject by is.na(STATE_NAME)
-  reason_n=stn%>%filter(is.na(jurisdict))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Non-jurisdictional: out of state or within tribal boundaries")
-  if(dim(reason_n)[1]>0){rej_reasons_spat=rbind(rej_reasons_spat,reason_n)}
-  
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, is.na(stn$jurisdict))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Non-jurisdictional: out of state or within tribal boundaries"
+    rej_reasons_spat=rbind(rej_reasons_spat,reason_n)}
+
   #Reject by GSL poly
-  reason_n=stn%>%filter(AU_NAME%in%c('Gilbert Bay','Gunnison Bay','Farmington Bay','Bear River Bay'))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="GSL assessed through separate program")
-  if(dim(reason_n)[1]>0){rej_reasons_spat=rbind(rej_reasons_spat,reason_n)}
-  
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, stn$AU_NAME%in%c('Gilbert Bay','Gunnison Bay','Farmington Bay','Bear River Bay'))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="GSL assessed through separate program"
+    rej_reasons_spat=rbind(rej_reasons_spat,reason_n)}
+
   #Remove unneeded spatial join columns
   stn=stn[,!names(stn)%in%c("jurisdict")]
   
   #Reject where MonitoringLocationTypeName is a canal type & AU_Type!="Canal"
-  reason_n=stn%>%filter(MonitoringLocationTypeName%in%c("Stream: Canal","Stream: Ditch","Canal Transport","Canal Drainage","Canal Irrigation")&!AU_Type%in%c("Canal"))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Non-assessed canal or ditch")
-  if(dim(reason_n)[1]>0){rej_reasons_spat=rbind(rej_reasons_spat,reason_n)}
-  
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, stn$MonitoringLocationTypeName%in%c("Stream: Canal","Stream: Ditch","Canal Transport","Canal Drainage","Canal Irrigation")&!stn$AU_Type%in%c("Canal"))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Non-assessed canal or ditch"
+    rej_reasons_spat=rbind(rej_reasons_spat,reason_n)}
+
   #Reject where MonitoringLocationTypeName is a stream or spring type & AU_Type!="River/Stream"
-  reason_n=stn%>%filter(MonitoringLocationTypeName%in%c("Stream","River/Stream","River/Stream Intermittent","River/Stream Perennial","Spring")&!AU_Type%in%c("River/Stream"))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Stream or spring site type in non-River/Stream AU")
-  if(dim(reason_n)[1]>0){rej_reasons_spat=rbind(rej_reasons_spat,reason_n)}
-  
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, stn$MonitoringLocationTypeName%in%c("Stream","River/Stream","River/Stream Intermittent","River/Stream Perennial","Spring")&!stn$AU_Type%in%c("River/Stream"))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Stream or spring site type in non-River/Stream AU"
+    rej_reasons_spat=rbind(rej_reasons_spat,reason_n)}  
+
   names(rej_reasons_spat)=c("MonitoringLocationIdentifier","Reason")
   rej_reasons_spat$ReasonType="Spatial"
   rej_reasons_spat$FLAG="REJECT"
@@ -168,7 +198,6 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   rm(rejected)
   stn$ValidationType="AUTO"
   
-  
   #Spatial review flags & reasons (Apply to stn only)
   #Populate stn$MLID & lat/long for new sites w/ no duplicate MLIDS, lats, longs, and 0 other sites w/in 100m (IR_FLAG=="REVIEW" for all non-rejected new sites at this point)
   stn$IR_MLID = ifelse(stn$IR_FLAG=="REVIEW"&stn$MLID_Count==1&stn$Lat_Count==1&stn$Long_Count==1,as.vector(stn$MonitoringLocationIdentifier),"REVIEW")
@@ -186,20 +215,28 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   review_reasons=data.frame(matrix(nrow=0,ncol=2))
   
   #MLID, lat/long, and site 50 m counts
-  reason_n=stn%>%filter(MLID_Count>1)%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Duplicated MLID")
-  if(dim(reason_n)[1]>0){review_reasons=rbind(review_reasons,reason_n)}
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, stn$MLID_Count>1)$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Duplicated MLID"
+    review_reasons=rbind(review_reasons,reason_n)}
   
-  reason_n=stn%>%filter(Lat_Count>1|Long_Count>1)%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Duplicated lat or long")
-  if(dim(reason_n)[1]>0){review_reasons=rbind(review_reasons,reason_n)}
-  
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, stn$Lat_Count>1|stn$Long_Count>1)$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Duplicated lat or long"
+    review_reasons=rbind(review_reasons,reason_n)}
+
   #MonitoringLocationTypeName is a stream or spring type & AU_Type=="Canal"
-  reason_n=stn%>%filter(MonitoringLocationTypeName%in%c("Stream","River/Stream","River/Stream Intermittent","River/Stream Perennial","Spring")& stn$AU_Type%in%c("Canal"))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="Stream or spring site type in canal AU type")
-  if(dim(reason_n)[1]>0){review_reasons=rbind(review_reasons,reason_n)}
-  
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, stn$MonitoringLocationTypeName%in%c("Stream","River/Stream","River/Stream Intermittent","River/Stream Perennial","Spring")& stn$AU_Type%in%c("Canal"))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Stream or spring site type in canal AU type"
+    review_reasons=rbind(review_reasons,reason_n)}
+ 
   #MonitoringLocationTypeName is a lake type & AU_Type!="Reservoir/Lake"
-  reason_n=stn%>%filter(MonitoringLocationTypeName%in%c("Lake, Reservoir, Impoundment","Lake","Reservoir")& !stn$AU_Type%in%c("Reservoir/Lake"))%>%select(MonitoringLocationIdentifier)%>%mutate(reason="MLID type is lake/reservoir, but AU_Type is not - potential new AU needed")
-  if(dim(reason_n)[1]>0){review_reasons=rbind(review_reasons,reason_n)}
-  
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, stn$MonitoringLocationTypeName%in%c("Lake, Reservoir, Impoundment","Lake","Reservoir")& !stn$AU_Type%in%c("Reservoir/Lake"))$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="MLID type is lake/reservoir, but AU_Type is not - potential new AU needed"
+    review_reasons=rbind(review_reasons,reason_n)}
+
   #Rename review reason columns
   names(review_reasons)=c("MonitoringLocationIdentifier","Reason")
   review_reasons$ReasonType="Spatial"
@@ -207,9 +244,6 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   
   print("Spatial site review reason count:")
   print(table(review_reasons$Reason))
-  
-  #rbind reasons together
-  reasons_all=rbind(rej_reasons_att,rej_reasons_spat, review_reasons)
   
   #Populate ACCEPT for new sites w/ no duplicate MLIDS, lats, longs, and 0 other sites w/in 100m (IR_FLAG=="REVIEW" for all non-rejected new sites at this point)
   stn=within(stn,{
@@ -232,6 +266,14 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   stn_rej$ValidationType = "MANUAL"
   stn_rej = merge(stn_rej, man_sites, all.x = TRUE)
   rm(man_sites)
+  
+  rej_reasons_man = data.frame(MonitoringLocationIdentifier=stn_rej$MonitoringLocationIdentifier,
+                               Reason = "Manually rejected due to BPJ",
+                               ReasonType = "Manual rejection",
+                               FLAG = "REJECT")
+  
+  #rbind reasons together
+  reasons_all=rbind(rej_reasons_att,rej_reasons_spat, rej_reasons_man, review_reasons)
   
   stn = subset(stn, !stn$MonitoringLocationIdentifier%in%stn_rej$MonitoringLocationIdentifier)
   stn = plyr::rbind.fill(stn, stn_rej)
