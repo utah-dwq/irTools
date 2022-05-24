@@ -52,7 +52,7 @@ prepWQPData <- function(irdata, cols, check=TRUE){
   
   # built irdata list of dataframes from WQP
   irdata = list(nr=nr,activity=activity,detquantlim=detquantlim,sites=sites,sites_filtered=sites_filtered, merged_results=merged_results)
-  save(irdata, file = "irdata_wqp_raw.Rdata")
+  save(irdata, file = "irdata_prepped.Rdata")
   return(irdata)
   ### Checks - if true, produces a csv showing which unique values were converted to NA
   if(check==TRUE){
