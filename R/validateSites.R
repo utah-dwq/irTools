@@ -179,16 +179,13 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   sum(table(accept_review$IR_FLAG))
   
   #Count MLIDs, add as column to accept_review, MLID_Count>1 means duplicated MLID
-  MLID_Count=as.vector(table(accept_review$MonitoringLocationIdentifier)[accept_review$MonitoringLocationIdentifier])
-  accept_review$MLID_Count=MLID_Count
+  accept_review$MLID_Count=as.vector(table(accept_review$MonitoringLocationIdentifier)[accept_review$MonitoringLocationIdentifier])
   
   #Count Latitudes, add as column to accept_review, Lat_Count>1 means duplicated lat
-  Lat_Count=as.vector(table(accept_review$LatitudeMeasure))[as.factor(accept_review$LatitudeMeasure)]
-  accept_review$Lat_Count=Lat_Count
+  accept_review$Lat_Count=as.vector(table(accept_review$LatitudeMeasure))[as.factor(accept_review$LatitudeMeasure)]
   
   #Count Longitudes, add as column to accept_review, Long_Count>1 means duplicated long
-  Long_Count=as.vector(table(accept_review$LongitudeMeasure))[as.factor(accept_review$LongitudeMeasure)]
-  accept_review$Long_Count=Long_Count
+  accept_review$Long_Count=as.vector(table(accept_review$LongitudeMeasure))[as.factor(accept_review$LongitudeMeasure)]
   
   #Re-appending rejected data
   stn=plyr::rbind.fill(accept_review,rejected)
@@ -245,15 +242,24 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   print("Spatial site review reason count:")
   print(table(review_reasons$Reason))
   
+  # Convert all NA AU types to Undefined, change beneficial use column name, add Review Comment Column
+  stn$AU_Type[is.na(stn$AU_Type)]="Undefined"
+  names(stn)[names(stn)=="bu_class"] = "BEN_CLASS"
+  names(stn)[names(stn)=="ss_descrp"] = "ss_R317Descrp"
+  
+  #rbind reasons together
+  reasons_all=rbind(rej_reasons_att,rej_reasons_spat, review_reasons)
+  
   #Populate ACCEPT for new sites w/ no duplicate MLIDS, lats, longs, and 0 other sites w/in 100m (IR_FLAG=="REVIEW" for all non-rejected new sites at this point)
   stn=within(stn,{
     IR_FLAG[!MonitoringLocationIdentifier %in% reasons_all$MonitoringLocationIdentifier &IR_FLAG!="REJECT" & MLID_Count==1 & Lat_Count==1 & Long_Count==1]<-"ACCEPT"
   })
   
-  # Convert all NA AU types to Undefined, change beneficial use column name, add Review Comment Column
-  stn$AU_Type[is.na(stn$AU_Type)]="Undefined"
-  names(stn)[names(stn)=="bu_class"] = "BEN_CLASS"
-  names(stn)[names(stn)=="ss_descrp"] = "ss_R317Descrp"
+  stn=within(stn,{
+    IR_COMMENT[IR_FLAG=="REJECT" & ValidationType=="AUTO"]="Automatically flagged for rejection"
+    IR_COMMENT[IR_FLAG=="REVIEW" & ValidationType=="AUTO"]="Automatically flagged for review"
+    IR_COMMENT[IR_FLAG=="ACCEPT" & ValidationType=="AUTO"]="Automatically accepted"
+  })
   
   print("Applying manual site rejections...")
   man_sites = readxl::read_xlsx(manual_path, sheet=1)
@@ -271,19 +277,11 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
                                Reason = "Manually rejected due to BPJ",
                                ReasonType = "Manual rejection",
                                FLAG = "REJECT")
-  
-  #rbind reasons together
-  reasons_all=rbind(rej_reasons_att,rej_reasons_spat, rej_reasons_man, review_reasons)
-  
   stn = subset(stn, !stn$MonitoringLocationIdentifier%in%stn_rej$MonitoringLocationIdentifier)
   stn = plyr::rbind.fill(stn, stn_rej)
   stn$ReviewDate = NA
   
-  stn=within(stn,{
-    IR_COMMENT[IR_FLAG=="REJECT" & ValidationType=="AUTO"]="Automatically flagged for rejection"
-    IR_COMMENT[IR_FLAG=="REVIEW" & ValidationType=="AUTO"]="Automatically flagged for review"
-    IR_COMMENT[IR_FLAG=="ACCEPT" & ValidationType=="AUTO"]="Automatically accepted"
-  })
+  reasons_all = rbind(reasons_all, rej_reasons_man)
   
   # Merge SLCo sites
   if(slco==TRUE){
