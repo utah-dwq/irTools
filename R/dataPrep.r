@@ -74,7 +74,7 @@ col_names=c("ResultIdentifier","OrganizationIdentifier","ActivityIdentifier","Ac
 													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
 													"AssessmentType","TableDescription","CriterionLabel","CriterionType","ParameterQualifier", "FrequencyCombined", "FrequencyNumber", "FrequencyUnit","TargetActivityType",
 													"DailyAggFun","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","NumericCriterion","SSC_StartMon","SSC_EndMon","SSC_MLID",
-													"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG"
+													"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG","IR_DataPrep_FLAG"
 													)
 
 ### Upload export translation workbook
@@ -450,10 +450,13 @@ table(reasons$BeneficialUse)
 rm(data_n)
 
 ####Apply rejections to flag column in data
-flags=reasons
+cols = c("ResultIdentifier","BeneficialUse","IR_Fraction","TableDescription","TargetFraction","FrequencyCombined","CriterionLabel","FrequencyNumber","FrequencyUnit","CriteriaQualifier")
+flags=unique(reasons[,c(cols,"reason")])
+len = dim(flags)[2]
+flags = tidyr::pivot_wider(flags, id_cols = all_of(cols), names_from = "reason", values_from = "reason")
+flags$IR_DataPrep_COMMENT = do.call(paste, c(flags[,len:dim(flags)[2]],sep=","))
+flags = flags[,names(flags)%in%c(cols, "IR_DataPrep_COMMENT")]
 flags$IR_DataPrep_FLAG="REJECT"
-# flags=unique(flags[,c("IR_MLID","BeneficialUse","ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","TableDescription","TargetFraction","FrequencyCombined","CriterionLabel","FrequencyNumber","FrequencyUnit","CriteriaQualifier","IR_DataPrep_FLAG")])
-#flags=unique(flags[,!names(flags) %in% 'reason'])
 dimcheck=dim(data)[1]
 data=merge(data,flags,all.x=T)
 #result$data_flags=data
