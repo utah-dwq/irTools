@@ -329,7 +329,7 @@ table(results_dql$IR_DetCond)
 
 # Allow zero & negative values in profile depth measures, temperature, & flow
 results_dql[which(results_dql$ResultMeasureValue<=0 & 
-	(results_dql$CharacteristicName %in% c("Depth, data-logger (ported)","Temperature, water","Stream flow, instantaneous","Flow","Flow rate, instantaneous","Stream flow, mean. daily","Velocity-discharge")) & 
+	(results_dql$CharacteristicName %in% c("Depth, data-logger (ported)","Temperature, water","Stream flow, instantaneous","Flow","Flow rate, instantaneous","Stream flow, mean. daily","Velocity-discharge","Escherichia coli")) & 
 	!is.na(results_dql$ResultMeasureValue)),"IR_DetCond"] = "DET"
 	
 table(results_dql$IR_DetCond)
