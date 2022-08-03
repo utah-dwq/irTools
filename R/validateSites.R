@@ -265,6 +265,7 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   man_sites = readxl::read_xlsx(manual_path, sheet=1)
   stn_rej = subset(stn, stn$MonitoringLocationIdentifier%in%man_sites$MonitoringLocationIdentifier)[!names(stn)%in%c("IR_COMMENT")]
   stn_rej$IR_FLAG = "REJECT"
+  stn_rej$IR_COMMENT = "Manually rejected from previous cycle - see manual site rejections sheet for more information."
   stn_rej$IR_Lat = "REJECT"
   stn_rej$IR_Long = "REJECT"
   stn_rej$IR_MLID = "REJECT"
