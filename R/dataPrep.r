@@ -74,7 +74,7 @@ col_names=c("ResultIdentifier","OrganizationIdentifier","ActivityIdentifier","Ac
 													"DataLoggerLine","ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","ActivityDepthHeightMeasure.MeasureUnitCode",
 													"AssessmentType","TableDescription","CriterionLabel","CriterionType","ParameterQualifier", "FrequencyCombined", "FrequencyNumber", "FrequencyUnit","TargetActivityType",
 													"DailyAggFun","AsmntAggPeriod","AsmntAggPeriodUnit","AsmntAggFun","NumericCriterion","SSC_StartMon","SSC_EndMon","SSC_MLID",
-													"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG"
+													"IR_Site_FLAG","IR_ActMedia_FLAG","IR_LabAct_FLAG","IR_DetCond_FLAG","IR_Unit_FLAG","IR_Parameter_FLAG","IR_DataPrep_FLAG"
 													)
 
 ### Upload export translation workbook
@@ -245,7 +245,7 @@ if(dim(diss_tot)[1]>0){
 ##################################
 
 #Double check that blanks are all NA in data (shouldn't really need this at this point)
-data[data==""]=NA
+# data[data==""]=NA
 
 #Merge conversion table to data
 data=merge(data,unit_convs,all.x=T)
@@ -321,7 +321,7 @@ rm(nd)
 # Assign correction factors to data requiring calculations
 if(any(data$BeneficialUse=="CF")){
 	## Extract CFs
-	cfs=unique(data[data$BeneficialUse=="CF",c("ActivityStartDate","IR_MLID","IRParameterName","DailyAggFun","IR_Unit","IR_Value")])
+	cfs=unique(data[data$BeneficialUse=="CF",c("ActivityStartDate","IR_MLID","R3172ParameterName","DailyAggFun","IR_Unit","IR_Value")])
 	#data=data[data$BeneficialUse!="CF",]
 	calcs=data[which(data$NumericCriterion=="calc"),]
 	dim(calcs)
@@ -334,7 +334,7 @@ if(any(data$BeneficialUse=="CF")){
 	dim(cfs)
 	dim(cfs_daily)
 	
-	cfs_daily$cf=paste0("cf_",cfs_daily$DailyAggFun,"_",cfs_daily$IRParameterName,"_",cfs_daily$IR_Unit)
+	cfs_daily$cf=paste0("cf_",cfs_daily$DailyAggFun,"_",cfs_daily$R3172ParameterName,"_",cfs_daily$IR_Unit)
 	cfs_daily_cast=reshape2::dcast(cfs_daily, ActivityStartDate+IR_MLID~cf, value.var="IR_Value")
 	
 	
@@ -450,19 +450,23 @@ table(reasons$BeneficialUse)
 rm(data_n)
 
 ####Apply rejections to flag column in data
-flags=reasons
+cols = c("ResultIdentifier","BeneficialUse","IR_Fraction","TableDescription","TargetFraction","FrequencyCombined","CriterionLabel","FrequencyNumber","FrequencyUnit","CriteriaQualifier")
+flags=unique(reasons[,c(cols,"reason")])
+len = dim(flags)[2]
+flags = tidyr::pivot_wider(flags, id_cols = all_of(cols), names_from = "reason", values_from = "reason")
+flags$IR_DataPrep_COMMENT = do.call(paste, c(flags[,len:dim(flags)[2]],sep=","))
+flags = flags[,names(flags)%in%c(cols, "IR_DataPrep_COMMENT")]
 flags$IR_DataPrep_FLAG="REJECT"
-flags=unique(flags[,c("IR_MLID","BeneficialUse","ActivityStartDate","ActivityIdentifier", "ActivityStartTime.Time", "R3172ParameterName","IR_Fraction","TableDescription","TargetFraction","FrequencyCombined","CriterionLabel","FrequencyNumber","FrequencyUnit","CriteriaQualifier","IR_DataPrep_FLAG")])
-#flags=unique(flags[,!names(flags) %in% 'reason'])
 dimcheck=dim(data)[1]
 data=merge(data,flags,all.x=T)
 #result$data_flags=data
 
-assoc_rej_records=subset(data, IR_DataPrep_FLAG=="REJECT" & !ResultIdentifier %in% reasons$ResultIdentifier)
-assoc_rej_records=assoc_rej_records[,!names(assoc_rej_records) %in% "IR_DataPrep_FLAG"]
-assoc_rej_records$reason="Associated with a rejected record"
+##### NOTE: Removed this reason for rejecting data, because it was primarily rejecting quality data
+# assoc_rej_records=subset(data, IR_DataPrep_FLAG=="REJECT" & !ResultIdentifier %in% reasons$ResultIdentifier)
+# assoc_rej_records=assoc_rej_records[,!names(assoc_rej_records) %in% "IR_DataPrep_FLAG"]
+# assoc_rej_records$reason="Associated with a rejected record"
 
-reasons=rbind(reasons, assoc_rej_records)
+# reasons=rbind(reasons, assoc_rej_records)
 
 result$rej_data_reasons=reasons
 

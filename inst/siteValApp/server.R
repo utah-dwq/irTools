@@ -296,9 +296,9 @@ observeEvent(reactive_objects$selected_sites, ignoreNULL=F, {
 output$selected_sites_table=DT::renderDT({
 	req(reactive_objects$selected_sites)
 	reactive_objects$selected_sites_table=as.data.frame(sf::st_drop_geometry(reactive_objects$map_sites[reactive_objects$map_sites$MonitoringLocationIdentifier %in% reactive_objects$selected_sites,
-		c("UID","MonitoringLocationIdentifier","OrganizationIdentifier","MonitoringLocationName","MonitoringLocationTypeName",
+		c("MonitoringLocationIdentifier","OrganizationIdentifier","MonitoringLocationName","MonitoringLocationTypeName",
 		  "IR_FLAG_REASONS","IR_FLAG", "OrganizationFormalName","ProviderName","IR_MLID","IR_MLNAME","ASSESS_ID",
-		  "AU_NAME","AU_Type","Water_Type","R317Descrp","ss_R317Descrp",
+		  "AU_NAME","AU_Type","R317Descrp","ss_R317Descrp",
 		  "BEN_CLASS","LatitudeMeasure","LongitudeMeasure","IR_Lat","IR_Long","IR_COMMENT", "ReviewComment")]))
 	DT::datatable(reactive_objects$selected_sites_table,
 		selection='multiple', rownames=FALSE, filter="top",
@@ -521,7 +521,7 @@ observeEvent(input$merge_ok, {
 		ASSESS_ID[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$ASSESS_ID
 		AU_NAME[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$AU_NAME
 		AU_Type[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$AU_Type
-		Water_Type[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$Water_Type
+		# Water_Type[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$Water_Type
 		R317Descrp[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$R317Descrp
 		ss_R317Descrp[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$ss_R317Descrp
 		BEN_CLASS[MonitoringLocationIdentifier %in% merge_mlids] = merged_lat_long$BEN_CLASS

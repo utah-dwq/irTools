@@ -73,7 +73,7 @@ length(unique(dql$ResultIdentifier))
 
 
 #Remove limits w/ 0s, NAs, ""s, etc in values and NAs in units from dql
-dql$DetectionQuantitationLimitMeasure.MeasureValue[dql$DetectionQuantitationLimitMeasure.MeasureValue==""]=NA
+# dql$DetectionQuantitationLimitMeasure.MeasureValue[dql$DetectionQuantitationLimitMeasure.MeasureValue==""]=NA
 dql$DetectionQuantitationLimitMeasure.MeasureValue[dql$DetectionQuantitationLimitMeasure.MeasureValue==0]=NA
 dql$DetectionQuantitationLimitMeasure.MeasureUnitCode[dql$DetectionQuantitationLimitMeasure.MeasureUnitCode==""]=NA
 dql$DetectionQuantitationLimitMeasure.MeasureUnitCode[dql$DetectionQuantitationLimitMeasure.MeasureUnitCode==0]=NA
@@ -96,16 +96,24 @@ dim(dql_lo)
 selectLim <- function(x) replace(logical(length(x)), which.min(x), TRUE)
 dql_lo=transform(dql_lo, keep=as.logical(ave(rank, ResultIdentifier, FUN=selectLim)))
 dim(dql_lo)
-if(length(unique(dql_lo$ResultIdentifier))!=dim(dql_lo[dql_lo$keep==TRUE,])[1]){stop("Error: selected limits not unique to each RID...")}
+if(length(unique(dql_lo$ResultIdentifier))!=dim(dql_lo[dql_lo$keep==TRUE,])[1]){stop("Selected limits not unique to each RID...")}
 dql_lo=dql_lo[dql_lo$keep==TRUE,!names(dql_lo) %in% "keep"]
 head(dql_lo)
 
+# dql_lo = dql_lo%>%group_by(ResultIdentifier)%>%slice_min(rank)%>%slice_head(n=1)
+# test = names(table(dql_lo$ResultIdentifier)[table(dql_lo$ResultIdentifier)>1])
+# if(length(test>0)){stop("ResultIdentifiers have multiple lower detection limits with the same ranking (likely 9999).")}
+
 dql_up=transform(dql_up, keep=as.logical(ave(rank, ResultIdentifier, FUN=selectLim)))
 dim(dql_up)
-if(length(unique(dql_up$ResultIdentifier))!=dim(dql_up[dql_up$keep==TRUE,])[1]){stop("Error: selected limits not unique to each RID...")}
+if(length(unique(dql_up$ResultIdentifier))!=dim(dql_up[dql_up$keep==TRUE,])[1]){stop("Selected limits not unique to each RID...")}
 dql_up=dql_up[dql_up$keep==TRUE,!names(dql_up) %in% "keep"]
 head(dql_up)
 
+# dql_up = dql_up%>%group_by(ResultIdentifier)%>%slice_min(rank)%>%slice_head(n=1)
+# test = names(table(dql_up$ResultIdentifier)[table(dql_up$ResultIdentifier)>1])
+# if(length(test>0)){stop("ResultIdentifiers have multiple upper detection limits with the same ranking (likely 9999).")}
+# 
 
 #Rename then combine to "wide" limit object w/ upper and lower limits
 names(dql_lo)[names(dql_lo)=="DetectionQuantitationLimitTypeName"]="IR_LowerLimitType"
@@ -121,7 +129,7 @@ names(dql_up)[names(dql_up)=="DetectionQuantitationLimitMeasure.MeasureUnitCode"
 sel_dql=merge(dql_lo, dql_up)
 
 #Check to ensure merge does not result in orphans.
-if(length(unique(dql$ResultIdentifier))!=dim(sel_dql)[1]){stop("Error: selected limits not unique to each RID...")}
+if(length(unique(dql$ResultIdentifier))!=dim(sel_dql)[1]){stop("Selected limits not unique to each RID...")}
 
 #Convert unranked (99999) lims back to NA
 sel_dql[sel_dql$IR_LowerLimitRank==99999,c("IR_LowerLimitType","IR_LowerLimitValue","IR_LowerLimitUnit","IR_LowerLimitRank")]=NA
@@ -185,7 +193,7 @@ if(dim(r_lu_units)[1]>0){
   unitconv <- unitconv[,names(unitconv)%in%c("IR_Unit","CriterionUnits","UnitConversionFactor")]
   
   #Check that UnitConversionFactor if filled in for all in unitconv
-  if(any(is.na(unitconv$UnitConversionFactor))){stop("Error: Needed unit conversion factor is NA in unit conversion table.")}
+  if(any(is.na(unitconv$UnitConversionFactor))){stop("Needed unit conversion factor is NA in unit conversion table.")}
   
   #Rename columns to merge CvFs with results - upper
   unitconv=dplyr::rename(unitconv, IR_UpperLimitUnit=IR_Unit, ResultMeasure.MeasureUnitCode=CriterionUnits, IR_Unit_CvF_Upper=UnitConversionFactor)
@@ -246,7 +254,7 @@ twolim <- length(results_dql[is.na(results_dql$ResultMeasureValue)&
 
 #### Consider incorporating ResultDetectionConditionText for this decision.
 if(twolim>0){
-  warning(paste("FYI: There are",twolim,"records with both upper and lower quantitation limits and is.na(result values). These records have been assigned as 'ND's"))
+  warning(paste("There are",twolim,"records with both upper and lower quantitation limits and is.na(result values). These records have been assigned as 'ND's"))
 }
 
 #is.na(rv) & is.na(lql) & !is.na(uql) ->OD
@@ -321,7 +329,7 @@ table(results_dql$IR_DetCond)
 
 # Allow zero & negative values in profile depth measures, temperature, & flow
 results_dql[which(results_dql$ResultMeasureValue<=0 & 
-	(results_dql$CharacteristicName %in% c("Depth, data-logger (ported)","Temperature, water","Stream flow, instantaneous","Flow","Flow rate, instantaneous","Stream flow, mean. daily","Velocity-discharge")) & 
+	(results_dql$CharacteristicName %in% c("Depth, data-logger (ported)","Temperature, water","Stream flow, instantaneous","Flow","Flow rate, instantaneous","Stream flow, mean. daily","Velocity-discharge","Escherichia coli")) & 
 	!is.na(results_dql$ResultMeasureValue)),"IR_DetCond"] = "DET"
 	
 table(results_dql$IR_DetCond)
@@ -329,7 +337,7 @@ table(results_dql$IR_DetCond)
 print("Detection condition counts:")
 print(table(results_dql$IR_DetCond, exclude=NULL))
 
-if(any(is.na(results_dql$IR_DetCond))){stop("ERROR - one or more detection conditions cannot be determined based on existing logic. NA's present in IR_DetCond.")}
+if(any(is.na(results_dql$IR_DetCond))){stop("One or more detection conditions cannot be determined based on existing logic. NA's present in IR_DetCond.")}
 
 #check1 <- unique(results_dql[results_dql$IR_DetCond=="DET",c("ResultMeasure.MeasureUnitCode","IR_LowerLimitUnit")])
 
