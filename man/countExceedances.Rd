@@ -6,9 +6,9 @@
 \usage{
 countExceedances(
   data,
-  group_vars = c("IR_MLID", "IR_MLNAME", "R317Descrp", "IR_Lat", "IR_Long",
-    "ASSESS_ID", "AU_NAME", "BeneficialUse", "BEN_CLASS", "R3172ParameterName",
-    "CriterionLabel", "SSC_MLID", "SSC_StartMon", "SSC_EndMon", "AsmntAggFun"),
+  group_vars = c("IR_MLID", "IR_MLNAME", "R317Descrp", "IR_Lat", "IR_Long", "ASSESS_ID",
+    "AU_NAME", "BeneficialUse", "BEN_CLASS", "R3172ParameterName", "CriterionLabel",
+    "SSC_MLID", "SSC_StartMon", "SSC_EndMon", "AsmntAggFun"),
   agg_exc = FALSE,
   agg_exc_as_n = TRUE
 )

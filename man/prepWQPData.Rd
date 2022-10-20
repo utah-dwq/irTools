@@ -4,7 +4,7 @@
 \alias{prepWQPData}
 \title{Prep WQP Data}
 \usage{
-prepWQPData(irdata, check = TRUE)
+prepWQPData(irdata, cols, check = TRUE)
 }
 \arguments{
 \item{nr}{A narrow result dataframe from EPA's WQP}
