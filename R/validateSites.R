@@ -150,7 +150,7 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
     rej_reasons_spat=rbind(rej_reasons_spat,reason_n)}
 
   #Reject where MonitoringLocationTypeName is a stream or spring type & AU_Type!="River/Stream"
-  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, stn$MonitoringLocationTypeName%in%c("Stream","River/Stream","River/Stream Intermittent","River/Stream Perennial","Spring")&!stn$AU_Type%in%c("River/Stream"))$MonitoringLocationIdentifier)
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, stn$MonitoringLocationTypeName%in%c("Stream","River/Stream","River/Stream Intermittent","River/Stream Perennial","Spring")&!stn$AU_Type%in%c("River/Stream","Canal"))$MonitoringLocationIdentifier)
   if(dim(reason_n)[1]>0){
     reason_n$reason="Stream or spring site type in non-River/Stream AU"
     rej_reasons_spat=rbind(rej_reasons_spat,reason_n)}  
