@@ -4,22 +4,18 @@
 \alias{prepWQPData}
 \title{Prep WQP Data}
 \usage{
-prepWQPData(irdata, cols, check = TRUE)
+prepWQPData(irdata, char_check = TRUE)
 }
 \arguments{
-\item{nr}{A narrow result dataframe from EPA's WQP}
+\item{irdata}{A list of WQP dataframes containing sites, narrowresult, activity, and detquantlim objects.}
 
-\item{activity}{An activity result dataframe from EPA's WQP}
-
-\item{detquantlim}{A detection quantitation limits dataframe from EPA's WQP}
-
-\item{sites}{A sites dataframe from EPA's WQP}
+\item{char_check}{Logical. If TRUE, the function produces a .csv showing all the special characters changed or converted to NA.}
 }
 \value{
-A list consisting of nr, activity, detquantlim, sites, filtered sites, and merged_results (nr combined with activity) dataframes with special characters converted to NA for the ResultMeasureValue column. Saves an rdata file named "irdata_wqp_raw.Rdata" containing the six data WQP objects.
+A list consisting of nr, activity, detquantlim, sites, filtered sites, and merged_results (nr combined with activity) dataframes with special characters converted to NA for the ResultMeasureValue column. Saves an rdata file named "irdata_prepped.Rdata" containing the six data WQP objects.
 }
 \description{
-This function reads dataframes downloaded from EPA's WQP, removes duplicates, and converts result values with non-numeric characters to NA (with the exception of those with <|>|,).
+This function reads dataframes downloaded from EPA's WQP, removes duplicates, and converts result values and detection limit values with non-numeric characters to NA (with the exception of those with <|>|,).
 Converts all non-result value columns in nr, activity, detquantlim, and sites objects to character, including dates.
 Replaces hard coding in bookdown and readWQPFiles function.
 }
