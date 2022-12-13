@@ -71,11 +71,15 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   # Aggregate to daily values.
   data_processed=aggregate(IR_Value~IR_MLID+BeneficialUse+ActivityStartDate+Year,data=data_rec,FUN=function(x){exp(mean(log(x)))})
 
-  cols2keep = c("ActivityStartDate","IR_MLID","IR_MLNAME","ASSESS_ID","AU_NAME","AU_Type","BEN_CLASS","R3172ParameterName",
-                "IR_Value","IR_Unit","IR_DetCond","IR_Fraction","IR_ActivityType","IR_Lat","IR_Long","DataLoggerLine",
-                "ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","R317Descrp","ActivityDepthHeightMeasure.MeasureUnitCode")
-
-  data_processed_allcols <- merge(data_processed,unique(data_rec[,cols2keep]), all.x=TRUE)
+  # cols2keep = c("ActivityStartDate","IR_MLID","IR_MLNAME","ASSESS_ID","AU_NAME","AU_Type","BEN_CLASS","R3172ParameterName",
+  #               "IR_Value","IR_Unit","IR_DetCond","IR_Fraction","IR_ActivityType","IR_Lat","IR_Long","DataLoggerLine",
+  #               "ActivityRelativeDepthName","ActivityDepthHeightMeasure.MeasureValue","R317Descrp","ActivityDepthHeightMeasure.MeasureUnitCode")
+  # 
+  #### NOTE: This dataset is created solely for viewing purposes in the Excel spreadsheet. It is NOT used to assess data.
+  #### EDH discovered on 12/13/22 that in cases where two NDs or ODs were collected on the same day, they will be displayed in the dataframe created below
+  #### due to the cols2keep vector containing IR_Value. In about 400 instances it is a one to many join.
+  #### AGAIN, does not affect assessment outcome, but may be confusing if reviewer sees a site with two daily aggregation values.
+  # data_processed_allcols <- merge(data_processed,unique(data_rec[,cols2keep]), all.x=TRUE)
   ecoli_assessments$dailyaggregated_data = data_processed
 
   # maxSamps48hr function - counts the maximum number of samples collected over the rec season that were not collected within 48 hours of another sample(s).
@@ -192,7 +196,7 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   ScenABC_agg$Scenario = "A"
   ScenABC_agg$Scenario[ScenABC_agg$S.rank==3]="B"
   ScenABC_agg$Scenario[ScenABC_agg$S.rank==2]="C"
-  ScenABC_agg$Scenario[ScenABC_agg$S.rank==1]="C"
+  ScenABC_agg$Scenario[ScenABC_agg$S.rank==1]="Not Assessed"
   ScenABC_agg = ScenABC_agg[,!names(ScenABC_agg)%in%"S.rank"]
 
   ScenABC_assess <- merge(ScenABC_agg, ScenABC, all.x=TRUE)
