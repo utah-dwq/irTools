@@ -7,8 +7,8 @@ library(leaflet)
 library(plotly)
 
 
-heatmap_param_choices=c("Dissolved oxygen (DO)","Temperature, water","pH","DO-temperature habitat profile width")
-names(heatmap_param_choices)=c("Dissolved oxygen", "Temperature", "pH", "DO/temperature lens")
+#heatmap_param_choices=c("Dissolved oxygen (DO)","Temperature, water","pH","DO-temperature habitat profile width")
+#names(heatmap_param_choices)=c("Dissolved oxygen", "Temperature", "pH", "DO/temperature lens")
 
 ui <-fluidPage(
 tags$head(
@@ -49,14 +49,14 @@ tags$head(
 			tabPanel("Profile time series",
 				fluidRow(column(8,
 					uiOutput("date_slider"),
-					radioButtons("ts_plot_type","Plot type:", choices=c("Heatmap", "Habitable width", "Water column exceedances"), inline=T),
-					conditionalPanel(condition="input.ts_plot_type=='Heatmap'",
-						selectInput("heatmap_param",label="Heatmap parameter:",choices=heatmap_param_choices)
-					),
+					radioButtons("ts_plot_type","Plot type:", choices=c("Habitable width", "Water column exceedances"), inline=T),
+					#conditionalPanel(condition="input.ts_plot_type=='Heatmap'",
+					#	selectInput("heatmap_param",label="Heatmap parameter:",choices=heatmap_param_choices)
+					#),
 					checkboxInput("show_dates", label="Show all profile dates", value=TRUE),
-					conditionalPanel(condition="input.ts_plot_type=='Heatmap'",
-						plotOutput("heatmap")
-					),
+					#conditionalPanel(condition="input.ts_plot_type=='Heatmap'",
+					#	plotOutput("heatmap")
+					#),
 					conditionalPanel(condition="input.ts_plot_type=='Habitable width'",
 						plotOutput("hab_width")
 					),
@@ -238,7 +238,7 @@ server <- function(input, output, session){
 		lat=prof_sites[prof_sites$MonitoringLocationIdentifier==reactive_objects$sel_mlid,"LatitudeMeasure"]
 		long=prof_sites[prof_sites$MonitoringLocationIdentifier==reactive_objects$sel_mlid,"LongitudeMeasure"]
 		map_proxy %>% leaflet::setView(lng=long, lat=lat, zoom=12)
-		updateSelectInput(session, "heatmap_param",selected=reactive_objects$sel_param)
+		#updateSelectInput(session, "heatmap_param",selected=reactive_objects$sel_param)
 	})
 
 
@@ -384,50 +384,50 @@ server <- function(input, output, session){
 		}
 	})
 
-	# Profile heatmap plot
-	output$heatmap=renderPlot({
-		req(reactive_objects$sel_profs_wide, reactive_objects$sel_profiles)
-		if(dim(reactive_objects$sel_profs_wide)[1]>0){
-			if(length(unique(reactive_objects$sel_profs_wide$ActivityStartDate))==1 | dim(reactive_objects$sel_profs_wide)[1]<=2){
-				plot.new()
-				text(0.5,0.5,"Cannot interpolate. See individual profiles.")
-				box()
-			}else{
-				# Define heatmap inputs based on selected parameter
-				if(input$heatmap_param=="Dissolved oxygen (DO)"){
-					name="Dissolved oxygen (DO)"
-					parameter="DO_mgL"
-					param_units="mg/L"
-					param_lab="Dissolved oxygen"
-				}
-				if(input$heatmap_param=="pH"){
-					name="pH"
-					parameter="pH"
-					param_units=""
-					param_lab="pH"
-				}
-				if(input$heatmap_param=="Temperature, water"){
-					name="Temperature, water"
-					parameter="Temp_degC"
-					param_units="deg C"
-					param_lab="Temperature"
-				}
-				if(input$heatmap_param=="DO-temperature habitat profile width"){
-					name="DO/temperature lens"
-					parameter="do_temp_exc"
-					param_units=""
-					param_lab="DO/temp exc."
-				}
-				# Define criteria
-				if(input$heatmap_param!="DO-temperature habitat profile width"){
-					criteria=unique(reactive_objects$sel_profiles[reactive_objects$sel_profiles$R3172ParameterName==name,"NumericCriterion"])
-				}else{criteria=1}
-				# heat map
-				if(input$show_dates){show_dates=TRUE}else{show_dates=FALSE}
-				profileHeatMap(reactive_objects$sel_profs_wide,parameter=parameter,param_units=param_units,param_lab=param_lab,depth="Depth_m",depth_units="m",criteria=criteria,show_dates=show_dates)
-		}
-		}
-	})
+	## Profile heatmap plot
+	#output$heatmap=renderPlot({
+	#	req(reactive_objects$sel_profs_wide, reactive_objects$sel_profiles)
+	#	if(dim(reactive_objects$sel_profs_wide)[1]>0){
+	#		if(length(unique(reactive_objects$sel_profs_wide$ActivityStartDate))==1 | dim(reactive_objects$sel_profs_wide)[1]<=2){
+	#			plot.new()
+	#			text(0.5,0.5,"Cannot interpolate. See individual profiles.")
+	#			box()
+	#		}else{
+	#			# Define heatmap inputs based on selected parameter
+	#			if(input$heatmap_param=="Dissolved oxygen (DO)"){
+	#				name="Dissolved oxygen (DO)"
+	#				parameter="DO_mgL"
+	#				param_units="mg/L"
+	#				param_lab="Dissolved oxygen"
+	#			}
+	#			if(input$heatmap_param=="pH"){
+	#				name="pH"
+	#				parameter="pH"
+	#				param_units=""
+	#				param_lab="pH"
+	#			}
+	#			if(input$heatmap_param=="Temperature, water"){
+	#				name="Temperature, water"
+	#				parameter="Temp_degC"
+	#				param_units="deg C"
+	#				param_lab="Temperature"
+	#			}
+	#			if(input$heatmap_param=="DO-temperature habitat profile width"){
+	#				name="DO/temperature lens"
+	#				parameter="do_temp_exc"
+	#				param_units=""
+	#				param_lab="DO/temp exc."
+	#			}
+	#			# Define criteria
+	#			if(input$heatmap_param!="DO-temperature habitat profile width"){
+	#				criteria=unique(reactive_objects$sel_profiles[reactive_objects$sel_profiles$R3172ParameterName==name,"NumericCriterion"])
+	#			}else{criteria=1}
+	#			# heat map
+	#			if(input$show_dates){show_dates=TRUE}else{show_dates=FALSE}
+	#			profileHeatMap(reactive_objects$sel_profs_wide,parameter=parameter,param_units=param_units,param_lab=param_lab,depth="Depth_m",depth_units="m",criteria=criteria,show_dates=show_dates)
+	#	}
+	#	}
+	#})
 
 
 	# Trophic indicators tab
