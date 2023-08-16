@@ -39,7 +39,7 @@ if(expand_uses & !"BEN_CLASS" %in% group_vars){group_vars=append(group_vars, "BE
 names(dat_all)[names(dat_all)==cat_var]="IR_Cat"
 dat_all=as.data.frame(dat_all)
 dat_all=subset(dat_all, !is.na(dat_all$IR_Cat))
-# Hierarchy of decision making within each subset: NS>TMDLa>IDEX>IDNE>FS
+# Hierarchy of decision making within each subset: NS>TMDLa>FS>IDEX>IDNE>ID(no data)
 dat_all$AssessCat=NA
 dat_all$AssessCat[dat_all$IR_Cat=="NS"]<-5
 #dat_all$AssessCat[dat_all$IR_Cat=="TMDLa"]<- 4 - (JV) turning off TMDL approved for now. Not sure if we want to include this here yet or as a sort of "secondary review" type step
