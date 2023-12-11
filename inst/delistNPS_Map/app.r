@@ -52,7 +52,7 @@ ui <-fluidPage(
 			fluidRow(div(DT::DTOutput("dt1"), style = list("font-size:65%")))
 		),
 		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "NPS Projects in AU"), value=5,
-		  fluidRow(div(DT::DTOutput("dt2"), style = list("font-size:65%"))),
+		  fluidRow(div(DT::DTOutput("dt2"), style = list("font-size:65%")))
 			)
 	))),
 
@@ -74,14 +74,20 @@ server <- function(input, output, session) {
   # Initialize the map
   output$assessment_map=leaflet::renderLeaflet({
     req(delist_au_poly1())
-    asmntMap(delist_au_poly1)
+    au_poly=delist_au_poly1()
+    asmntMap(au_poly)
   })
+  
   asmnt_map_proxy=leafletProxy('assessment_map')
+  
+  # Update map based on delist_au_poly1 completed or not..
   observe({
-    # Update map based on delist_au_poly1 completed or not..
-    leafletProxy("assessment_map", data = delist_au_poly1()) %>%
-      clearLayers() %>%  # Clear specific layers if needed
-      addPolygons(...)   # Add updated polygons
+    au_poly_data <- delist_au_poly1()
+
+    asmnt_map_proxy %>%
+      clearGroup(group='Assessment units') %>%  # Clear specific layers if needed
+      addPolygons(data=au_poly_data,group="Assessment units",smoothFactor=4,fillOpacity = 0.1,
+                  layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"))
   })
   
   observeEvent(input$assessment_map_shape_click, {
@@ -98,7 +104,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(selected_aus, ignoreNULL = F, ignoreInit=T, {
-    req(delist_au_poly1)
+    req(delist_au_poly1())
     asmnt_map_proxy %>%
       clearGroup(group='highlight') %>%
       addPolygons(data=delist_au_poly1[delist_au_poly1$ASSESS_ID %in% selected_aus(),], group='highlight', 
