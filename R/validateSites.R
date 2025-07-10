@@ -8,7 +8,8 @@
 #' @param manual_path Path to workbook containing manual site changes from previous IR's
 #' @param slco Logical. Default is FALSE. If TRUE, function will use the grepl function to automatically merge SLCOWS and UTAHDWQ sites containing the same two-letter, 4-number combination code used to denote SLCo monitoring locations.
 #' @return Exports a new, undated master site list to the location & filename provided by the user.
-#' @import geosphere distm
+#' @importFrom geosphere distm
+#' @importFrom geosphere distHaversine
 #' @import dplyr
 #' @export validateSites
 validateSites <- function(site_buffer=10,sites,trans_wb,manual_path,slco=FALSE){
