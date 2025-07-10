@@ -8,11 +8,17 @@
 #' @param manual_path Path to workbook containing manual site changes from previous IR's
 #' @param slco Logical. Default is FALSE. If TRUE, function will use the grepl function to automatically merge SLCOWS and UTAHDWQ sites containing the same two-letter, 4-number combination code used to denote SLCo monitoring locations.
 #' @return Exports a new, undated master site list to the location & filename provided by the user.
-
-#' @import sp
+#' @import geosphere distm
 #' @import dplyr
 #' @export validateSites
-validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
+validateSites <- function(site_buffer=10,sites,trans_wb,manual_path,slco=FALSE){
+  
+  #TESTING
+   # stn <- ecoli_WQP_SLCo_sites1
+   # trans_wb="/Users/alanochoa/Documents/GitHub/IR-2024/ir_translation_workbook_working_2024.xlsx"
+   # manual_path="/Users/alanochoa/Documents/GitHub/IR-2024/manual_site_rejections.xlsx"
+   # slco=TRUE
+  
   stn=sites
   stn[stn==""]=NA #Make sure all blanks are NA
   stn=unique(stn)
@@ -119,6 +125,7 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   # stn = wqTools::assignPolys(stn,wqTools::hnnc_poly, lat="LatitudeMeasure", long = "LongitudeMeasure")
   stn = wqTools::assignPolys(stn,wqTools::wmu_poly, lat="LatitudeMeasure", long = "LongitudeMeasure")
   
+  
   ###Spatial rejections
   rej_reasons_spat=data.frame(matrix(nrow=0,ncol=2))
   
@@ -156,9 +163,12 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
     rej_reasons_spat=rbind(rej_reasons_spat,reason_n)}  
 
   names(rej_reasons_spat)=c("MonitoringLocationIdentifier","Reason")
-  rej_reasons_spat$ReasonType="Spatial"
-  rej_reasons_spat$FLAG="REJECT"
-  head(rej_reasons_spat)
+  if(dim(rej_reasons_spat)[1]>0){
+    rej_reasons_spat$ReasonType="Spatial"
+    rej_reasons_spat$FLAG="REJECT"
+    head(rej_reasons_spat)
+  }
+  
   
   print("Spatial site rejection reason count:")
   print(table(rej_reasons_spat$Reason))
@@ -181,11 +191,36 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   #Count MLIDs, add as column to accept_review, MLID_Count>1 means duplicated MLID
   accept_review$MLID_Count=as.vector(table(accept_review$MonitoringLocationIdentifier)[accept_review$MonitoringLocationIdentifier])
   
-  #Count Latitudes, add as column to accept_review, Lat_Count>1 means duplicated lat
-  accept_review$Lat_Count=as.vector(table(accept_review$LatitudeMeasure))[as.factor(accept_review$LatitudeMeasure)]
+  #Review reasons
+  review_reasons=data.frame(matrix(nrow=0,ncol=2))
   
-  #Count Longitudes, add as column to accept_review, Long_Count>1 means duplicated long
-  accept_review$Long_Count=as.vector(table(accept_review$LongitudeMeasure))[as.factor(accept_review$LongitudeMeasure)]
+  #AO - Using duplicate lat and long was missing many true duplicates that were right next to each other but had a slight rounding difference (example: 39.37468	-112.03966 ; 39.37468029	-112.0396557) 
+  # Identify spatially close duplicates (< 5-10 meters ) within the same ASSESS_ID
+  nearby_duplicates <- do.call(rbind, lapply(split(accept_review, accept_review$ASSESS_ID), function(df) {
+    if (nrow(df) < 2) return(NULL)  # skip if only one site
+    coords <- cbind(df$LongitudeMeasure, df$LatitudeMeasure)
+    dist_matrix <- geosphere::distm(coords, fun = distHaversine) # convert to km /1000
+    near_pairs <- which(dist_matrix < site_buffer & dist_matrix > 0, arr.ind = TRUE)
+    if (nrow(near_pairs) > 0) {
+      data.frame(
+        MonitoringLocationIdentifier = df$MonitoringLocationIdentifier[unique(near_pairs[,1])],
+        reason = paste("Within ",site_buffer, " meters of another site in same AU") )
+    } else {
+      NULL
+    }
+  }))
+  
+  if (!is.null(nearby_duplicates)) {
+    nearby_duplicates <- distinct(nearby_duplicates)
+    rownames(nearby_duplicates) <- NULL
+    review_reasons <- rbind(review_reasons, nearby_duplicates)
+  }
+  
+  #MLID, lat/long, and site 50 m counts
+  reason_n=data.frame(MonitoringLocationIdentifier=subset(accept_review, accept_review$MLID_Count>1)$MonitoringLocationIdentifier)
+  if(dim(reason_n)[1]>0){
+    reason_n$reason="Duplicated MLID"
+    review_reasons=rbind(review_reasons,reason_n)}
   
   #Re-appending rejected data
   stn=plyr::rbind.fill(accept_review,rejected)
@@ -197,30 +232,20 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   
   #Spatial review flags & reasons (Apply to stn only)
   #Populate stn$MLID & lat/long for new sites w/ no duplicate MLIDS, lats, longs, and 0 other sites w/in 100m (IR_FLAG=="REVIEW" for all non-rejected new sites at this point)
-  stn$IR_MLID = ifelse(stn$IR_FLAG=="REVIEW"&stn$MLID_Count==1&stn$Lat_Count==1&stn$Long_Count==1,as.vector(stn$MonitoringLocationIdentifier),"REVIEW")
-  stn$IR_MLNAME = ifelse(stn$IR_FLAG=="REVIEW"&stn$MLID_Count==1&stn$Lat_Count==1&stn$Long_Count==1,as.vector(stn$MonitoringLocationName),NA)
-  stn$IR_Lat = ifelse(stn$IR_FLAG=="REVIEW"&stn$MLID_Count==1&stn$Lat_Count==1&stn$Long_Count==1,stn$LatitudeMeasure,NA)
-  stn$IR_Long = ifelse(stn$IR_FLAG=="REVIEW"&stn$MLID_Count==1&stn$Lat_Count==1&stn$Long_Count==1,stn$LongitudeMeasure,NA)
+  stn$IR_MLID = ifelse(stn$IR_FLAG=="REVIEW"&stn$MLID_Count==1&!stn$MonitoringLocationIdentifier%in%review_reasons$MonitoringLocationIdentifier,as.vector(stn$MonitoringLocationIdentifier),"REVIEW")
+  stn$IR_MLNAME = ifelse(stn$IR_FLAG=="REVIEW"&stn$MLID_Count==1&!stn$MonitoringLocationIdentifier%in%review_reasons$MonitoringLocationIdentifier,as.vector(stn$MonitoringLocationName),NA)
   
+  
+  stn$IR_Lat = ifelse(stn$IR_FLAG=="REVIEW"&stn$MLID_Count==1&!stn$MonitoringLocationIdentifier%in%review_reasons$MonitoringLocationIdentifier,stn$LatitudeMeasure,NA)
+  stn$IR_Long = ifelse(stn$IR_FLAG=="REVIEW"&stn$MLID_Count==1&!stn$MonitoringLocationIdentifier%in%review_reasons$MonitoringLocationIdentifier,stn$LongitudeMeasure,NA)
+  # 
   #Populate rejected MLID, lat, and long w/ REJECT
   stn$IR_MLID = ifelse(stn$IR_FLAG=="REJECT","REJECT",as.vector(stn$IR_MLID))
   stn$IR_MLNAME = ifelse(stn$IR_FLAG=="REJECT","REJECT",as.vector(stn$IR_MLNAME))
   stn$IR_Lat = ifelse(stn$IR_FLAG=="REJECT",NA,stn$IR_Lat)
   stn$IR_Long = ifelse(stn$IR_FLAG=="REJECT",NA,stn$IR_Long)
   
-  #Review reasons
-  review_reasons=data.frame(matrix(nrow=0,ncol=2))
-  
-  #MLID, lat/long, and site 50 m counts
-  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, stn$MLID_Count>1)$MonitoringLocationIdentifier)
-  if(dim(reason_n)[1]>0){
-    reason_n$reason="Duplicated MLID"
-    review_reasons=rbind(review_reasons,reason_n)}
-  
-  reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, stn$Lat_Count>1|stn$Long_Count>1)$MonitoringLocationIdentifier)
-  if(dim(reason_n)[1]>0){
-    reason_n$reason="Duplicated lat or long"
-    review_reasons=rbind(review_reasons,reason_n)}
+  names(stn)
 
   #MonitoringLocationTypeName is a stream or spring type & AU_Type=="Canal"
   reason_n=data.frame(MonitoringLocationIdentifier=subset(stn, stn$MonitoringLocationTypeName%in%c("Stream","River/Stream","River/Stream Intermittent","River/Stream Perennial","Spring")& stn$AU_Type%in%c("Canal"))$MonitoringLocationIdentifier)
@@ -247,12 +272,13 @@ validateSites <- function(sites,trans_wb,manual_path,slco=FALSE){
   names(stn)[names(stn)=="bu_class"] = "BEN_CLASS"
   names(stn)[names(stn)=="ss_descrp"] = "ss_R317Descrp"
   
+
   #rbind reasons together
   reasons_all=rbind(rej_reasons_att,rej_reasons_spat, review_reasons)
   
   #Populate ACCEPT for new sites w/ no duplicate MLIDS, lats, longs, and 0 other sites w/in 100m (IR_FLAG=="REVIEW" for all non-rejected new sites at this point)
   stn=within(stn,{
-    IR_FLAG[!MonitoringLocationIdentifier %in% reasons_all$MonitoringLocationIdentifier &IR_FLAG!="REJECT" & MLID_Count==1 & Lat_Count==1 & Long_Count==1]<-"ACCEPT"
+    IR_FLAG[!MonitoringLocationIdentifier %in% reasons_all$MonitoringLocationIdentifier &IR_FLAG!="REJECT" & MLID_Count==1 ]<-"ACCEPT"
   })
   
   stn=within(stn,{

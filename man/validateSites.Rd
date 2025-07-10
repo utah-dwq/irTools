@@ -4,7 +4,7 @@
 \alias{validateSites}
 \title{Validate monitoring locations for the IR}
 \usage{
-validateSites(sites, trans_wb, manual_path, slco = FALSE)
+validateSites(site_buffer = 10, sites, trans_wb, manual_path, slco = FALSE)
 }
 \arguments{
 \item{sites}{Sites object queried from WQP to be reviewed.}

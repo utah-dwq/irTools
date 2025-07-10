@@ -4,3 +4,4 @@
 rsconnect
 inst/lakeDashboard/user_guide/user_guide.html
 inst/lakeDashboard/user_guide/rsconnect
+*.Rdata
