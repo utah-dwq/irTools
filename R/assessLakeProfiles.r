@@ -19,11 +19,11 @@
 assessLakeProfiles <- function(data, do_crit=list("3A"=4, "3B"=3), temp_crit=list("3A"=20, "3B"=27), uses_assessed=c("3A","3B")){
 
 ##### Testing setup
-#load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
-#data=profile_data_asmnt
-#uses_assessed=c("3A","3B")
-#do_crit=list("3A"=4, "3B"=3)
-#temp_crit=list("3A"=20, "3B"=27)
+# load("P:\\WQ\\Integrated Report\\Automation_Development\\R_package\\demo\\prepped_data.rdata")
+# data=profile_data_asmnt
+# uses_assessed=c("3A","3B")
+# do_crit=list("3A"=4, "3B"=3)
+# temp_crit=list("3A"=20, "3B"=27)
 #####
 
 # Make numeric criterion numeric
@@ -104,8 +104,14 @@ thermo_depths$stratified[thermo_depths$tc_depth_m!="NaN"]=1
 profs_exc=merge(profs_exc,thermo_depths, all.x=T)
 
 # Determine DO + temp exc
-profs_exc$do_temp_exc=0
-profs_exc$do_temp_exc[profs_exc$do_exc==1 | profs_exc$temp_exc==1]=1
+#profs_exc$do_temp_exc=0
+#profs_exc$do_temp_exc[profs_exc$do_exc==1 | profs_exc$temp_exc==1]=1
+
+#******AO Create multi-category exceedance variable
+profs_exc$do_temp_exc = 0  # Neither exceeds
+profs_exc$do_temp_exc[profs_exc$do_exc==1 & profs_exc$temp_exc==1] = 1  # Both exceed
+profs_exc$do_temp_exc[profs_exc$do_exc==1 & profs_exc$temp_exc==0] = 2  # DO only exceeds
+profs_exc$do_temp_exc[profs_exc$do_exc==0 & profs_exc$temp_exc==1] = 3  # Temp only exceeds
 
 #######
 #x=profs_exc[profs_exc$ActivityIdentifier=="UTAHDWQ_WQX-BORFG061615-4938550-0617-Pr-F",]
@@ -136,18 +142,42 @@ assessOneProfile=function(x){
 	if(any(strat$rles.values==0)){
 		max_hab_width=max(strat$layer_width[strat$rles.values==0])
 	}else{max_hab_width=0}
-	if(x$stratified[1]==1 & max(x$Profile.depth)>4){ #stratified
+	
+	##******AO Identify which parameters are limiting habitat in the bad zones
+	limiting_factors = character(0)
+	if(any(strat$rles.values %in% c(1,2,3))){
+	  bad_zones = strat[strat$rles.values %in% c(1,2,3), ]
+	  if(any(bad_zones$rles.values %in% c(1,2))) limiting_factors = c(limiting_factors, "DO")
+	  if(any(bad_zones$rles.values %in% c(1,3))) limiting_factors = c(limiting_factors, "Temp")
+	}
+	
+	if(x$stratified[1]==1 & max(x$Profile.depth)>4){ #stratified 
 		do_temp_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
-		do_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
-		temp_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
+		
+		#******AO - change this section to specify the impaired parameter DO Temp or both..
+		#*Only mark DO as NS if DO is actually limiting the habitat
+		if(max_hab_width>=3){
+		  do_asmnt = "FS"
+		  temp_asmnt = "FS"
+		} else {
+		  do_asmnt = ifelse("DO" %in% limiting_factors, "NS", "FS")
+		  temp_asmnt = ifelse("Temp" %in% limiting_factors, "NS", "FS")
+		}
+	
+		# do_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
+		# temp_asmnt=ifelse(max_hab_width>=3, "FS", "NS")
 	
 	}else{ #non-stratified
 		do_temp_asmnt=as.factor(NA)
 		temp_asmnt=ifelse(temp_exc_cnt>pct10 & temp_exc_cnt>=2,"NS","FS")
 		do_asmnt=ifelse(do_exc_cnt>pct10 & do_exc_cnt>=2,"NS","FS")
 	}
+	
+	# Create summary of limiting factors for reporting
+	limiting_summary = ifelse(length(limiting_factors)==0, "None", paste(limiting_factors, collapse=", "))
+	
 
-	asmnt=data.frame(max_hab_width,do_temp_asmnt,do_exc_cnt,do_asmnt,temp_exc_cnt,temp_asmnt,pH_exc_cnt,pH_asmnt,samp_count,pct10,profile_depth)
+	asmnt=data.frame(max_hab_width,do_temp_asmnt,do_exc_cnt,do_asmnt,temp_exc_cnt,temp_asmnt,pH_exc_cnt,pH_asmnt,samp_count,pct10,profile_depth,limiting_summary)
 	
 	return(asmnt)
 }
