@@ -46,7 +46,7 @@ assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startR
 #library(openxlsx)
 #library(reshape2)
 #library(plyr)
-#data=acc_data
+#data=acc_data_param
 #data=within(data,{
 #	ss_R317Descrp[ss_R317Descrp=='Lost Creek from the confluence with Sevier River to U.S. National Forest boundary']='Ivie Creek and its tributaries from the confluence with Muddy Creek to the confluence with Quitchupah Creek'
 #})
@@ -55,7 +55,7 @@ assignCriteria=function(data, crit_wb, crit_sheetname, ss_sheetname, crit_startR
 #ss_sheetname="ss_criteria"
 #crit_startRow=3
 #ss_startRow=4
-#any(data$R3172ParameterName=='Sulfate', na.rm=T)
+any(data$R3172ParameterName=='Sulfate', na.rm=T)
 
 #Check that data is post-parameter translation
 if(!any(names(data)=="R3172ParameterName")){
@@ -101,6 +101,7 @@ uses_flat=uses_flat[uses_flat$BeneficialUse!="" & !is.na(uses_flat$BeneficialUse
 data_uses_flat=merge(data,uses_flat,all=T)
 rm(uses_flat)
 
+# AO - Can sulfate be lost here or other Parameters that are in ss_crit_table but not crit_table?
 #Merge criteria to data w/ flattened uses
 data_uses_flat_crit=merge(data_uses_flat,crit_table,all.x=T)
 dim_check=dim(data_uses_flat_crit)[1]
