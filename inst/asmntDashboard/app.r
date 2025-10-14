@@ -29,6 +29,8 @@ options(warn = -1)
 # Shiny file input size allowed
 options(shiny.maxRequestSize = 10*1024^2)
 
+print(max(assessed_data$ActivityStartDate))
+
 # User interface
 ui <-fluidPage(
 

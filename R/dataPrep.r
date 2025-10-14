@@ -25,14 +25,15 @@
 dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb, cf_formulas_sheetname, startRow_unit=1, startRow_formulas=1, split_agg_tds=TRUE){
 
 ######SETUP#####
-#data=acc_data_criteria
-#split_agg_tds=TRUE
-#translation_wb='ir_translation_workbook_working_v12_ef - no IR_Fraction formula.xlsx'
-#unit_sheetname="unitConvTable"
-#startRow_unit=1
-#crit_wb="IR_uses_standards_working_v4_ef.xlsx"
-#cf_formulas_sheetname="cf_formulas"
-#startRow_formulas=3
+# data=acc_data_criteria
+# split_agg_tds=TRUE
+# translation_wb='~/Documents/GitHub/IR-2026/IR_translation_workbook_working_2026.xlsx'
+# unit_sheetname="unitConvTable"
+# startRow_unit=1
+# crit_wb="IR_uses_standards_working_2026.xlsx"
+# cf_formulas_sheetname="cf_formulas"
+# startRow_formulas=1
+# split_agg_tds=TRUE
 #########
 
 result=list()
@@ -180,6 +181,7 @@ names(unit_convs)[names(unit_convs)=="IR_FLAG"]="IR_UnitConv_FLAG"
 ######################################################
 ###Data prep for dissolved vs. total fraction check###
 ######################################################
+
 
 # Reduce dataframe to columns of interest for comparing total and dissolved, narrow down rows to unique values (currently values are duplicated if measurement subject to multiple uses/standards)
 unique(data$ResultSampleFractionText)# note that NA's may be in this list.
@@ -460,6 +462,11 @@ flags$IR_DataPrep_FLAG="REJECT"
 dimcheck=dim(data)[1]
 data=merge(data,flags,all.x=T)
 #result$data_flags=data
+
+#******CHECK THIS
+#AO - There is an issue with data showing up both in rej_data_reasons AND acc_data. Could line below be cause? What is cause of comment below? 
+#How would a record be associated and rejected but not in reasons$ResultIdentifier? Why does the code above not apply a REJECT flag to all the records in reason df?
+
 
 ##### NOTE: Removed this reason for rejecting data, because it was primarily rejecting quality data
 # assoc_rej_records=subset(data, IR_DataPrep_FLAG=="REJECT" & !ResultIdentifier %in% reasons$ResultIdentifier)

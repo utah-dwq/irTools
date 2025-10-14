@@ -5,6 +5,7 @@
 library(wqTools)
 library(leaflet)
 library(plotly)
+library(colorspace)
 
 
 #heatmap_param_choices=c("Dissolved oxygen (DO)","Temperature, water","pH","DO-temperature habitat profile width")
@@ -103,8 +104,9 @@ server <- function(input, output, session){
 		removeModal()
 	})
 
-	# Load data
-	load("data/lake_data.Rdata")
+	# Load data -- This file was created using the lake_profile_assessments.Rmd file. 
+	#load("data/lake_data.Rdata")
+	load("data/lake_data_for_app2025.Rdata") # This data was created in August 2025 and includes data for the 2026 Integrated Report
 
 	# Subset polygons to lake polygons
 	au_poly=wqTools::au_poly

@@ -31,17 +31,17 @@ fillMaskedValues = function(results, detquantlim, translation_wb, detLimitTypeTa
 #####TESTING SETUP
 #####
 # 
-# results=merged_results
+# results=acc_data_filt
 # detquantlim=detquantlim
-# translation_wb="C:\\Users\\jvander\\Documents\\R\\irTools-test-16\\lookup-tables\\ir_translation_workbook.xlsx"
+# translation_wb='~/Documents/GitHub/IR-2026/IR_translation_workbook_working_2026.xlsx'
 # detLimitTypeTable_sheetname="detLimitTypeTable"
 # unitConvTable_sheetname="unitConvTable"
 # lql_fac=0.5
 # uql_fac=1
-# detLimitTypeTable_startRow=2
+# detLimitTypeTable_startRow=1
 # unitConvTable_startRow=1
 # unitConvTable_startCol=1
-########
+#######
 ########
 
 
