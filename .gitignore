@@ -5,3 +5,5 @@ rsconnect
 inst/lakeDashboard/user_guide/user_guide.html
 inst/lakeDashboard/user_guide/rsconnect
 *.Rdata
+!asmntDashboard_data.Rdata
+!hf_temp_assessed_data.RData

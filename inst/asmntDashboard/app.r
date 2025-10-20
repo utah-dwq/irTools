@@ -4,6 +4,7 @@
 #setwd('C:\\Users\\jvander\\Documents\\R\\irTools\\inst\\asmntDashboard')
 #devtools::install_local('C:\\Users\\jvander\\Documents\\R\\irTools', force=T)
 
+
 # Packages
 library(wqTools)
 library(irTools)
@@ -21,8 +22,6 @@ library(lubridate)
 # Modules/functions
 source('helpers/initialDataProc.R')
 source('helpers/asmntMap.R')
-source('helpers/figuresMod.R')
-source('helpers/figuresMod.R')
 source('helpers/figuresMod.R')
 
 # Load data & criteria
