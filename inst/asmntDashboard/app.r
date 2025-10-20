@@ -13,23 +13,41 @@ library(plotly)
 library(sf)
 library(rgdal)
 library(mapedit)
-
+library(dplyr)
+library(DT)
+library(data.table)
+library(lubridate)
 
 # Modules/functions
 source('helpers/initialDataProc.R')
 source('helpers/asmntMap.R')
 source('helpers/figuresMod.R')
+source('helpers/figuresMod.R')
+source('helpers/figuresMod.R')
 
 # Load data & criteria
-load(system.file("extdata", "asmntDashboard_data.Rdata", package = "irTools"))
+#load(system.file("extdata", "asmntDashboard_data.Rdata", package = "irTools"))
 load(system.file("extdata","reviewer_export_data.Rdata", package = "irTools"))
-#load('C:\\Users\\jvander\\Documents\\R\\irTools\\inst\\extdata\\asmntDashboard_data.Rdata')
+
+load(file.path("data", "asmntDashboard_data.Rdata"))
+load(file.path("data", "hf_temp_assessed_data.RData"))
 options(warn = -1)
 
 # Shiny file input size allowed
 options(shiny.maxRequestSize = 10*1024^2)
 
-print(max(assessed_data$ActivityStartDate))
+temp_cs = conflicting_summary%>%filter(R3172ParameterName%in%c("High Frequency Temperature","Max. Temperature"))
+
+setDT(acc_hf_data)
+
+discrete_temp = assessed_data%>%
+  filter(ASSESS_ID%in%acc_hf_data$ASSESS_ID&R3172ParameterName=="Max. Temperature")%>%
+  mutate(DateTime_str = paste(`ActivityStartDate`, `ActivityStartTime.Time`),
+    DateTime = ymd_hms(DateTime_str,  tz = "America/Denver"  ))%>%
+  # Filter out any rows that still failed conversion, just in case
+  filter(!is.na(DateTime))
+print('DISCRETE DIMENSIONS')
+print(dim(discrete_temp))
 
 # User interface
 ui <-fluidPage(
@@ -66,6 +84,16 @@ ui <-fluidPage(
 		bsCollapsePanel(list(icon('plus-circle'), icon('chart-bar'), "Figures"), value=3,
 			fluidRow(tableOutput("asmnt_summary")),
 			figuresModUI('figures')
+		),
+		bsCollapsePanel(list(icon('plus-circle'), icon('chart-bar'), "Continuous & Grab Data"), value=3,
+		                fluidRow(DTOutput("hf_grab_summary")),
+		                fluidRow( column(4, selectInput("hf_site_selector", "Select sites:", choices = NULL, selected = NULL,multiple=TRUE
+		                               )),column(1,checkboxInput("all_hf_data","Review All HF Sites")),
+		                  #column(4,selectInput("param_selector", "Select parameter:", choices = NULL, selected = NULL)),
+		                  column(1,icon("circle-info"))
+		                  )
+		                ,plotlyOutput("hf_plot")
+		                #figuresModUI('figures')
 		),
 		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "View & download data"), value=4,
 			fluidRow(downloadButton('exp_dt', label = "Download data & assessment summary", icon=icon('download'), style='color: #fff; background-color: #337ab7; border-color: #2e6da4%')),
@@ -193,6 +221,175 @@ observeEvent(input$import_assessments,{
 	reactive_objects$site_use_param_asmnt=site_use_param_asmnt
 })
 
+#Filtered Conflicting Asmnt
+hf_site_list <- reactive({
+  req(reactive_objects$selected_aus)
+  
+  # This option may include sites with HF-DO or HF-Temp. The difference between two options are 1) AUs where they have any HF assessments, 2) Where there is potential conflicting asmnts.
+  if(input$all_hf_data==TRUE){
+    conflicting_summary[
+      conflicting_summary$ASSESS_ID %in% reactive_objects$selected_aus,]
+  } else {
+    conflicting_summary[
+      conflicting_summary$ASSESS_ID %in% reactive_objects$selected_aus &conflicting_summary$p_conflict,]
+  }
+ })
+
+
+
+filtered_hf_plot_data <- reactiveValues()
+
+# Update filtered hf_data. Respond to site selectors
+observe({
+  input$hf_site_selector
+  req(reactive_objects$selected_aus) 
+  req(hf_site_list())
+  
+  filtered_hf_plot_data$discrete = discrete_temp%>%
+    filter(ASSESS_ID%in%reactive_objects$selected_aus)
+
+  filtered_hf_plot_data$hf = acc_hf_data%>%filter(ASSESS_ID%in%reactive_objects$selected_aus & IR_MLID%in%input$hf_site_selector) # 
+  
+  
+})
+
+
+# Update Site Selector w/ Checkbox
+observeEvent(input$all_hf_data, ignoreNULL = F, ignoreInit=T, {
+  req(reactive_objects$au_asmnt_poly)
+  
+  sites = hf_site_list()%>%filter(R3172ParameterName%in%c("High Frequency Temperature"))
+  
+  
+  if(nrow(sites)>0){
+    updateSelectInput(session, "hf_site_selector", 
+                      choices = unique(sites$IR_MLID),
+                      selected = sites$IR_MLID[1])
+  }
+  
+})
+
+#Plot HF Data
+output$hf_plot <- renderPlotly({
+  req(filtered_hf_plot_data$hf)
+  req(filtered_hf_plot_data$discrete)
+
+  discrete = filtered_hf_plot_data$discrete
+  water_data <- filtered_hf_plot_data$hf%>%
+    filter(IR_MLID%in%input$hf_site_selector)
+  if (nrow(water_data) == 0) {
+    return(plot_ly() %>% layout(title = "No data available"))
+  }
+  
+  
+  # Filter by date range
+  #water_data <- water_data[DateTime_Local >= (min(shade_data$Date)-20) & 
+  #                        DateTime_Local <= (max(shade_data$Date) + 20)]
+  # water_data <- as.data.frame(water_data) %>%
+  #   filter(!is.na(Water_Measurement))%>%
+  #   mutate(color = ifelse(as.numeric(Water_Measurement) > as.numeric(Criteria), "red", "blue"))
+  # 
+  water_data_agg <- water_data %>%
+    group_by(ASSESS_ID)%>%
+    mutate(DateTime_Hour = floor_date(DateTime_Local, unit = "hour"),Criteria = first(Criteria)) %>%
+    ungroup()%>%
+    group_by(IR_MLID,DateTime_Hour)%>%
+    summarise(
+      DateTime_Local = first(DateTime_Hour), # Use the start of the hour as the timestamp
+      Water_Measurement = mean(as.numeric(Water_Measurement), na.rm = TRUE),
+      Criteria = first(Criteria), # Assuming criteria doesn't change hourly
+      .groups = 'drop'
+    ) %>%
+    mutate(color = ifelse(Water_Measurement > as.numeric(Criteria), "red", "blue"))
+  
+  str(discrete)
+  str(water_data_agg)
+  
+  # Prepare air temp data
+  air_temp_data <- water_data %>%
+    select(IR_MLID,Date, tmmn_c, tmmx_c) %>%
+    distinct() %>%
+    mutate(DateTime = as.POSIXct(Date) + hours(12)) %>%
+    filter(!is.na(tmmn_c) | !is.na(tmmx_c))%>%
+    arrange(DateTime)
+  
+ 
+  # Create plot
+  p <- plot_ly()
+  
+  # Add water temperature measurements
+  p <- p %>%
+    add_trace(data = water_data_agg,
+              x = ~DateTime_Local,
+              y = ~Water_Measurement,
+              type = 'scatter',
+              mode = 'markers',
+              marker = list(color = ~color, size = 6),
+              name = ~paste("HF:", IR_MLID),
+              text = ~paste("MLID:", IR_MLID,
+                "<br>Value:", round(Water_Measurement, 2),
+                           "<br>DateTime:", DateTime_Local),
+              hoverinfo = "text")
+  
+  # Add air temp max
+  if (nrow(air_temp_data) > 0 && any(!is.na(air_temp_data$tmmx_c))) {
+    p <- p %>%
+      add_trace(data = air_temp_data %>% filter(!is.na(tmmx_c)),
+                x = ~DateTime,
+                y = ~tmmx_c,
+                type = 'scatter',
+                mode = 'markers+lines',
+                line = list(color = "orange", dash = "dash"),
+                marker = list(color = "orange", size = 8, symbol = "triangle-up"),
+                name = "Air Temp C° Max",
+                text = ~paste("Max Temp:", round(tmmx_c, 2), "°C<br>Date:", Date),
+                hoverinfo = "text")
+  }
+  
+  # Add air temp min
+    if (nrow(air_temp_data) > 0 && any(!is.na(air_temp_data$tmmn_c))) {
+      p <- p %>%
+        add_trace(data = air_temp_data %>% filter(!is.na(tmmn_c)),
+                  x = ~DateTime,
+                  y = ~tmmn_c,
+                  type = 'scatter',
+                  mode = 'markers+lines',
+                  line = list(color = "lightblue", dash = "dash"),
+                  marker = list(color = "lightblue", size = 8, symbol = "triangle-down"),
+                  name = "Air Temp C° Min",
+                  text = ~paste("Min Temp C°:", round(tmmn_c, 2), "°C<br>Date:", Date),
+                  hoverinfo = "text")
+    }
+
+  # Add discrete temperature samples
+  if (!is.null(discrete) && nrow(discrete) > 0) {
+    p <- p %>%
+      add_trace(data = discrete,
+                x = ~DateTime,
+                y = ~IR_Value,
+                type = 'scatter',
+                mode = 'markers',
+                marker = list(color = "green", size = 9, symbol = "diamond"),
+                name = "Discrete Water Temp",
+                text = ~paste("MLID:", IR_MLID,
+                              "<br>Value:", round(IR_Value, 2),
+                              "<br>Date:", DateTime),
+                hoverinfo = "text")
+  }
+
+  
+  # Final layout
+  p %>%
+    layout(
+      title = paste("HF & Discrete Temperature Data"),
+      xaxis = list(
+        title = "Date"
+      ),
+      yaxis = list(title = "Temperature (°C)"),
+      legend = list(orientation = "h", y = -0.2),
+      hovermode = "closest"
+    )
+})
 
 
 
@@ -205,8 +402,16 @@ observe({
 					"AU name: ", AU_NAME,
 					'<br />', "AU ID: ", ASSESS_ID,
 					'<br />', "Assessment: ", AssessCat,
-					'<br />', "Impaired params: ", Impaired_params,
-					'<br />', "ID w/ exceedance params: ", IDEX_params)
+					case_when(
+					  !is.na(new_listings) & !is.na(Impaired_params) ~ 
+					    paste0('<br />', "Impaired params: ", '<span style="color:red;">', new_listings, '</span>', "; ", Impaired_params),
+					  !is.na(new_listings) ~ 
+					    paste0('<br />', "Impaired params: ", '<span style="color:red;">', new_listings, '</span>'),
+					  !is.na(Impaired_params) ~ 
+					    paste0('<br />', "Impaired params: ", Impaired_params),
+					  TRUE ~ ""),
+					'<br />', "ID w/ exceedance params: ", IDEX_params,
+					'<br> NS pollution indicators: ', pi_params)
 	})
 })
 
@@ -240,7 +445,14 @@ observeEvent(input$map_rev_filter, ignoreInit=T, {
 				"AU name: ", AU_NAME,
 				'<br />', "AU ID: ", ASSESS_ID,
 				'<br />', "Assessment: ", AssessCat,
-				'<br />', "Impaired params: ", Impaired_params,
+				case_when(
+				  !is.na(new_listings) & !is.na(Impaired_params) ~ 
+				    paste0('<br />', "Impaired params: ", '<span style="color:red;">', new_listings, '</span>', "; ", Impaired_params),
+				  !is.na(new_listings) ~ 
+				    paste0('<br />', "Impaired params: ", '<span style="color:red;">', new_listings, '</span>'),
+				  !is.na(Impaired_params) ~ 
+				    paste0('<br />', "Impaired params: ", Impaired_params),
+				  TRUE ~ ""),
 				'<br />', "ID w/ exceedance params: ", IDEX_params,
 				'<br> NS pollution indicators: ', pi_params)
 
@@ -291,6 +503,16 @@ observeEvent(input$assessment_map_shape_click,{
 # Highlight AU polygon by adding new polygons via proxy
 observeEvent(reactive_objects$selected_aus, ignoreNULL = F, ignoreInit=T, {
 	req(reactive_objects$au_asmnt_poly)
+
+  sites = hf_site_list()%>%filter(R3172ParameterName%in%c("High Frequency Temperature"))
+  
+  
+  if(nrow(sites)>0){
+    updateSelectInput(session, "hf_site_selector", 
+                         choices = unique(sites$IR_MLID),
+                         selected = sites$IR_MLID[1])
+  }
+  
 	asmnt_map_proxy %>%
 	clearGroup(group='highlight') %>%
 	addPolygons(data=reactive_objects$au_asmnt_poly[reactive_objects$au_asmnt_poly$ASSESS_ID %in% reactive_objects$selected_aus,],
@@ -321,10 +543,28 @@ observeEvent(input$build_tools,{
 
 output$asmnt_summary=function() {
 	req(reactive_objects$asmnt_summary)
-	knitr::kable(allign='c', reactive_objects$asmnt_summary[,c('ASSESS_ID','AU_NAME','AssessCat','Impaired_params','IDEX_params','pi_params')],
-			row.names=F, col.names=c('ASSESS_ID','AU_NAME','Category', 'Impaired params', 'ID w/ exceedance params', 'NS pollution indicators')) %>%
+	knitr::kable(allign='c', reactive_objects$asmnt_summary[,c('ASSESS_ID','AU_NAME','AssessCat','Impaired_params',"new_listings",'IDEX_params','pi_params')],
+			row.names=F, col.names=c('ASSESS_ID','AU_NAME','Category', 'Impaired params'," New impaired params", 'ID w/ exceedance params', 'NS pollution indicators')) %>%
 			kableExtra::kable_styling()
 }
+
+# Summary Table of conflicting HF & Grab sample assessments.
+output$hf_grab_summary <- renderDT({
+  req(reactive_objects$selected_aus)
+  req(hf_site_list)
+  
+  
+  # 1. Prepare your data frame
+  data_to_display <- conflicting_summary%>%
+    filter(IR_MLID%in%hf_site_list()$IR_MLID)%>%select('AU_NAME', "IR_MLID",'IR_MLNAME', 'R3172ParameterName','IR_Cat',  "SampleCount", 'ExcCount', 'Percent_Exceed','BeneficialUse','ASSESS_ID')
+  
+  # 2. Create the interactive datatable
+  DT::datatable( data_to_display, rownames = FALSE, filter = 'top',
+    options = list( pageLength = 10,  
+      scrollY = '600px', scrollX=TRUE,
+      # Set initial sorting order: R3172ParameterName (5th col), then IR_MLID (3rd col) : index starts at 0..
+      order = list(list(4, 'asc'), list(2, 'asc')) ))
+})
 
 # Recommend rebuild
 ## Determine if a rebuild is appropriate
@@ -674,8 +914,16 @@ observeEvent(input$mark_complete, ignoreInit=T, {
 					"AU name: ", AU_NAME,
 					'<br />', "AU ID: ", ASSESS_ID,
 					'<br />', "Assessment: ", AssessCat,
-					'<br />', "Impaired params: ", Impaired_params,
-					'<br />', "ID w/ exceedance params: ", IDEX_params)
+					case_when(
+					  !is.na(new_listings) & !is.na(Impaired_params) ~ 
+					    paste0('<br />', "Impaired params: ", '<span style="color:red;">', new_listings, '</span>', "; ", Impaired_params),
+					  !is.na(new_listings) ~ 
+					    paste0('<br />', "Impaired params: ", '<span style="color:red;">', new_listings, '</span>'),
+					  !is.na(Impaired_params) ~ 
+					    paste0('<br />', "Impaired params: ", Impaired_params),
+					  TRUE ~ ""),
+					'<br />', "ID w/ exceedance params: ", IDEX_params,
+					'<br> NS pollution indicators: ', pi_params)
 
 		})
 

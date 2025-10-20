@@ -6,6 +6,10 @@ initialDataProc=function(site_use_param_asmnt){
 # Initial data processing
 ## Extract pollution indicator assessments
 pol_ind=subset(site_use_param_asmnt, pol_ind=='Y')
+
+#Extract new listings for map label
+new_listings = subset(site_use_param_asmnt, new_listing=='Y')
+
 site_use_param_asmnt=subset(site_use_param_asmnt, pol_ind=='N')
 
 ## Site level rollups
@@ -88,51 +92,43 @@ au_param_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('ASSESS_
 au_param_pol_ind=irTools::rollUp(list(pol_ind), group_vars=c('ASSESS_ID','AU_NAME','R3172ParameterName'), cat_var="AssessCat", print=F, expand_uses=F)
 au_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('ASSESS_ID','AU_NAME'), cat_var="AssessCat", print=F, expand_uses=F)
 
+# Helper function to summarize parameters (replaces many lines of repeated code)
+summarize_params <- function(data, category, group_vars, new_col_name) {
+  data %>%
+    filter(AssessCat == {{category}}) %>%
+    group_by(across(all_of(group_vars))) %>%
+    dplyr::summarize({{new_col_name}} := paste(unique(R3172ParameterName), collapse = "; "), .groups = "drop")}
+
+# Generate all parameter lists using the helper function
 ### Generate impaired params list
-aus_ns=subset(au_param_asmnt, AssessCat=='NS')
-if(dim(aus_ns)[1]>0){
-	impaired_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_ns, value.var='R3172ParameterName')
-	nms=names(impaired_params[2:dim(impaired_params)[2]])
-	impaired_params=tidyr::unite(impaired_params, 'Impaired_params', nms, sep='; ')
-	impaired_params=within(impaired_params, {
-		Impaired_params=gsub('NA; ', '', Impaired_params)
-		Impaired_params=gsub('NA', '', Impaired_params)
-		Impaired_params=sub("; $","",Impaired_params)
-	})
-	head(impaired_params)
-	au_asmnt=merge(au_asmnt, impaired_params, all.x=T)
-}else{au_asmnt$Impaired_params=NA}
-
 ### Generate IDEX params list
-aus_IDEX=subset(au_param_asmnt, AssessCat=='IDEX')
-if(dim(aus_IDEX)[1]>0){
-	IDEX_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_IDEX, value.var='R3172ParameterName')
-	nms=names(IDEX_params[2:dim(IDEX_params)[2]])
-	IDEX_params=tidyr::unite(IDEX_params, 'IDEX_params', nms, sep='; ')
-	IDEX_params=within(IDEX_params, {
-		IDEX_params=gsub('NA; ', '', IDEX_params)
-		IDEX_params=gsub('NA', '', IDEX_params)
-		IDEX_params=sub("; $","",IDEX_params)
-	})
-	head(IDEX_params)
-	au_asmnt=merge(au_asmnt, IDEX_params, all.x=T)
-}else{au_asmnt$IDEX_params=NA}
+### Generate Pollution Indicator params list
+au_impaired_params <- summarize_params(au_param_asmnt, "NS", c("ASSESS_ID"), "Impaired_params")
+au_idex_params <- summarize_params(au_param_asmnt, "IDEX", c("ASSESS_ID"), "IDEX_params")
+au_pi_params <- summarize_params(pol_ind,"NS",c("ASSESS_ID"), "pi_params")
+
+### Generate New listing param list
+new_listings=new_listings%>%group_by(ASSESS_ID,AU_NAME)%>%
+  dplyr::summarize(new_listings=paste(unique(R3172ParameterName),collapse="; "))
+
+au_asmnt <- au_asmnt %>%
+  left_join(au_impaired_params, by = "ASSESS_ID") %>%
+  left_join(au_idex_params, by = "ASSESS_ID") %>%
+  left_join(au_pi_params, by = "ASSESS_ID") %>%
+  left_join(new_listings, by = "ASSESS_ID")
 
 
-### Generate IDEX params list
-if(dim(pol_ind)[1]>0){aus_pi=subset(au_param_pol_ind, AssessCat=='NS')}
-if(dim(aus_pi)[1]>0){
-	pi_params=reshape2::dcast(ASSESS_ID~R3172ParameterName, data=aus_pi, value.var='R3172ParameterName')
-	nms=names(pi_params[2:dim(pi_params)[2]])
-	pi_params=tidyr::unite(pi_params, 'pi_params', nms, sep='; ')
-	pi_params=within(pi_params, {
-		pi_params=gsub('NA; ', '', pi_params)
-		pi_params=gsub('NA', '', pi_params)
-		pi_params=sub("; $","",pi_params)
-	})
-	head(pi_params)
-	au_asmnt=merge(au_asmnt, pi_params, all.x=T)
-}else{au_asmnt$pi_params=NA}
+# *** Remove duplicate parameters from Impaired_params here ***
+au_asmnt <- au_asmnt %>%
+  rowwise() %>%
+  mutate(
+    Impaired_params = if_else(
+      is.na(Impaired_params) | is.na(new_listings),
+      Impaired_params,
+      paste(setdiff(strsplit(Impaired_params, ";\\s*")[[1]], strsplit(new_listings, ";\\s*")[[1]]), collapse = "; ")
+    )
+  ) %>%
+  ungroup()
 
 
 # Assign colors
