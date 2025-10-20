@@ -18,6 +18,7 @@ library(dplyr)
 library(DT)
 library(data.table)
 library(lubridate)
+library(colorspace)
 
 # Modules/functions
 source('helpers/initialDataProc.R')
@@ -26,11 +27,17 @@ source('helpers/figuresMod.R')
 
 # Load data & criteria
 #load(system.file("extdata", "asmntDashboard_data.Rdata", package = "irTools"))
-load(system.file("extdata","reviewer_export_data.Rdata", package = "irTools"))
+#load(system.file("extdata","reviewer_export_data.Rdata", package = "irTools"))
 
-load(file.path("data", "asmntDashboard_data.Rdata"))
-load(file.path("data", "hf_temp_assessed_data.RData"))
+# load(file.path("data", "asmntDashboard_data.Rdata"))
+# load(file.path("data", "hf_temp_assessed_data.RData"))
+load("asmntDashboard_data.Rdata")
+load("hf_temp_assessed_data.RData")
+load("reviewer_export_data.Rdata")
 options(warn = -1)
+
+
+
 
 # Shiny file input size allowed
 options(shiny.maxRequestSize = 10*1024^2)
@@ -86,10 +93,17 @@ ui <-fluidPage(
 		),
 		bsCollapsePanel(list(icon('plus-circle'), icon('chart-bar'), "Continuous & Grab Data"), value=3,
 		                fluidRow(DTOutput("hf_grab_summary")),
-		                fluidRow( column(4, selectInput("hf_site_selector", "Select sites:", choices = NULL, selected = NULL,multiple=TRUE
-		                               )),column(1,checkboxInput("all_hf_data","Review All HF Sites")),
-		                  #column(4,selectInput("param_selector", "Select parameter:", choices = NULL, selected = NULL)),
-		                  column(1,icon("circle-info"))
+		                fluidRow( column(1,actionButton("hf_info_button", 
+		                                                label = "", 
+		                                                icon = icon("circle-info", "fa-lg"), # fa-lg makes the icon larger
+		                                                class = "btn-link", # Removes button border/background
+		                                                style = "color: #007bff;padding-top: 15px; padding-left: 15px;") # Makes it blue and removes padding
+		                ),
+		                  column(4, selectInput("hf_site_selector", "Select sites:", choices = NULL, selected = NULL,multiple=TRUE
+		                               )),column(3,div(style = "padding-top: 15px; transform: scale(1.5); transform-origin: left top;", 
+		                                               checkboxInput("all_hf_data", "Review All HF Sites")
+		                               ))
+		                  
 		                  )
 		                ,plotlyOutput("hf_plot")
 		                #figuresModUI('figures')
@@ -118,6 +132,50 @@ ui <-fluidPage(
 
 # Server
 server <- function(input, output, session){
+  
+  # Add info message for HF data
+  observeEvent(input$hf_info_button, {
+    showModal(modalDialog(
+      title = "About Continuous & Grab Data",
+      p(strong("Default View:"), "The table initially shows sites where assessments from high-frequency (continuous) data and discrete grab samples may conflict."),
+      p(strong("All Data View:"), "Check the 'Review All HF Sites' box to see all sites with continuous data for the selected Assessment Units, even if there are no potential conflicts."),
+      p(strong("Air Temperature:"), "Daily minimum and maximum air temperatures are estimated for the area (a 2.5 km buffer) around each monitoring location. These estimates may be less accurate for sites with large changes in elevation."),
+      p(strong("HF Data:"), "High-frequency (HF) data is shown as an hourly average. Any points that exceed the water quality standard are highlighted in red."),
+      easyClose = TRUE,
+      footer = modalButton("Close")
+    ))
+  })
+  
+  # Add info message for main map
+  observeEvent(input$map_info_box, { # Make sure you have an actionButton with id = "map_info_box" in your UI
+    showModal(modalDialog(
+      title = "About the Review Map",
+      p(strong("Review Types (Map Filter):")),
+      p("The map initially shows Assessment Units (AUs) marked as 'New Listing' or 'New Listing, Permit'. These are the highest priority for review."),
+      p("Your recommended review workflow is:"),
+      tags$ol(
+        tags$li(strong("High Priority:"), "Focus on the default 'New Listing' categories first."),
+        tags$li(strong("Medium Priority:"), "Next, filter for 'Insufficient Data w/ Exceedances (IDEX)'."),
+        tags$li(strong("Low Priority:"), "Finally, review AUs marked 'Review Needed'. These AUs haven't changed status since the last report cycle but may still warrant a look.")
+      ),
+      
+      hr(), # Adds a horizontal line for separation
+      p(strong("Map Layers (Control Button - Top Left):")),
+      p("Click the layers icon (looks like stacked squares) on the top left of the map to turn these layers on or off:"),
+      tags$ul(
+        tags$li(strong("Assessed Sites:"), "Shows monitoring locations with recent assessments. Colors indicate the site's overall status:",
+                tags$ul(
+                  tags$li(span(style="color:red;", "Red (NS):"), " Not Supporting (impaired)"),
+                  tags$li(span(style="color:orange;", "Orange (IDEX):"), " Insufficient Data with Exceedances"),
+                  tags$li(span(style="color:yellow;", "Yellow (IDNE):"), " Insufficient Data with No Exceedances"),
+                  tags$li(span(style="color:green;", "Green (FS):"), " Fully Supporting")) ),
+        tags$li(strong("Rejected Sites:"), "These are sites not used in the current assessment (e.g., duplicates, wrong site type for the AU, inactive). It can be helpful to turn this layer on if you expect to see data at a location but don't see an 'Assessed Site'. Pay attention to rejected sites near reservoir edges – sometimes a stream site is mistakenly rejected as a lake site (or vice-versa) if it's assigned to the wrong AU."),
+        tags$li(strong("Permits & Priority Permits:"), "Shows permitted discharge locations. 'Priority Permits' (purple) are often individual permits located in AUs designated for drinking water use.")
+      ),
+      easyClose = TRUE,
+      footer = modalButton("Close")
+    ))
+  })
 
 
 # Toolbar UI
@@ -301,8 +359,6 @@ output$hf_plot <- renderPlotly({
     ) %>%
     mutate(color = ifelse(Water_Measurement > as.numeric(Criteria), "red", "blue"))
   
-  str(discrete)
-  str(water_data_agg)
   
   # Prepare air temp data
   air_temp_data <- water_data %>%
@@ -316,19 +372,45 @@ output$hf_plot <- renderPlotly({
   # Create plot
   p <- plot_ly()
   
-  # Add water temperature measurements
-  p <- p %>%
-    add_trace(data = water_data_agg,
-              x = ~DateTime_Local,
-              y = ~Water_Measurement,
-              type = 'scatter',
-              mode = 'markers',
-              marker = list(color = ~color, size = 6),
-              name = ~paste("HF:", IR_MLID),
-              text = ~paste("MLID:", IR_MLID,
-                "<br>Value:", round(Water_Measurement, 2),
-                           "<br>DateTime:", DateTime_Local),
-              hoverinfo = "text")
+  compliant_data <- water_data_agg %>% filter(color == "blue")
+  exceedance_data <- water_data_agg %>% filter(color == "red")
+  
+  
+  # --- Now, build your plot ---
+  
+  p <- plot_ly()
+  
+  # Add a trace ONLY for the compliant (blue) water temp data
+  if (nrow(compliant_data) > 0) {
+    p <- p %>%
+      add_trace(data = compliant_data,
+                x = ~DateTime_Local,
+                y = ~Water_Measurement,
+                type = 'scatter',
+                mode = 'markers',
+                marker = list(color = "blue", size = 6),
+                name = "HF Data",  
+                text = ~paste("MLID:", IR_MLID,
+                              "<br>Value:", round(Water_Measurement, 2),
+                              "<br>DateTime:", DateTime_Local),
+                hoverinfo = "text")
+  }
+  
+  # Add a SEPARATE trace ONLY for the exceedance (red) data
+  if (nrow(exceedance_data) > 0) {
+    p <- p %>%
+      add_trace(data = exceedance_data,
+                x = ~DateTime_Local,
+                y = ~Water_Measurement,
+                type = 'scatter',
+                mode = 'markers',
+                marker = list(color = "red", size = 6),
+                name = "HF Data (Exceedance)",  # Legend entry 2
+                text = ~paste("MLID:", IR_MLID,
+                              "<br>Value:", round(Water_Measurement, 2),
+                              "<br>DateTime:", DateTime_Local),
+                hoverinfo = "text")
+  }
   
   # Add air temp max
   if (nrow(air_temp_data) > 0 && any(!is.na(air_temp_data$tmmx_c))) {
@@ -424,11 +506,14 @@ asmnt_map_proxy=leafletProxy('assessment_map')
 # Map filter UI
 output$map_rev_filter=renderUI({
 	req(reactive_objects$site_use_param_asmnt)
-	#req(reactive_objects$map_ready)
 	choices=unique(reactive_objects$site_use_param_asmnt$AU_review)
 	choices=unique(append(choices, c('Complete', 'Complete with flag(s)', 'Not assessed')))
 	fluidRow(
-		column(1),
+		column(1,actionButton("map_info_box", 
+		                      label = "", 
+		                      icon = icon("circle-info", "fa-lg"), # fa-lg makes the icon larger
+		                      class = "btn-link", # Removes button border/background
+		                      style = "color: #007bff; padding-top: 15px; padding-left: 15px;")),# Makes it blue and removes padding),
 		column(11,shinyWidgets::pickerInput('map_rev_filter', 'Review types', choices, selected=c('New listing', 'New listing, permit'), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3")))
 	)
 })
@@ -552,15 +637,19 @@ output$hf_grab_summary <- renderDT({
   req(reactive_objects$selected_aus)
   req(hf_site_list)
   
-  
-  # 1. Prepare your data frame
   data_to_display <- conflicting_summary%>%
     filter(IR_MLID%in%hf_site_list()$IR_MLID)%>%select('AU_NAME', "IR_MLID",'IR_MLNAME', 'R3172ParameterName','IR_Cat',  "SampleCount", 'ExcCount', 'Percent_Exceed','BeneficialUse','ASSESS_ID')
+  
+  num_rows <- nrow(data_to_display)
+  
+  # Calculate height: 180px base for header/footer + 35px per row, up to a max of 600px
+  dynamic_height <- min(85 + (num_rows * 35), 600)
+  scroll_y_val <- paste0(dynamic_height, "px")
   
   # 2. Create the interactive datatable
   DT::datatable( data_to_display, rownames = FALSE, filter = 'top',
     options = list( pageLength = 10,  
-      scrollY = '600px', scrollX=TRUE,
+      scrollY = scroll_y_val, scrollX=TRUE,
       # Set initial sorting order: R3172ParameterName (5th col), then IR_MLID (3rd col) : index starts at 0..
       order = list(list(4, 'asc'), list(2, 'asc')) ))
 })
