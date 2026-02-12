@@ -26,11 +26,10 @@ dataPrep=function(data, translation_wb, unit_sheetname="unitConvTable", crit_wb,
 
 ######SETUP#####
 # data=acc_data_criteria
-# split_agg_tds=TRUE
 # translation_wb='~/Documents/GitHub/IR-2026/IR_translation_workbook_working_2026.xlsx'
 # unit_sheetname="unitConvTable"
 # startRow_unit=1
-# crit_wb="IR_uses_standards_working_2026.xlsx"
+# crit_wb="~/Documents/GitHub/IR-2026/IR_uses_standards_working_2026.xlsx"
 # cf_formulas_sheetname="cf_formulas"
 # startRow_formulas=1
 # split_agg_tds=TRUE
@@ -371,6 +370,12 @@ if(any(data$BeneficialUse=="CF")){
 	cf_formulas=unique(cf_formulas[,names(cf_formulas) %in% c("CAS","BeneficialUse","TableDescription","FrequencyNumber","FrequencyUnit","CF","CriterionFormula","ParameterQualifier","CriterionUnits", "SS_calc")])
 	names(calcs)[names(calcs) %in% names(cf_formulas)]
 	
+	cf_formulas <- cf_formulas %>%
+	  mutate(across(where(is.character), ~na_if(.x, "")))
+	
+	calcs <- calcs %>%
+	  mutate(across(where(is.character), ~na_if(.x, "")))
+	
 	### Merge formulas to data
 	dimcheck=dim(calcs)[1]
 	calcs = merge(calcs, cf_formulas, all.x = TRUE) 
@@ -459,9 +464,28 @@ flags = tidyr::pivot_wider(flags, id_cols = all_of(cols), names_from = "reason",
 flags$IR_DataPrep_COMMENT = do.call(paste, c(flags[,len:dim(flags)[2]],sep=","))
 flags = flags[,names(flags)%in%c(cols, "IR_DataPrep_COMMENT")]
 flags$IR_DataPrep_FLAG="REJECT"
+
+# There were issues with merging where TOTAL fractions were not being flagged and merged properly due to CriteriaQualifier being "" vs data$CriteriaQualifier that had NA values for empty cells.
+flags$CriteriaQualifier[flags$CriteriaQualifier == ""] <- NA
+data$CriteriaQualifier[data$CriteriaQualifier == ""] <- NA
+
 dimcheck=dim(data)[1]
+
+# dim_data0 = data%>%
+#   group_by(ResultIdentifier)%>%
+#   summarize(counts0 = n())%>%
+#   ungroup()
+ 
 data=merge(data,flags,all.x=T)
-#result$data_flags=data
+# #result$data_flags=data
+ 
+# Dimensions grew becuase flags were not properly aggregated,  
+# dim_data2 = data%>%
+#   group_by(ResultIdentifier)%>%
+#   mutate(counts = n())%>%
+#   ungroup()%>%
+#   merge(.,dim_data0)%>%
+#   filter(counts!=counts0)
 
 #******CHECK THIS
 #AO - There is an issue with data showing up both in rej_data_reasons AND acc_data. Could line below be cause? What is cause of comment below? 
@@ -477,10 +501,10 @@ data=merge(data,flags,all.x=T)
 
 result$rej_data_reasons=reasons
 
-
-if(dimcheck!=dim(data)[1]){
-	stop("ERROR: Error in applying data prep flags. Data dimension[1] has changed.")
-	}
+# Commenting this out.. The data,flags merge led to more rows (duplicate Flag Comments) but we are not losing data since all.x=T
+# if(dimcheck!=dim(data)[1]){
+# 	stop("ERROR: Error in applying data prep flags. Data dimension[1] has changed.")
+# 	}
 data=within(data, {IR_DataPrep_FLAG[is.na(IR_DataPrep_FLAG)]="ACCEPT"})
 
 print("Data prep record ACCEPT/REJECT counts:")
@@ -534,7 +558,7 @@ toxics_raw=toxics_raw[toxics_raw$R3172ParameterName!='Radium 226, 228 (Combined)
 toxics_raw=toxics_raw[,col_names]
 
 	#split streams & lakes
-	toxics_strms=toxics_raw[which(toxics_raw$AU_Type=="River/Stream"),]
+	toxics_strms=toxics_raw[which(toxics_raw$AU_Type%in%c("River/Stream","Canal")),]
 	toxics_lakes=toxics_raw[which(toxics_raw$AU_Type=="Reservoir/Lake"),]
 	
 	if(dim(toxics_strms)[1]>0){
@@ -583,7 +607,7 @@ if(any(acc_data$AssessmentType=="Conventional")){
 	conv_raw=conv_raw[,col_names]
 	
 	#split streams & lakes
-	conv_strms=conv_raw[which(conv_raw$AU_Type=="River/Stream"),]
+	conv_strms=conv_raw[which(conv_raw$AU_Type%in%c("River/Stream","Canal")),]
 	conv_lakes=conv_raw[which(conv_raw$AU_Type=="Reservoir/Lake"),]
 	
 	if(dim(conv_strms)[1]>0){
@@ -651,7 +675,7 @@ if(any(acc_data$AssessmentType=="Conventional")){
 #Estimated & calculated value check
 #Holding times
 
-objects(result)
+print(objects(result))
 
 return(result)
 

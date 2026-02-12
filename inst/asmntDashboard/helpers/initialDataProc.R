@@ -18,8 +18,9 @@ if(dim(pol_ind)[1]>0){site_param_pol_ind=irTools::rollUp(list(pol_ind), group_va
 site_asmnt=irTools::rollUp(list(site_use_param_asmnt), group_vars=c('IR_MLID','IR_MLNAME','IR_Lat','IR_Long','ASSESS_ID','AU_NAME'), cat_var="AssessCat", print=F, expand_uses=F)
 
 ## Read master site list
-master_site_file=system.file("extdata", "0_master_site_file_SLCOWS_v2.xlsx", package = "irTools")
-master_site=as.data.frame(readxl::read_excel(master_site_file, 'sites'))
+#master_site_file=system.file("extdata", "0_master_site_file_SLCOWS_v2.xlsx", package = "irTools")
+#master_site=as.data.frame(readxl::read_excel(master_site_file, 'sites'))
+master_site=as.data.frame(readxl::read_excel("ir_translation_workbook_working_2026.xlsx", 'masterSiteTable'))
 
 ## ID rejected site locations
 rejected_sites=subset(master_site, IR_FLAG=="REJECT")
@@ -100,9 +101,7 @@ summarize_params <- function(data, category, group_vars, new_col_name) {
     dplyr::summarize({{new_col_name}} := paste(unique(R3172ParameterName), collapse = "; "), .groups = "drop")}
 
 # Generate all parameter lists using the helper function
-### Generate impaired params list
-### Generate IDEX params list
-### Generate Pollution Indicator params list
+### Generate impaired params list,IDEX params list,Pollution Indicator params list
 au_impaired_params <- summarize_params(au_param_asmnt, "NS", c("ASSESS_ID"), "Impaired_params")
 au_idex_params <- summarize_params(au_param_asmnt, "IDEX", c("ASSESS_ID"), "IDEX_params")
 au_pi_params <- summarize_params(pol_ind,"NS",c("ASSESS_ID"), "pi_params")
@@ -130,7 +129,6 @@ au_asmnt <- au_asmnt %>%
   ) %>%
   ungroup()
 
-
 # Assign colors
 assignAsmntCols=function(x){
 	y=within(x, {
@@ -139,8 +137,7 @@ assignAsmntCols=function(x){
 		col[AssessCat=='FS']='green'
 		col[AssessCat=='IDNE']='yellow'
 		col[AssessCat=='IDEX']='orange'
-		col[AssessCat=='NS']='red'
-	})
+		col[AssessCat=='NS']='red'	})
 	return(y)
 }
 

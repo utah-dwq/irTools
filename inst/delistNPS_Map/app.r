@@ -40,20 +40,18 @@ ui <-fluidPage(
 		tags$head(tags$link(rel = "icon", type = "image/png", href = "dwq_logo_small.png"), windowTitle="WQ Delistings Associated NPS Projects")
 	),
 	# User inputs & figures
-	fluidRow(column(12, align='left', offset=8,
-		actionButton('toolbar_reset', 'Reset toolbar', style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('sync-alt'))
-	)), 
 	br(),
 	column(8, shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1,
 		bsCollapsePanel(list(icon('plus-circle'), icon('map-marked-alt'),"Review map"), value=2,
 			shinycssloaders::withSpinner(leaflet::leafletOutput("assessment_map", height="600px", width="100%"),size=2, color="#0080b7")
-		),
-		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "Parameter Delistings for AU"), value=4,
-			fluidRow(div(DT::DTOutput("dt1"), style = list("font-size:65%")))
-		),
-		bsCollapsePanel(list(icon('plus-circle'), icon('table'), "NPS Projects in AU"), value=5,
-		  fluidRow(div(DT::DTOutput("dt2"), style = list("font-size:65%")))
-			)
+		 )
+		#,
+		# bsCollapsePanel(list(icon('plus-circle'), icon('table'), "Parameter Delistings for AU"), value=4,
+		# 	fluidRow(div(DT::DTOutput("dt1"), style = list("font-size:65%")))
+		# ),
+		# bsCollapsePanel(list(icon('plus-circle'), icon('table'), "NPS Projects in AU"), value=5,
+		#   fluidRow(div(DT::DTOutput("dt2"), style = list("font-size:65%")))
+		# 	)
 	))),
 
 	#Reviewer toolbar (wide)
@@ -75,9 +73,62 @@ server <- function(input, output, session) {
   output$assessment_map=leaflet::renderLeaflet({
     req(delist_au_poly1())
     au_poly=delist_au_poly1()
-    asmntMap(au_poly)
+    delist_mlids$IR_Lat=as.numeric(delist_mlids$IR_Lat)
+    delist_mlids$IR_Long=as.numeric(delist_mlids$IR_Long)
+    
+    delist_mlids1 <- delist_mlids %>%
+      group_by(IR_MLID,IR_Lat,IR_Long) %>%
+      summarise(param_summary = paste("<tr><td>", R3172ParameterName, "</td><td>", cycleFirstListed, "</td><td>", Site_cat, "</td></tr>", sep="", collapse=""))
+    
+    print(any(is.na(delist_mlids1$IR_Lat)))
+    print(any(is.na(delist_mlids1$IR_Long)))
+    nps_proj$IR_Lat=wqTools::facToNum(nps_proj$IR_Lat)
+    nps_proj$IR_Long=wqTools::facToNum(nps_proj$IR_Long)
+    
+    print(any(is.na(nps_proj$IR_Lat)))
+    print(any(is.na(nps_proj$IR_Long)))
+    
+    assessment_map = leaflet::leaflet(options = leafletOptions(preferCanvas = TRUE, dragging=TRUE))
+    assessment_map=leaflet::addProviderTiles(assessment_map,"Esri.WorldImagery", group = "Satellite", options = providerTileOptions(updateWhenZooming = FALSE,updateWhenIdle = TRUE))
+    assessment_map=leaflet::addProviderTiles(assessment_map, "Esri.WorldTopoMap", group = "Topo", options = providerTileOptions(updateWhenZooming = FALSE,updateWhenIdle = TRUE))%>%
+      addMapPane("highlight", zIndex = 413) %>%
+      addMapPane("au_poly", zIndex = 415) %>%
+      addMapPane("markerPoints", zIndex = 417) %>%
+      addPolygons( data=au_poly,group="Assessment units",fillOpacity = 0.1, layerId=au_poly$polyID,
+                      weight=3,color="orange", options = pathOptions(pane = "au_poly"),
+                      popup=paste0(
+                        "AU name: ", au_poly$AU_NAME,
+                        "<br> AU ID: ", au_poly$ASSESS_ID,
+                        "<br> AU type: ", au_poly$AU_Type)
+      )%>%
+      addCircleMarkers(lat=nps_proj$IR_Lat, lng=nps_proj$IR_Long, options = pathOptions(pane = "markerPoints"),
+                       group="NPS_projects", radius=5, color="blue", opacity = 0.8,
+                       popup = paste0(
+                         "Project ID: ", nps_proj$ProjectID,
+                         "<br> Project Title: ", nps_proj$ProjectTitle,
+                         "<br> Amount Spent: ", nps_proj$AmountSpent,
+                         "<br> Date Completed: ", nps_proj$DateCompleted)
+      ) %>%
+      addCircleMarkers(lat=delist_mlids1$IR_Lat, lng=delist_mlids1$IR_Long, options = pathOptions(pane = "markerPoints"),
+                       group="Delist_mlids", radius=5, color="red", opacity = 0.8,
+                       popup = paste0(
+                         "MLID: ", delist_mlids1$IR_MLID,
+                         "<br> Delisting Params - First Listed - Current Site Category:<br>", delist_mlids1$param_summary )
+      )%>%
+      leaflet::addLayersControl(position ="topleft",
+                                baseGroups = c("Topo","Satellite"),overlayGroups = c("NPS_projects", "Assessment units", "Delist_mlids"),
+                                options = leaflet::layersControlOptions(collapsed = TRUE, autoZIndex=FALSE)) %>%
+      hideGroup("Beneficial uses") %>%
+      leaflet::addLegend(position = 'topright',
+                         colors = c('blue','red'), 
+                         labels = c('NPS Projects', 'Delisting Sites')) %>% 
+      fitBounds(-114.0187, 37.02012, -109.0555, 41.99088) %>%
+      leaflet.extras::removeSearchFeatures() %>% leaflet.extras::addSearchFeatures(
+        targetGroups = c('au_ids','au_names', 'locationID'),
+        options = leaflet.extras::searchFeaturesOptions(
+          zoom=12, openPopup = TRUE, firstTipSubmit = TRUE,
+          autoCollapse = TRUE, hideMarkerOnCollapse = TRUE ))
   })
-  
   asmnt_map_proxy=leafletProxy('assessment_map')
   
   # Update map based on delist_au_poly1 completed or not..
@@ -87,7 +138,7 @@ server <- function(input, output, session) {
     asmnt_map_proxy %>%
       clearGroup(group='Assessment units') %>%  # Clear specific layers if needed
       addPolygons(data=au_poly_data,group="Assessment units",smoothFactor=4,fillOpacity = 0.1,
-                  layerId=~polyID, weight=3,color=~col, options = pathOptions(pane = "au_poly"))
+                  layerId=~polyID, weight=3,color="orange", options = pathOptions(pane = "au_poly"))
   })
   
   observeEvent(input$assessment_map_shape_click, {
@@ -111,96 +162,97 @@ server <- function(input, output, session) {
             options = pathOptions(pane = "highlight"), color='chartreuse', opacity = 0.75, fillOpacity = 0.4, weight = 5)
   })
   
-  # Render tables based on selected ASSESS_ID
-  output$dt1 <- renderDT({
-    req(selected_aus())
-    # Filter delist_candidates1 based on selected ASSESS_ID
-      DT::datatable(delist_candidates1[delist_candidates1$ASSESS_ID==selected_aus(),],
-          selection='single', rownames=FALSE, filter="top",
-          options = list(scrollY = '600px', paging = TRUE, scrollX=TRUE)
-      )
-    })
-  
+  # # Render tables based on selected ASSESS_ID
+  # output$dt1 <- renderDT({
+  #   req(selected_aus())
+  #   # Filter delist_candidates1 based on selected ASSESS_ID
+  #     DT::datatable(delist_candidates1[delist_candidates1$ASSESS_ID==selected_aus(),],
+  #         selection='single', rownames=FALSE, filter="top",
+  #         options = list(scrollY = '600px', paging = TRUE, scrollX=TRUE)
+  #     )
+  #   })
+  # 
   # Observer to update other components based on selected row
-  observeEvent(input$dt1_rows_selected, {
-    selected_row <- input$dt1_rows_selected
-    if (length(selected_row) > 0) {
-      # Get the R3172ParameterName from the selected row
-      selected_param <- delist_candidates1[selected_row, ]$R3172ParameterName
-      # Update the textInput for param_comment
-      updateTextInput(session, "param_comment", value = paste("Comment for", selected_param))
-    }
-  })
+  # observeEvent(input$dt1_rows_selected, {
+  #   selected_row <- input$dt1_rows_selected
+  #   if (length(selected_row) > 0) {
+  #     # Get the R3172ParameterName from the selected row
+  #     selected_param <- delist_candidates1[selected_row, ]$R3172ParameterName
+  #     # Update the textInput for param_comment
+  #     updateTextInput(session, "param_comment", value = paste("Comment for", selected_param))
+  #   }
+  # })
   
   #Render the NPS Projects table
-  output$dt2 <- renderDT({
-    req(selected_assess_id())
-    # Filter nps_proj based on selected ASSESS_ID
-    DT::datatable(nps_proj[nps_proj$ASSESS_ID==selected_aus(),],
-        selection='none', rownames=FALSE, filter="top",
-        options = list(scrollY = '600px', paging = TRUE, scrollX=TRUE)
-    )
-  })
+  # output$dt2 <- renderDT({
+  #   req(selected_assess_id())
+  #   # Filter nps_proj based on selected ASSESS_ID
+  #   DT::datatable(nps_proj[nps_proj$ASSESS_ID==selected_aus(),],
+  #       selection='none', rownames=FALSE, filter="top",
+  #       options = list(scrollY = '600px', paging = TRUE, scrollX=TRUE)
+  #   )
+  # })
   
   # Toolbar interaction for comments and marking complete
-  observeEvent(input$submit_comment, {
-    # Code to handle comment submission
-    # Update delist_candidates1 with the comment
-  })
+  # observeEvent(input$submit_comment, {
+  #   # Code to handle comment submission
+  #   # Update delist_candidates1 with the comment
+  # })
   
   
   # Observe marking an ASSESS_ID as complete
-  observeEvent(input$mark_complete, {
-    # Add the completed ASSESS_ID to the list
-    current_completed <- completed_assess_ids()
-    completed_assess_ids(c(current_completed, input$completed_assess_id))
-  })
-  
+  # observeEvent(input$mark_complete, {
+  #   # Add the completed ASSESS_ID to the list
+  #   current_completed <- completed_assess_ids()
+  #   completed_assess_ids(c(current_completed, input$completed_assess_id))
+  # })
+  # 
   # Export functionality
-  output$export_data <- downloadHandler(
-    filename = function() {
-      paste("delist-data-", Sys.Date(), ".csv", sep = "")
-    },
-    content = function(file) {
-      write.csv(global_delist_candidates1, file, row.names = FALSE)
-    }
-  )
+  # output$export_data <- downloadHandler(
+  #   filename = function() {
+  #     paste("delist-data-", Sys.Date(), ".csv", sep = "")
+  #   },
+  #   content = function(file) {
+  #     write.csv(global_delist_candidates1, file, row.names = FALSE)
+  #   }
+  # )
   
   
   # Toolbar UI
-	output$toolbarUI=renderUI({
-		column(4,fixedPanel(draggable=T, style="z-index:1000; overflow-y:scroll; max-height: 85vh",
-			shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1,
-				bsCollapsePanel(list(icon('plus-circle'), icon('edit'), 'Review'), value=1,
-					fluidRow(
-						textInput('param_comment', 'Parameter Review Comment'),
-						actionButton('comment_save', 'Save Comment', 
-						             style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox'))
-					 ),fluidRow(
-					  actionButton('mark_complete', label = "AU Review Complete", 
-					               style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'))
-			    ,fluidRow(
-					  downloadButton('exp_rev', label = "Export reviews", 
-					                 style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'))
-				              )))))
-	})
+	# output$toolbarUI=renderUI({
+	# 	column(4,fixedPanel(draggable=T, style="z-index:1000; overflow-y:scroll; max-height: 85vh",
+	# 		shinyjqui::jqui_resizable(bsCollapse(multiple=T, open=1,
+	# 			bsCollapsePanel(list(icon('plus-circle'), icon('edit'), 'Review'), value=1,
+	# 				fluidRow(
+	# 					textInput('param_comment', 'Parameter Review Comment'),
+	# 					actionButton('comment_save', 'Save Comment', 
+	# 					             style='color: #fff; background-color: #337ab7; border-color: #2e6da4%', icon=icon('toolbox'))
+	# 				 ),fluidRow(
+	# 				  actionButton('mark_complete', label = "AU Review Complete", 
+	# 				               style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'))
+	# 		    ,fluidRow(
+	# 				  downloadButton('exp_rev', label = "Export reviews", 
+	# 				                 style='color: #fff; background-color: #337ab7; border-color: #2e6da4%'))
+	# 			              )))))
+	# })
 	
-	observeEvent(input$comment_save, {
-	  if (is.null(input$dt1_rows_selected)) {
-	    showNotification("Please select a row before saving a comment", type = "error")
-	    return()
-	  }
-	  req(input$dt1_rows_selected)
-	  selected_row <- input$dt1_rows_selected
-	  comment <- input$param_comment
-	  
-	  # Update the Comments column
-	  global_delist_candidates1[selected_row, "Comments"] <<- comment
-	  
-	  # Optionally: clear the comment input field after saving
-	  updateTextInput(session, "param_comment", value = "")
-	})
-  }
+# 	observeEvent(input$comment_save, {
+# 	  if (is.null(input$dt1_rows_selected)) {
+# 	    showNotification("Please select a row before saving a comment", type = "error")
+# 	    return()
+# 	  }
+# 	  req(input$dt1_rows_selected)
+# 	  selected_row <- input$dt1_rows_selected
+# 	  comment <- input$param_comment
+# 	  
+# 	  # Update the Comments column
+# 	  global_delist_candidates1[selected_row, "Comments"] <<- comment
+# 	  
+# 	  # Optionally: clear the comment input field after saving
+# 	  updateTextInput(session, "param_comment", value = "")
+# 	})
+  
+   }## END OF SERVER
 
 ## run app
 shinyApp(ui = ui, server = server)

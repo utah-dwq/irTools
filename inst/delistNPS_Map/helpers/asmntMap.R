@@ -1,8 +1,8 @@
 #Map for NPS Delisting Connects
 
-asmntMap=function(au_asmnt_poly, dragging=T, ...){
+asmntMap=function(au_asmnt_poly,delist_mlids,nps_proj, dragging=T, ...){
 	# Load delist_candidates1, delist_mlids, nps_proj
-	load(system.file("extdata", "delist_NPS_mlids.Rdata", package = "irTools"))
+	#load(system.file("extdata", "delist_NPS_mlids.Rdata", package = "irTools"))
 	
 	ss_poly=wqTools::ss_poly
 	bu_poly=wqTools::bu_poly

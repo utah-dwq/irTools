@@ -1,10 +1,6 @@
 ### Assessment Dashboard
 ### Version 2
 
-#setwd('C:\\Users\\jvander\\Documents\\R\\irTools\\inst\\asmntDashboard')
-#devtools::install_local('C:\\Users\\jvander\\Documents\\R\\irTools', force=T)
-
-
 # Packages
 library(wqTools)
 library(irTools)
@@ -29,14 +25,10 @@ source('helpers/figuresMod.R')
 #load(system.file("extdata", "asmntDashboard_data.Rdata", package = "irTools"))
 #load(system.file("extdata","reviewer_export_data.Rdata", package = "irTools"))
 
-# load(file.path("data", "asmntDashboard_data.Rdata"))
-# load(file.path("data", "hf_temp_assessed_data.RData"))
 load("asmntDashboard_data.Rdata")
 load("hf_temp_assessed_data.RData")
 load("reviewer_export_data.Rdata")
 options(warn = -1)
-
-
 
 
 # Shiny file input size allowed
@@ -97,10 +89,10 @@ ui <-fluidPage(
 		                                                label = "", 
 		                                                icon = icon("circle-info", "fa-lg"), # fa-lg makes the icon larger
 		                                                class = "btn-link", # Removes button border/background
-		                                                style = "color: #007bff;padding-top: 15px; padding-left: 15px;") # Makes it blue and removes padding
+		                                                style = "color:  #337ab7;padding-top: 15px; padding-left: 15px;") # Makes it blue and removes padding
 		                ),
 		                  column(4, selectInput("hf_site_selector", "Select sites:", choices = NULL, selected = NULL,multiple=TRUE
-		                               )),column(3,div(style = "padding-top: 15px; transform: scale(1.5); transform-origin: left top;", 
+		                               )),column(3,div(style = "padding-top: 5px; transform: scale(1.2); transform-origin: left top;", 
 		                                               checkboxInput("all_hf_data", "Review All HF Sites")
 		                               ))
 		                  
@@ -151,7 +143,7 @@ server <- function(input, output, session){
     showModal(modalDialog(
       title = "About the Review Map",
       p(strong("Review Types (Map Filter):")),
-      p("The map initially shows Assessment Units (AUs) marked as 'New Listing' or 'New Listing, Permit'. These are the highest priority for review."),
+      p("The map initially shows Assessment Units (AUs) marked as 'New Listing' or 'New Listing, Permit'.These are the highest priority for review. Hovering over an AU shows details of assessment results. Parameters in red are new listings."),
       p("Your recommended review workflow is:"),
       tags$ol(
         tags$li(strong("High Priority:"), "Focus on the default 'New Listing' categories first."),
@@ -176,6 +168,29 @@ server <- function(input, output, session){
       footer = modalButton("Close")
     ))
   })
+  
+  # In your server function
+  
+  observeEvent(input$review_info_button, {
+    showModal(modalDialog(
+      title = "About Reviewing Assessments",
+      p("This section allows you to record your review decisions for the selected Assessment Units (AUs)."),
+      tags$ul(
+        tags$li(strong("Generate Flag:"), "Use this option to document specific concerns about data quality, assessment methods, or other issues. You can apply flags at different scopes:",
+                tags$ul(
+                  tags$li("Assessment unit(s)"),
+                  tags$li("Site(s) - example are there any sites that should be rejected or rejected sites taht should be assessed?"),
+                  tags$li("Record(s) - best to select Box Select tool on the top right of the Figures Plot."),
+                  tags$li("State-wide (applies to types of AUs or MLs)")
+                )
+        ),
+        tags$li(strong("Mark Complete:"), "Use this option when you have finished reviewing the selected AU(s) and have either applied all necessary flags or found no issues.")
+      ),
+      p("Remember to enter your reviewer name and provide comments for flags."),
+      easyClose = TRUE,
+      footer = modalButton("Close")
+    ))
+  })
 
 
 # Toolbar UI
@@ -195,16 +210,28 @@ observeEvent(input$toolbar_reset, ignoreInit=F, ignoreNULL=F, {
 					),
 					fluidRow(column(12, uiOutput('rebuild')))
 				),
-				bsCollapsePanel(list(icon('plus-circle'), icon('edit'),"Review assessments"), value=2,
-					uiOutput('flagUI1a'),
-					uiOutput('flagUI1b'),
-					uiOutput('flagUI2'),
-					uiOutput('flagUI3'),
-					uiOutput('flagUI4'),
-					uiOutput('flagUI5'),
-					uiOutput('flagUI6'),
-					uiOutput('flagUI7'),
-					uiOutput('flagUI8')
+				bsCollapsePanel(
+				  # Modify the title list to include the actionButton
+				  title = tagList(
+				    icon('plus-circle'),
+				    icon('edit'),
+				    "Review assessments ", # Add a space after the text
+				    actionButton("review_info_button",
+				                 label = "",
+				                 icon = icon("circle-info", "fa-lg"),
+				                 class = "btn-link",
+				                 style = "color:  #337ab7; padding: 0; vertical-align: middle;") # Added vertical-align
+				  ),
+				  value=2,
+				  uiOutput('flagUI1a'),
+				  uiOutput('flagUI1b'),
+				  uiOutput('flagUI2'),
+				  uiOutput('flagUI3'),
+				  uiOutput('flagUI4'),
+				  uiOutput('flagUI5'),
+				  uiOutput('flagUI6'),
+				  uiOutput('flagUI7'),
+				  uiOutput('flagUI8')
 				),
 				bsCollapsePanel(list(icon('plus-circle'), icon('draw-polygon'),"Split AU"), value=3,
 					uiOutput('splitUI')
@@ -337,15 +364,7 @@ output$hf_plot <- renderPlotly({
   if (nrow(water_data) == 0) {
     return(plot_ly() %>% layout(title = "No data available"))
   }
-  
-  
-  # Filter by date range
-  #water_data <- water_data[DateTime_Local >= (min(shade_data$Date)-20) & 
-  #                        DateTime_Local <= (max(shade_data$Date) + 20)]
-  # water_data <- as.data.frame(water_data) %>%
-  #   filter(!is.na(Water_Measurement))%>%
-  #   mutate(color = ifelse(as.numeric(Water_Measurement) > as.numeric(Criteria), "red", "blue"))
-  # 
+
   water_data_agg <- water_data %>%
     group_by(ASSESS_ID)%>%
     mutate(DateTime_Hour = floor_date(DateTime_Local, unit = "hour"),Criteria = first(Criteria)) %>%
@@ -368,16 +387,11 @@ output$hf_plot <- renderPlotly({
     filter(!is.na(tmmn_c) | !is.na(tmmx_c))%>%
     arrange(DateTime)
   
- 
-  # Create plot
-  p <- plot_ly()
   
   compliant_data <- water_data_agg %>% filter(color == "blue")
   exceedance_data <- water_data_agg %>% filter(color == "red")
   
-  
-  # --- Now, build your plot ---
-  
+
   p <- plot_ly()
   
   # Add a trace ONLY for the compliant (blue) water temp data
@@ -462,7 +476,7 @@ output$hf_plot <- renderPlotly({
   # Final layout
   p %>%
     layout(
-      title = paste("HF & Discrete Temperature Data"),
+      title = paste("HF & Discrete Water Temperature"),
       xaxis = list(
         title = "Date"
       ),
@@ -513,7 +527,7 @@ output$map_rev_filter=renderUI({
 		                      label = "", 
 		                      icon = icon("circle-info", "fa-lg"), # fa-lg makes the icon larger
 		                      class = "btn-link", # Removes button border/background
-		                      style = "color: #007bff; padding-top: 15px; padding-left: 15px;")),# Makes it blue and removes padding),
+		                      style = "color:  #337ab7; padding-top: 10px; padding-left: 10px;")),# Makes it blue and removes padding),
 		column(11,shinyWidgets::pickerInput('map_rev_filter', 'Review types', choices, selected=c('New listing', 'New listing, permit'), multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3")))
 	)
 })
@@ -569,20 +583,6 @@ observeEvent(input$assessment_map_shape_click,{
 	}
 })
 
-
-# Turn off AU assessment hover info w/ switch
-#observeEvent(input$au_hover, ignoreInit=T, {
-#	if(input$au_hover == FALSE){
-#		asmnt_map_proxy %>%
-#			clearGroup(group='Assessment units') %>%
-#			addPolygons(data=reactive_objects$au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~ASSESS_ID, weight=3,color=~col, options = pathOptions(pane = "au_poly"))
-#	}else{
-#		asmnt_map_proxy %>%
-#			clearGroup(group='Assessment units') %>%
-#			addPolygons(data=reactive_objects$au_asmnt_poly,group="Assessment units",smoothFactor=4,fillOpacity = 0.1, layerId=~ASSESS_ID, weight=3,color=~col, options = pathOptions(pane = "au_poly"),
-#				label=lapply(reactive_objects$au_asmnt_poly$lab, HTML))
-#	}
-#})
 
 # Highlight AU polygon by adding new polygons via proxy
 observeEvent(reactive_objects$selected_aus, ignoreNULL = F, ignoreInit=T, {
@@ -837,20 +837,6 @@ observeEvent(input$split_cancel, ignoreInit=T, {
 	reactive_objects$splits<-callModule(editMod, "auSplit", sel_aus_map, targetLayerId='split_shapes')
 })
 
-
-# Print figures module outputs
-#observe({
-#	if(!is.null(figures$select_data())){
-#		print(figures$select_data())
-#	}
-#	if(!is.null(figures$param1())){
-#		print(figures$param1())
-#	}
-#	if(!is.null(figures$param_choices())){
-#		print(figures$param_choices())
-#	}
-#
-#})
 
 
 # Flag UI
