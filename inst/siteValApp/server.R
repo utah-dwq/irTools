@@ -5,6 +5,7 @@ options(warn=0)
 server <- function(input, output, session){
 
 permits=read.csv(system.file("extdata", "ut_facilities.csv", package = "irTools"))
+permits=subset(permits, permits$priority=='Y')
 
 observeEvent(input$collapse_panels, {
 	if((2 %in% input$collapse_panels | 3 %in% input$collapse_panels) & (input$reviewer=="" | is.null(reactive_objects$sites_input))){
@@ -118,6 +119,14 @@ observe({
 	reactive_objects$review_reasons=unique(reactive_objects$reasons[reactive_objects$reasons$FLAG %in% input$site_types,]$Reason)
 })
 
+observeEvent(reactive_objects$review_reasons, {
+	req(reactive_objects$review_reasons)
+	if (length(reactive_objects$review_reasons) > 0 &&
+	    (is.null(input$review_reasons) || length(input$review_reasons) == 0)) {
+		shinyWidgets::updatePickerInput(session, "review_reasons", selected = reactive_objects$review_reasons)
+	}
+}, ignoreInit = TRUE)
+
 observe({
 	if(!is.null(input$review_reasons)){
 		sel_reasons=input$review_reasons
@@ -128,7 +137,7 @@ observe({
 output$review_reasons <- renderUI({
 	req(reactive_objects$review_reasons)
 	isolate({
-		shinyWidgets::pickerInput("review_reasons", "Review reason", reactive_objects$review_reasons[order(reactive_objects$review_reasons)], selected=reactive_objects$sel_reasons, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))
+		shinyWidgets::pickerInput("review_reasons", "Review reason", reactive_objects$review_reasons[order(reactive_objects$review_reasons)], selected=reactive_objects$review_reasons, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))
 	})
 })
 
@@ -153,10 +162,17 @@ observe({
 })
 
 observe({
+	req(reactive_objects$sites)
+	site_types <- input$site_types
+	if (is.null(site_types)) site_types <- character(0)
+	reason_mlids <- reactive_objects$reason_mlids
+	mltype_mlids <- reactive_objects$mltype_mlids
+	if (is.null(reason_mlids)) reason_mlids <- character(0)
+	if (is.null(mltype_mlids)) mltype_mlids <- character(0)
 	reactive_objects$map_sites=
-		reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% input$site_types & 
-		reactive_objects$sites$MonitoringLocationIdentifier %in% reactive_objects$reason_mlids &
-		reactive_objects$sites$MonitoringLocationIdentifier %in% reactive_objects$mltype_mlids
+		reactive_objects$sites[reactive_objects$sites$IR_FLAG %in% site_types & 
+		reactive_objects$sites$MonitoringLocationIdentifier %in% reason_mlids &
+		reactive_objects$sites$MonitoringLocationIdentifier %in% mltype_mlids
 		,]
 })
 
@@ -174,7 +190,6 @@ session$onFlushed(once = T, function() {
 				"<br> Permit name: ", permits$locationName,
 				"<br> Permit type: ", permits$locationType)
 		) %>%
-		#addPolygons(data=wqTools::ut_poly,group="State boundary",smoothFactor=4,fillOpacity = 0.1,weight=3,color="purple", options = pathOptions(pane = "underlay_polygons"))  %>%
 		hideGroup('Permits')
 	})
 })
@@ -190,8 +205,11 @@ map_proxy=leafletProxy("map")
 # Add sites via proxy on site_types change
 observeEvent({
 	reactive_objects$map_sites
-	reactive_objects$merged_sites}, ignoreNULL = F, ignoreInit=T, {
-	if(dim(reactive_objects$map_sites)[1]>0){
+	reactive_objects$merged_sites
+	input$map_bounds
+}, ignoreNULL = F, ignoreInit=T, {
+	req(input$map_bounds)
+	if(!is.null(reactive_objects$map_sites) && nrow(reactive_objects$map_sites) > 0){
 		mlocs=unique(reactive_objects$map_sites[,c('MonitoringLocationIdentifier','MonitoringLocationName')])
 		map_proxy %>% clearGroup(group='Sites') %>% clearGroup(group='Merged sites') %>% clearGroup(group='Site IDs') %>%  clearGroup(group='Site names') %>% 
 		addCircleMarkers(data=reactive_objects$map_sites, layerId=~MonitoringLocationIdentifier, group="Sites", color=~color, options = pathOptions(pane = "markers")) %>%
@@ -245,7 +263,7 @@ observeEvent({
 			)		
 		}
 		
-		if(input$auto_zoom){
+		if(isTRUE(input$auto_zoom)){
 			map_proxy %>% fitBounds(min(reactive_objects$map_sites$long)*0.99, min(reactive_objects$map_sites$lat)*0.99, max(reactive_objects$map_sites$long)*1.01, max(reactive_objects$map_sites$lat)*1.01)
 		}
 		

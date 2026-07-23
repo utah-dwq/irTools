@@ -31,7 +31,7 @@ bsCollapse(id='collapse_panels', multiple=T, open=1,
 	bsCollapsePanel(list(icon('map-marked-alt'),"Review map"), value=2,
 		fluidRow(
 			column(2),
-			column(3, shinyWidgets::pickerInput("site_types","Site types to map:", choices=site_type_choices, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))),
+			column(3, shinyWidgets::pickerInput("site_types","Site types to map:", choices=site_type_choices, selected=site_type_choices, multiple=T, options = list(`actions-box` = TRUE, size = 10, `selected-text-format` = "count > 3"))),
 			column(3, uiOutput("review_reasons")),
 			column(3, uiOutput('ml_types')),
 			column(1, shinyWidgets::materialSwitch(inputId = "auto_zoom", label="Auto-zoom on", value = TRUE, right=T, status='primary'))

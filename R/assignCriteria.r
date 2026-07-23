@@ -186,6 +186,10 @@ if(print){
 	#}
 }
 
+# Change Lake TP NumericCriterion to 0.025mg/L
+data_uses_flat_crit = data_uses_flat_crit%>%
+  mutate(NumericCriterion = ifelse((R3172ParameterName=="Total Phosphorus as P"&AU_Type=="Reservoir/Lake"),0.025,NumericCriterion))
+
 return(data_uses_flat_crit)
 
 

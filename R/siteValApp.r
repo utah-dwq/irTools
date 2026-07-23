@@ -14,5 +14,5 @@
 
 #' @export
 siteValApp=function(){
-	 shiny::runApp(system.file('siteValApp', package='irTools'))
-	 }
+	shiny::runApp(system.file('siteValApp', package='irTools'))
+}
