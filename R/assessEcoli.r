@@ -224,6 +224,13 @@ assessEColi <- function(data, rec_season = TRUE, SeasonStartDate="05-01", Season
   mlid_cats$present = 1
   cat_table = tidyr::pivot_wider(mlid_cats, names_from = "IR_Cat", values_from = "present")
 
+  # Ensure all IR_Cat columns exist even when a category is absent from the dataset
+  for (cat_col in c("NS", "FS", "IDEX", "IDNE")) {
+    if (!cat_col %in% names(cat_table)) {
+      cat_table[[cat_col]] <- NA
+    }
+  }
+
   fsid_mlids = subset(cat_table, cat_table$IDNE==1&cat_table$FS==1&is.na(cat_table$NS)&is.na(cat_table$IDEX))
 
   mlid_uses = fsid_mlids[,c("IR_MLID","BeneficialUse")] # 158
