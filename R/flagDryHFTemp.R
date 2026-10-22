@@ -1,6 +1,6 @@
 #' Flag potential dry-sensor days in HF water temperature for review
 #'
-#' Builds daily features (\code{buildHFTempFeatures}), scores them with a versioned dry-sensor model, adds harmonic physics evidence, and assigns a review disposition to every day. Neither the model nor physics rejects data; days needing review are written to a review file (analogous to \code{validateSites()} output for \code{siteValApp()}). A random sample of low-score days is added as an audit so missed dry days can be measured.
+#' Builds daily features (\code{buildHFTempFeatures}), scores them with one dry-sensor random forest, adds harmonic physics evidence, and assigns a review disposition to every day. Neither the model nor physics rejects data; days needing review are written to a review file (analogous to \code{validateSites()} output for \code{siteValApp()}). A random sample of low-score days is added as an audit so missed dry days can be measured.
 #'
 #' Reviewers fill \code{Review_Decision} with one of \code{"Confirmed Dry"}, \code{"Confirmed Wet"}, or \code{"Unsure"}. Confirmed Dry days are rejected by \code{applyHFTempQC()}, and confirmed decisions become candidate training labels for the next model retrain in highfreqQC.
 #'
@@ -24,25 +24,11 @@ flagDryHFTemp <- function(data, air_temp, model, value_col = "QC_Measure_Val", r
     Sample_ID, HF_Location_ID, DateTime_Local,
     Water_Measurement = get(value_col)
   )]
-  hf[, Date := data.table::as.IDate(DateTime_Local)]
-
-  air <- data.table::copy(data.table::as.data.table(air_temp))
-  if (!"Date" %in% names(air) && "date" %in% names(air)) data.table::setnames(air, "date", "Date")
-  if (!"tmmn_mean" %in% names(air) && "tmmn_c" %in% names(air)) data.table::setnames(air, "tmmn_c", "tmmn_mean")
-  if (!"tmmx_mean" %in% names(air) && "tmmx_c" %in% names(air)) data.table::setnames(air, "tmmx_c", "tmmx_mean")
-  missing_air <- setdiff(c("HF_Location_ID", "Date", "tmmn_mean", "tmmx_mean"), names(air))
-  if (length(missing_air)) stop("air_temp is missing: ", paste(missing_air, collapse = ", "))
-  air <- unique(air[, .(
-    HF_Location_ID = as.character(HF_Location_ID),
-    Date = data.table::as.IDate(Date),
-    tmmn_mean, tmmx_mean
-  )], by = c("HF_Location_ID", "Date"))
-  hf[, HF_Location_ID := as.character(HF_Location_ID)]
-  hf <- merge(hf, air, by = c("HF_Location_ID", "Date"), all.x = TRUE)
+  hf <- .hfJoinAirTemp(hf, air_temp)
   hf[, Date := NULL]
 
   features <- buildHFTempFeatures(hf, air_max_hour = policy$air_max_hour_local)
-  scores <- predictDryHFTemp(features, model$model_list, threshold = policy$rf_review_threshold, decision = "avg")
+  scores <- predictDryHFTemp(features, model$model, threshold = policy$rf_review_threshold)
 
   site_ids <- unique(hf[, .(Sample_ID, HF_Location_ID)], by = "Sample_ID")
   daily <- features[, .(Sample_ID, Date, water_temp_max, range_d, air_temp_min, air_temp_max, amplitude_ratio, phase_lag_hours)]
@@ -105,6 +91,24 @@ flagDryHFTemp <- function(data, air_temp, model, value_col = "QC_Measure_Val", r
   }
 
   list(daily = daily, review = review, manifest = manifest)
+}
+
+.hfJoinAirTemp <- function(hf, air_temp) {
+  air <- data.table::copy(data.table::as.data.table(air_temp))
+  if (!"Date" %in% names(air) && "date" %in% names(air)) data.table::setnames(air, "date", "Date")
+  if (!"tmmn_mean" %in% names(air) && "tmmn_c" %in% names(air)) data.table::setnames(air, "tmmn_c", "tmmn_mean")
+  if (!"tmmx_mean" %in% names(air) && "tmmx_c" %in% names(air)) data.table::setnames(air, "tmmx_c", "tmmx_mean")
+  missing_air <- setdiff(c("HF_Location_ID", "Date", "tmmn_mean", "tmmx_mean"), names(air))
+  if (length(missing_air)) stop("air_temp is missing: ", paste(missing_air, collapse = ", "))
+  air <- unique(air[, .(
+    HF_Location_ID = as.character(HF_Location_ID),
+    Date = data.table::as.IDate(Date),
+    tmmn_mean, tmmx_mean
+  )], by = c("HF_Location_ID", "Date"))
+  hf <- data.table::copy(hf)
+  hf[, HF_Location_ID := as.character(HF_Location_ID)]
+  hf[, Date := data.table::as.IDate(DateTime_Local)]
+  merge(hf, air, by = c("HF_Location_ID", "Date"), all.x = TRUE)
 }
 
 .hfDryPolicy <- function(manifest) {

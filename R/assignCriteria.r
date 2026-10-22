@@ -70,6 +70,14 @@ crit_wb=openxlsx::loadWorkbook(crit_wb)
 crit_table=data.frame(openxlsx::readWorkbook(crit_wb, sheet=crit_sheetname, startRow=crit_startRow, detectDates=TRUE))
 ss_table=data.frame(openxlsx::readWorkbook(crit_wb, sheet=ss_sheetname, startRow=ss_startRow, detectDates=TRUE))
 
+# Agricultural use is "4" on sites. Sheets often store that cell as the number 4.0, which reads in as the text "4.0" and misses the join.
+normalize_bu=function(x){
+	x=trimws(as.character(x))
+	ifelse(x=="4.0","4",x)
+}
+crit_table$BeneficialUse=normalize_bu(crit_table$BeneficialUse)
+ss_table$BeneficialUse=normalize_bu(ss_table$BeneficialUse)
+
 if(any(names(data) =='CAS_DWQ')){
 	names(data)[names(data) =='CAS_DWQ']='CAS'
 }
@@ -77,6 +85,12 @@ if(any(names(data) =='CAS_DWQ')){
 names(data)[names(data) %in% names(crit_table)]
 names(data)[names(data) %in% names(ss_table)]
 
+
+# Same 4.0 -> 4 normalization for use codes carried on the samples (comma-separated BEN_CLASS).
+bu_ok=!is.na(data$BEN_CLASS)
+data$BEN_CLASS[bu_ok]=vapply(strsplit(as.character(data$BEN_CLASS[bu_ok]), ",", fixed=TRUE), function(toks){
+	paste(normalize_bu(toks), collapse=",")
+}, character(1))
 
 #Identify correction factor (CF) parameters in crit_table, append ",CF" to BEN_CLASS for all of these parameters (note, this is so target units can be defined for correction factors)
 cf=crit_table[crit_table$BeneficialUse=="CF",]
@@ -96,6 +110,7 @@ names(uses_mat)[names(uses_mat)=="data.BEN_CLASS"]="BEN_CLASS"
 uses_flat=reshape2::melt(uses_mat, id.vars="BEN_CLASS", value.name = "BeneficialUse")
 uses_flat=uses_flat[,!names(uses_flat)=="variable"]
 uses_flat=uses_flat[uses_flat$BeneficialUse!="" & !is.na(uses_flat$BeneficialUse),]
+uses_flat$BeneficialUse=normalize_bu(uses_flat$BeneficialUse)
 
 #Merge flat uses back to data by BEN_CLASS
 data_uses_flat=merge(data,uses_flat,all=T)

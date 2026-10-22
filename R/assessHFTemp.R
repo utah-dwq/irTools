@@ -3,24 +3,28 @@
 #' 10% excursion assessments for continuous water temperature, matching the
 #' IR-2026 production method: individual critical-season readings versus the
 #' numeric max-temperature criterion (typically 20 C for 3A, 27 C for 3B/3C).
-#' An assessment unit is NS if any site exceeds `exceed_frac`.
+#' An assessment unit is NS if any site exceeds \code{exceed_frac}.
 #'
-#' This function assesses **already accepted** data. Interpolate, Dry-sensor
-#' scoring, human review, and REJECT rules live in the `highfreqQC` repo
-#' (`prepHFTemp()`, `flagDryHFTemp()`, `applyHFTempRejectRules()`).
+#' This function assesses already accepted data. Run \code{prepHFTemp()},
+#' \code{flagDryHFTemp()}, and \code{applyHFTempQC()} (reviewed Confirmed Dry
+#' days) first. Utah's REJECT rules table is applied by
+#' \code{applyHFTempRejectRules()} in the highfreqQC repo.
 #'
 #' @param data Accepted HF temperature records with a measurement column,
-#'   a numeric `Criteria` column, timestamps, and site/AU identifiers.
-#' @param value_col Measurement column. Default `Water_Measurement`.
-#' @param criteria_col Numeric criterion column. Default `Criteria`.
+#'   a numeric \code{Criteria} column, timestamps, and site/AU identifiers.
+#' @param value_col Measurement column. Default \code{Water_Measurement}.
+#' @param criteria_col Numeric criterion column. Default \code{Criteria}.
 #' @param exceed_frac Exceedance fraction for NS. Default 0.10.
+#' @param group_cols Optional site-level grouping columns. Default is IR site
+#'   identifiers (not Sample_ID), matching IR-2026 production.
 #' @param start_month,start_day,end_month,end_day Critical season (default
-#'   May 15–September 30).
-#' @return List with `site_assessments` and `au_assessments`.
+#'   May 15-September 30).
+#' @return List with \code{site_assessments} and \code{au_assessments}.
 #' @export assessHFTemp
 assessHFTemp <- function(data,
                          value_col = "Water_Measurement",
                          criteria_col = "Criteria",
+                         group_cols = NULL,
                          exceed_frac = 0.10,
                          start_month = 5,
                          start_day = 15,
@@ -56,14 +60,17 @@ assessHFTemp <- function(data,
   end <- 100 * as.integer(end_month) + as.integer(end_day)
   x <- x[!is.na(x[[value_col]]) & md >= start & md <= end, , drop = FALSE]
 
-  group_cols <- intersect(
-    c(
-      "IR_MLNAME", "IR_MLID", "HF_Location_ID", "Sample_ID",
-      "IR_Long", "IR_Lat", "ASSESS_ID", "AU_NAME",
-      "BeneficialUse", "BEN_CLASS", criteria_col
-    ),
-    names(x)
-  )
+  if (is.null(group_cols)) {
+    group_cols <- intersect(
+      c(
+        "IR_MLNAME", "IR_MLID", "HF_Location_ID",
+        "IR_Long", "IR_Lat", "ASSESS_ID", "AU_NAME",
+        "BeneficialUse", "BEN_CLASS", criteria_col
+      ),
+      names(x)
+    )
+  }
+  group_cols <- unique(c(group_cols, criteria_col))
   if (length(group_cols) == 0) {
     stop("No grouping columns found for site-level assessment.")
   }
